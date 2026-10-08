@@ -21,7 +21,7 @@ SITE = 'https://invoiceo.in'
 NAME = 'Invoiceo'
 BUSINESS = 'Madcreations'
 EMAIL = 'madhanprasat2002r@gmail.com'
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 RELEASE_DATE = '9 October 2026'
 RELEASE_ISO = '2026-10-09'
 COFFEE = 'https://buymeacoffee.com/madcreations'
@@ -829,6 +829,11 @@ changelog_body = page_head('Updates', f'What’s new in {NAME}', 'Every release,
   <div class="wrap measure">
     <article class="release" id="v{VERSION}">
       <h2>Version {VERSION} {badge('Latest', 'brand')}</h2>
+      <p class="date">{RELEASE_DATE}</p>
+      <p>The app is the same as version 1.0.1: there are no new features or fixes in this release. If you already have 1.0.1, you don’t need to update.</p>
+    </article>
+    <article class="release" id="v1.0.1">
+      <h2>Version 1.0.1</h2>
       <p class="date">{RELEASE_DATE}</p>
       <p>Fixes and improvements from release testing.</p>
       <ul>
