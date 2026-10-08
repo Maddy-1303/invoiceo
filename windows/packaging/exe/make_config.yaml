@@ -1,0 +1,17 @@
+# The value of AppId uniquely identifies this application.
+# Do not use the same AppId value in installers for other applications.
+script_template: setup_template.iss
+# Invoiceo's own id (the old one was Invoiso's: sharing it made this installer
+# treat itself as an upgrade of Invoiso and install into its folder).
+app_id: D12815409DEC460A96518FBCD6488779
+publisher: Madcreations
+publisher_url: https://invoiceo.in/
+display_name: Invoiceo
+create_desktop_icon: true
+output_base_filename: InvoiceoSetup
+# See: https://jrsoftware.org/ishelp/index.php?topic=setup_defaultdirname
+# install_dir_name: "D:\\HELLO-WORLD"
+# This path is relative to the root directory of your project; The format of icon file must be ico, can not be png or others
+setup_icon_file: assets\exe\images\logo.ico
+locales:
+  - en

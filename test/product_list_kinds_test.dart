@@ -1,0 +1,106 @@
+// The product list's kind filter (Products / Services pages) and the new
+// list tabs: in_stock (in_stock + low + out = all), taxed / tax_free /
+// no_hsn for services, the one-query tab counts, SKU search and deleting
+// only one kind.
+import 'dart:io';
+
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:invoiceo/database/database_helper.dart';
+import 'package:invoiceo/database/product_service.dart';
+import 'package:invoiceo/models/product.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  late Directory tmp;
+  var dbCounter = 0;
+
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    tmp = Directory.systemTemp.createTempSync('invoiceo_product_kinds');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            (call) async => tmp.path);
+  });
+  tearDownAll(() async {
+    await DatabaseHelper().close();
+    tmp.deleteSync(recursive: true);
+  });
+
+  Product p(String id, {String type = 'product', int stock = 0, bool unlimited = false,
+          int tax = 0, String hsn = '1001'}) =>
+      Product(id: id, name: 'Item $id', description: '', price: 10, stock: stock,
+          hsncode: hsn, tax_rate: tax, type: type, unlimitedStock: unlimited);
+
+  // Products: healthy 50, unlimited, low 5, out 0, and a tracked SERVICE at
+  // stock 0 (services can be tracked) that must never count as a product.
+  setUp(() async {
+    await DatabaseHelper().switchToFile('product_kinds_${dbCounter++}.db');
+    await ProductService.insertProduct(p('p1', stock: 50));
+    await ProductService.insertProduct(p('p2', unlimited: true));
+    await ProductService.insertProduct(p('p3', stock: 5));
+    await ProductService.insertProduct(p('p4', stock: 0));
+    await ProductService.insertProduct(p('s1', type: 'service', tax: 18, hsn: '9987'));
+    await ProductService.insertProduct(p('s2', type: 'service', tax: 0, hsn: ''));
+    await ProductService.insertProduct(p('s3', type: 'service', tax: 5, hsn: '  ', unlimited: true));
+  });
+
+  Future<List<String>> ids(String tab, {String? type, String query = ''}) async =>
+      (await ProductService.getProductListPage(
+              offset: 0, limit: 50, tab: tab, type: type, query: query))
+          .map((e) => e.id)
+          .toList()
+        ..sort();
+
+  test('type limits the list to products or services; null and both mean all', () async {
+    expect(await ids('all', type: 'product'), ['p1', 'p2', 'p3', 'p4']);
+    expect(await ids('all', type: 'service'), ['s1', 's2', 's3']);
+    expect((await ids('all')).length, 7);
+    expect((await ids('all', type: 'both')).length, 7);
+    expect(await ProductService.getProductListCount(type: 'service'), 3);
+  });
+
+  test('products: in_stock + low + out = all, and services never leak in', () async {
+    expect(await ids('in_stock', type: 'product'), ['p1', 'p2']);
+    expect(await ids('low', type: 'product'), ['p3']);
+    expect(await ids('out', type: 'product'), ['p4'], reason: 'not the tracked service s2');
+    final c = await ProductService.getProductListTabCounts(
+        ['all', 'in_stock', 'low', 'out', 'expired'], type: 'product');
+    expect(c, {'all': 4, 'in_stock': 2, 'low': 1, 'out': 1, 'expired': 0});
+    expect(c['in_stock']! + c['low']! + c['out']!, c['all']);
+  });
+
+  test('services: with tax, tax-free and without SAC', () async {
+    expect(await ids('taxed', type: 'service'), ['s1', 's3']);
+    expect(await ids('tax_free', type: 'service'), ['s2']);
+    expect(await ids('no_hsn', type: 'service'), ['s2', 's3'], reason: 'blank or spaces');
+    final c = await ProductService.getProductListTabCounts(
+        ['all', 'taxed', 'tax_free', 'no_hsn'], type: 'service');
+    expect(c, {'all': 3, 'taxed': 2, 'tax_free': 1, 'no_hsn': 2});
+  });
+
+  test('tab counts follow the search too', () async {
+    final c = await ProductService.getProductListTabCounts(['all', 'low'],
+        type: 'product', query: 'Item p3');
+    expect(c, {'all': 1, 'low': 1});
+  });
+
+  test('search finds a SKU code', () async {
+    await ProductService.upsertProductMetadata(
+        ProductMetadata(productId: 'p3', skuCode: 'TRS-250'));
+    expect(await ids('all', type: 'product', query: 'trs-25'), ['p3']);
+    expect(await ids('all', type: 'service', query: 'trs-25'), isEmpty);
+  });
+
+  test('deleteProductsByType removes one kind and its details only', () async {
+    await ProductService.upsertProductMetadata(ProductMetadata(productId: 's1', notes: 'x'));
+    await ProductService.upsertProductMetadata(ProductMetadata(productId: 'p1', notes: 'y'));
+    await ProductService.deleteProductsByType('service');
+    expect(await ids('all'), ['p1', 'p2', 'p3', 'p4']);
+    expect(await ProductService.getProductMetadata('s1'), isNull);
+    expect((await ProductService.getProductMetadata('p1'))?.notes, 'y');
+  });
+}

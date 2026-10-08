@@ -1,0 +1,31 @@
+display_name: Invoiceo
+package_name: invoiceo
+maintainer:
+  name: Madhan Prasath (Madcreations)
+  email: madhanprasat2002r@gmail.com
+priority: optional
+section: x11
+essential: false
+icon: assets/deb/images/logo.png
+
+postinstall_scripts:
+  - echo "Installed Invoiceo"
+postuninstall_scripts:
+  - echo "Removed Invoiceo"
+
+#keywords:
+#  - Hello
+#  - World
+#  - Test
+#  - Application
+
+generic_name: Invoice Application
+
+categories:
+  - Office
+  - Finance
+
+startup_notify: true
+# You can also specify [metainfo](https://freedesktop.org/software/appstream/docs/chap-Quickstart.html) file
+# which contains metadata of the app.
+# metainfo: linux/packaging/myappid.appdata.xml

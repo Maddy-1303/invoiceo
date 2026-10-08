@@ -1,0 +1,727 @@
+name: Build and Release Invoiceo
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "test-v*"
+
+# Required so GITHUB_TOKEN can create releases and upload assets
+permissions:
+  contents: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Windows — build .exe installer
+  # ─────────────────────────────────────────────────────────────
+  build-windows:
+    if: ${{ vars.BUILD_WINDOWS == 'true' }}
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      #      - name: Setup Visual Studio Build Tools
+      #        uses: microsoft/setup-msbuild@v1
+
+      - name: Setup MSVC Development Environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Set version from tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          sed -i "s|static const version = \"v[^\"]*\";|static const version = \"v$VERSION\";|" lib/common/app_config.dart
+
+      - name: Install FastForge
+        run: dart pub global activate fastforge
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      #      - name: Build Flutter Windows Release
+      #        run: flutter build windows --release
+      #        env:
+      #          CMAKE_GENERATOR: "Visual Studio 17 2022"
+
+      - name: Build Windows Installer with FastForge
+        run: fastforge package --platform windows --targets exe
+        env:
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
+
+      - name: Verify installer exists
+        shell: bash
+        run: |
+          count=$(find dist -name "invoiceo-*-windows-setup.exe" | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: No installer found in dist/"
+            find dist -type f
+            exit 1
+          fi
+          echo "Found installer(s):"
+          find dist -name "invoiceo-*-windows-setup.exe"
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiceo-Windows-Installer
+          path: dist/*/invoiceo-*-windows-setup.exe
+
+  # ─────────────────────────────────────────────────────────────
+  # Linux — build .deb package
+  # ─────────────────────────────────────────────────────────────
+  build-linux:
+    if: ${{ vars.BUILD_LINUX_DEB22 == 'true' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Setup build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev patchelf squashfs-tools
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          sed -i "s|static const version = \"v[^\"]*\";|static const version = \"v$VERSION\";|" lib/common/app_config.dart
+
+      - name: Install FastForge
+        run: dart pub global activate fastforge
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      #      - name: Build Flutter Linux Release
+      #        run: flutter build linux --release
+
+      - name: Build .deb Package
+        run: |
+          fastforge package --platform linux --targets deb
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
+          echo "Found deb: $DEB_FILE"
+          mv "$DEB_FILE" Invoiceo-$VERSION-ubuntu22.deb
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiceo-Ubuntu22.deb
+          path: Invoiceo-*-ubuntu22.deb
+
+  # ─────────────────────────────────────────────────────────────
+  # Linux — build .deb for Ubuntu 24.04
+  # Compiled natively on ubuntu-24.04 for modern systems (e.g.
+  # Ryzen 7000 series) running Ubuntu 24.04 (Noble).
+  # ─────────────────────────────────────────────────────────────
+  build-linux-ubuntu24:
+    if: ${{ vars.BUILD_LINUX_DEB24 == 'true' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Setup build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev patchelf squashfs-tools
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          sed -i "s|static const version = \"v[^\"]*\";|static const version = \"v$VERSION\";|" lib/common/app_config.dart
+
+      - name: Install FastForge
+        run: dart pub global activate fastforge
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      #      - name: Build Flutter Linux Release
+      #        run: flutter build linux --release
+
+      - name: Build .deb Package
+        run: |
+          fastforge package --platform linux --targets deb
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          DEB_FILE=$(find dist/$VERSION -name "*.deb" | head -1)
+          echo "Found deb: $DEB_FILE"
+
+          # ── Inject libsqlite3.so and create LD_LIBRARY_PATH launcher ──────────
+          # sqflite_common_ffi calls DynamicLibrary.open("libsqlite3.so") which
+          # needs the unversioned symlink.  Ubuntu 24.04 only ships libsqlite3.so.0
+          # in the runtime package; the unversioned name requires libsqlite3-dev.
+          # Bundle it so the app always finds it regardless of what the user has
+          # installed.
+          mkdir -p /tmp/deb_root
+          dpkg-deb -R "$DEB_FILE" /tmp/deb_root
+
+          echo "--- deb contents ---"
+          find /tmp/deb_root -type f | sort
+
+          mkdir -p /tmp/deb_root/usr/share/invoiceo/lib
+          # Bundle libsqlite3 into the application's lib directory
+          mkdir -p /tmp/deb_root/opt/invoiceo/lib
+
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" /tmp/deb_root/usr/share/invoiceo/lib/libsqlite3.so
+          cp "$LIBSQLITE" /tmp/deb_root/opt/invoiceo/lib/libsqlite3.so
+
+          echo "Contents of opt/invoiceo/lib:"
+          ls -l /tmp/deb_root/opt/invoiceo/lib
+
+          echo "Injected libsqlite3.so into deb at /usr/share/invoiceo/lib/"
+          echo "Injected libsqlite3.so into deb at /opt/invoiceo/lib/"
+
+          dpkg-deb -b /tmp/deb_root "$DEB_FILE"
+          echo "Repacked with LD_LIBRARY_PATH launcher"
+
+          mv "$DEB_FILE" Invoiceo-$VERSION-ubuntu24.deb
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiceo-Ubuntu24.deb
+          path: Invoiceo-*-ubuntu24.deb
+
+  # Old appimage-builder AppImage job — disabled: appimage-builder hardcodes
+  # xz compression, which AppImageHub cannot mount. Replaced by the
+  # appimagetool-based build-appimage job below.
+#  # ─────────────────────────────────────────────────────────────
+#  # Linux — build AppImage
+#  # ─────────────────────────────────────────────────────────────
+#  build-appimage:
+#    if: ${{ vars.BUILD_APPIMAGE22 == 'true' }}
+#    runs-on: ubuntu-22.04
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - uses: subosito/flutter-action@v2
+#        with:
+#          flutter-version: '3.32.8'
+#          cache: true
+#
+#      - name: Setup build dependencies
+#        run: |
+#          sudo apt-get update -y
+#          sudo apt-get install -y \
+#            clang cmake ninja-build pkg-config \
+#            libgtk-3-dev liblzma-dev patchelf squashfs-tools
+#
+#      - name: Set version from tag
+#        run: |
+#          VERSION="${GITHUB_REF#refs/tags/}"
+#          IS_TEST_BUILD="false"
+#          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+#          VERSION="${VERSION#test-v}"
+#          VERSION="${VERSION#v}"
+#          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+#          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+#          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+#          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+#
+#      - name: Flutter Pub Get
+#        run: flutter pub get
+#
+#      - name: Build Flutter Linux Release
+#        run: flutter build linux --release
+#
+#      - name: Bundle libstdc++ into AppDir
+#        run: |
+#          # ubuntu-22.04 system libstdc++ already provides GLIBCXX_3.4.29
+#          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+#          echo "Bundling libstdc++: $LIBSTDCPP"
+#          mkdir -p AppDir/usr/lib
+#          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
+#          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+#
+#      - name: Prepare AppDir
+#        run: |
+#          mkdir -p AppDir/usr/bin
+#          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+#          mkdir -p AppDir/usr/share/icons
+#          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+#
+#      - name: Install AppImage Builder
+#        run: |
+#          sudo apt-get install -y appstream file desktop-file-utils libfuse2 zsync
+#          pip install "packaging<22" appimage-builder==1.1.0
+#
+#      - name: Build AppImage
+#        run: |
+#          VERSION="${GITHUB_REF#refs/tags/}"
+#          VERSION="${VERSION#test-v}"
+#          VERSION="${VERSION#v}"
+#          sed -i "/app_info:/,/^[^ ]/ s/^\(\s*version:\s*\)[0-9.]*$/\1$VERSION/" AppImageBuilder.yml
+#          appimage-builder --recipe AppImageBuilder.yml --skip-test
+#
+#      - name: Upload AppImage
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: Invoiceo-AppImage
+#          path: "*.AppImage"
+
+  # ─────────────────────────────────────────────────────────────
+  # Linux — build AppImage for Ubuntu 24.04
+  # Compiled natively on ubuntu-24.04 (glibc 2.39) for modern
+  # systems. Uses appimagetool directly instead of appimage-builder
+  # to avoid Python 3.12 compatibility issues on Noble.
+  # Bundles libstdc++ and libgcc_s; relies on system GTK/glib
+  # which are standard on Ubuntu 24.04.
+  # ─────────────────────────────────────────────────────────────
+  build-appimage-ubuntu24:
+    if: ${{ vars.BUILD_APPIMAGE24 == 'true' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Setup build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev patchelf squashfs-tools \
+            desktop-file-utils wget
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          sed -i "s|static const version = \"v[^\"]*\";|static const version = \"v$VERSION\";|" lib/common/app_config.dart
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Flutter Linux Release
+        run: flutter build linux --release
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/icons
+
+          # Copy Flutter bundle
+          cp -r build/linux/x64/release/bundle/. AppDir/usr/bin/
+
+          # Bundle libstdc++ (provides GLIBCXX symbols required by Syncfusion)
+          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+          echo "Bundling libstdc++: $LIBSTDCPP"
+          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
+
+          # Bundle libgcc_s
+          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+
+          # Bundle libsqlite3.so — sqflite_common_ffi calls
+          # DynamicLibrary.open("libsqlite3.so") (unversioned).  Ubuntu only
+          # ships libsqlite3.so.0 in the runtime package so we bundle it here.
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" AppDir/usr/lib/libsqlite3.so
+
+          # Icons
+          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+          cp assets/deb/images/logo.png AppDir/logo.png
+
+      - name: Create AppRun and desktop entry
+        run: |
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/bin/lib:${LD_LIBRARY_PATH}"
+          exec "${HERE}/usr/bin/invoiceo" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          cat > AppDir/invoiceo.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Invoiceo
+          Exec=invoiceo
+          Icon=logo
+          Type=Application
+          Categories=Office;
+          Terminal=false
+          EOF
+
+      - name: Build AppImage with appimagetool
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+
+          wget -q -O /tmp/appimagetool.AppImage \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool.AppImage
+
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 \
+            /tmp/appimagetool.AppImage AppDir \
+            "Invoiceo-${VERSION}-ubuntu24-x86_64.AppImage"
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiceo-AppImage-Ubuntu24
+          path: "Invoiceo-*-ubuntu24-x86_64.AppImage"
+
+  # ─────────────────────────────────────────────────────────────
+  # Linux — build AppImage with appimagetool on Ubuntu 22.04
+  # Replaces appimage-builder: it hardcodes xz compression, which
+  # AppImageHub's runtime cannot mount. appimagetool produces gzip
+  # SquashFS. Compiled on 22.04 (glibc 2.35) for older distros.
+  # ─────────────────────────────────────────────────────────────
+  build-appimage:
+    if: ${{ vars.BUILD_APPIMAGE22 == 'true' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Setup build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev patchelf squashfs-tools \
+            desktop-file-utils wget
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          sed -i "s|static const version = \"v[^\"]*\";|static const version = \"v$VERSION\";|" lib/common/app_config.dart
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Build Flutter Linux Release
+        run: flutter build linux --release
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/icons
+
+          # Copy Flutter bundle
+          cp -r build/linux/x64/release/bundle/. AppDir/usr/bin/
+
+          # Bundle libstdc++ (provides GLIBCXX symbols required by Syncfusion)
+          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
+          echo "Bundling libstdc++: $LIBSTDCPP"
+          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
+
+          # Bundle libgcc_s
+          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+
+          # Bundle libsqlite3.so — sqflite_common_ffi calls
+          # DynamicLibrary.open("libsqlite3.so") (unversioned).  Ubuntu only
+          # ships libsqlite3.so.0 in the runtime package so we bundle it here.
+          LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          if [ -z "$LIBSQLITE" ]; then
+            sudo apt-get install -y libsqlite3-dev
+            LIBSQLITE=$(find /usr/lib -name "libsqlite3.so.0.*" | sort -V | tail -1)
+          fi
+          echo "Bundling libsqlite3: $LIBSQLITE"
+          cp "$LIBSQLITE" AppDir/usr/lib/libsqlite3.so
+
+          # Icons
+          cp assets/deb/images/logo.png AppDir/usr/share/icons/logo.png
+          cp assets/deb/images/logo.png AppDir/logo.png
+
+      - name: Create AppRun and desktop entry
+        run: |
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/bin/lib:${LD_LIBRARY_PATH}"
+          exec "${HERE}/usr/bin/invoiceo" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          cat > AppDir/invoiceo.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Invoiceo
+          Exec=invoiceo
+          Icon=logo
+          Type=Application
+          Categories=Office;
+          Terminal=false
+          EOF
+
+      - name: Build AppImage with appimagetool
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+
+          wget -q -O /tmp/appimagetool.AppImage \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool.AppImage
+
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 \
+            /tmp/appimagetool.AppImage AppDir \
+            "Invoiceo-${VERSION}-x86_64.AppImage"
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiceo-AppImage
+          path: "Invoiceo-*-x86_64.AppImage"
+
+
+  # ─────────────────────────────────────────────────────────────
+  # macOS — build .dmg installer
+  # ─────────────────────────────────────────────────────────────
+  build-macos:
+    if: ${{ vars.BUILD_MACOS == 'true' }}
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+          cache: true
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          IS_TEST_BUILD="false"
+          if [[ "$VERSION" == test-v* ]]; then IS_TEST_BUILD="true"; fi
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          sed -i '' "s/^version: .*/version: $VERSION/" pubspec.yaml
+          echo "Building version: $VERSION (test build: $IS_TEST_BUILD)"
+          sed -i '' "s|__IS_TEST_BUILD__|$IS_TEST_BUILD|g" lib/common/constants.dart
+          sed -i '' "s|__BUILD_TIMESTAMP__|$(date +%s)|g" lib/common/constants.dart
+          sed -i '' "s|static const version = \"v[^\"]*\";|static const version = \"v$VERSION\";|" lib/common/app_config.dart
+
+      - name: Install FastForge
+        run: dart pub global activate fastforge
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      #      - name: Build Flutter macOS Release
+      #        run: flutter build macos --release
+
+      - name: Install appdmg
+        run: npm install -g appdmg
+
+      - name: Create .icns for DMG volume icon
+        run: |
+          ICONSET=macos/packaging/dmg/AppIcon.iconset
+          mkdir -p "$ICONSET"
+          APPICONSET=macos/Runner/Assets.xcassets/AppIcon.appiconset
+          cp "$APPICONSET/app_icon_16.png"   "$ICONSET/icon_16x16.png"
+          cp "$APPICONSET/app_icon_32.png"   "$ICONSET/icon_16x16@2x.png"
+          cp "$APPICONSET/app_icon_32.png"   "$ICONSET/icon_32x32.png"
+          cp "$APPICONSET/app_icon_64.png"   "$ICONSET/icon_32x32@2x.png"
+          cp "$APPICONSET/app_icon_128.png"  "$ICONSET/icon_128x128.png"
+          cp "$APPICONSET/app_icon_256.png"  "$ICONSET/icon_128x128@2x.png"
+          cp "$APPICONSET/app_icon_256.png"  "$ICONSET/icon_256x256.png"
+          cp "$APPICONSET/app_icon_512.png"  "$ICONSET/icon_256x256@2x.png"
+          cp "$APPICONSET/app_icon_512.png"  "$ICONSET/icon_512x512.png"
+          cp "$APPICONSET/app_icon_1024.png" "$ICONSET/icon_512x512@2x.png"
+          iconutil -c icns "$ICONSET" -o macos/packaging/dmg/AppIcon.icns
+
+      - name: Build macOS DMG with FastForge
+        run: fastforge package --platform macos --targets dmg
+
+      - name: Rename DMG
+        run: |
+          DMG=$(find dist -name "*.dmg" | head -1)
+          if [ -z "$DMG" ]; then
+            echo "ERROR: No DMG found in dist/"
+            find dist -type f
+            exit 1
+          fi
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION="${VERSION#test-v}"
+          VERSION="${VERSION#v}"
+          FINAL_DMG="dist/invoiceo-${VERSION}-macos.dmg"
+          mv "$DMG" "$FINAL_DMG"
+          echo "Renamed to: $FINAL_DMG"
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Invoiceo-macOS
+          path: dist/invoiceo-*-macos.dmg
+
+  # ─────────────────────────────────────────────────────────────
+  # Release — collect artifacts and publish GitHub Release
+  # Runs only after all three build jobs succeed
+  # ─────────────────────────────────────────────────────────────
+  create-release:
+    needs: [build-windows, build-linux, build-linux-ubuntu24, build-appimage, build-appimage-ubuntu24, build-macos]
+    # Runs when the builds that are switched on all passed (switched-off ones
+    # are "skipped" and do not block). A failed build publishes nothing, so
+    # the website's download links never point at a half-made release.
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && vars.INVOICEO_RELEASE == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiceo-Windows-Installer
+          path: release-assets/
+        continue-on-error: true
+
+
+      - name: Download Ubuntu22 .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiceo-Ubuntu22.deb
+          path: release-assets/
+        continue-on-error: true
+
+      - name: Download AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiceo-AppImage
+          path: release-assets/
+        continue-on-error: true
+
+      - name: Download Ubuntu24 .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiceo-Ubuntu24.deb
+          path: release-assets/
+        continue-on-error: true
+
+      - name: Download Ubuntu24 AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiceo-AppImage-Ubuntu24
+          path: release-assets/
+        continue-on-error: true
+
+      - name: Download macOS DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: Invoiceo-macOS
+          path: release-assets/
+        continue-on-error: true
+
+      # Fixed names as well, for links that must not change between versions:
+      # https://github.com/Maddy-1303/invoiceo/releases/latest/download/<name>
+      # (the website's Download buttons and the in-app update dialog).
+      - name: Add fixed-name copies for the website
+        run: |
+          cd release-assets
+          # copy <pattern> <fixed name>: the Ubuntu 22.04 builds are the Linux
+          # downloads (they also run on newer systems); never the ubuntu24 ones.
+          copy() { f=$(find . -maxdepth 2 -type f -name "$1" ! -name '*ubuntu24*' | head -1); if [ -n "$f" ]; then cp "$f" "$2"; echo "$f -> $2"; else echo "skip $2 (no $1)"; fi; }
+          copy 'invoiceo-*-windows-setup.exe' Invoiceo-Setup-Windows.exe
+          copy 'invoiceo-*-macos.dmg' Invoiceo-macOS.dmg
+          copy 'Invoiceo-*-ubuntu22.deb' Invoiceo-Linux.deb
+          copy 'Invoiceo-*-x86_64.AppImage' Invoiceo-Linux.AppImage
+
+      - name: List release assets
+        run: find release-assets -type f -exec ls -l {} \;
+
+      - name: Write checksums
+        run: |
+          cd release-assets
+          find . -type f ! -name SHA256SUMS.txt -exec sha256sum {} \; | sed 's| \./.*/| |; s| \./| |' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Invoiceo ${{ github.ref_name }}
+          draft: false
+          # test-v* builds are pre-releases: never "latest", so the website
+          # and the in-app update check keep pointing at the real release.
+          prerelease: ${{ startsWith(github.ref_name, 'test-v') }}
+          make_latest: ${{ !startsWith(github.ref_name, 'test-v') }}
+          files: release-assets/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

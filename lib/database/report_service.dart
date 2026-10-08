@@ -1,0 +1,2296 @@
+import 'dart:typed_data';
+import 'package:intl/intl.dart';
+import 'package:invoiceo/database/database_helper.dart';
+import 'package:invoiceo/services/backend_services.dart';
+import 'package:invoiceo/services/pdf/pdf_report_header.dart';
+import 'package:invoiceo/common/common.dart';
+import 'package:invoiceo/domain/customer_identity.dart';
+import 'package:invoiceo/domain/invoice_calculator.dart';
+import 'package:invoiceo/domain/invoice_totals_calculator.dart';
+import 'package:invoiceo/models/additional_cost.dart';
+import 'package:invoiceo/utils/app_date.dart';
+import 'package:invoiceo/utils/formatters.dart';
+import 'package:invoiceo/models/report_models.dart';
+import 'package:invoiceo/services/pdf/pdf_font_service.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+
+import 'package:invoiceo/common/constants.dart';
+import 'package:invoiceo/common/app_config.dart';
+export 'package:invoiceo/models/report_models.dart';
+
+// ─── Internal row ─────────────────────────────────────────────────────────────
+
+class _InvRow {
+  final String id;
+  final String customerKey;
+  final String customerName;
+  final String date;
+  final String? dueDate;
+  final double total;
+  final double paid;
+  final double outstanding;
+  // Tax-exclusive product revenue after the invoice-level discount (its
+  // net-subtotal share), and cost of goods sold — for profit reporting.
+  final double netRevenue;
+  final double cogs;
+  final String currencyCode;
+  final String currencySymbol;
+
+  const _InvRow({
+    required this.id,
+    required this.customerKey,
+    required this.customerName,
+    required this.date,
+    this.dueDate,
+    required this.total,
+    required this.paid,
+    required this.outstanding,
+    required this.netRevenue,
+    required this.cogs,
+    required this.currencyCode,
+    required this.currencySymbol,
+  });
+}
+
+class _StatementLineDraft {
+  final String date;
+  final int order;
+  final String type;
+  final String reference;
+  final String description;
+  final double debit;
+  final double credit;
+
+  const _StatementLineDraft({
+    required this.date,
+    required this.order,
+    required this.type,
+    required this.reference,
+    required this.description,
+    required this.debit,
+    required this.credit,
+  });
+}
+
+// ─── Service ───────────────────────────────────────────────────────────────────
+
+class ReportService {
+  static final _db = DatabaseHelper();
+  static const _invoiceItemNetSql = 'CASE WHEN ii.discount_per_unit = 1 '
+      'THEN (COALESCE(ii.unit_price, ii.product_price) - ii.discount) * ii.quantity '
+      '+ COALESCE(ii.extra_cost, 0) '
+      'ELSE COALESCE(ii.unit_price, ii.product_price) * ii.quantity '
+      '- ii.discount + COALESCE(ii.extra_cost, 0) END';
+  static const _invoiceItemDiscountSql = 'CASE WHEN ii.discount_per_unit = 1 '
+      'THEN ii.discount * ii.quantity ELSE ii.discount END';
+  // Revenue basis for P&L/dashboard: backs out embedded tax for
+  // tax-inclusive-priced items so "revenue" stays a tax-exclusive figure,
+  // matching the sales tax report and invoice subtotal. Per-item mode backs
+  // out the product's own rate; global mode backs out the invoice rate
+  // (i.tax_rate is a fraction), as InvoiceTotalsCalculator.line does.
+  static const _invoiceItemTaxableNetSql =
+      "CASE WHEN i.tax_mode = 'per_item' AND ii.product_price_includes_tax = 1 "
+      'AND ii.product_tax_rate > 0 '
+      'THEN ($_invoiceItemNetSql) / (1 + ii.product_tax_rate / 100.0) '
+      "WHEN i.tax_mode = 'global' AND ii.product_price_includes_tax = 1 "
+      'AND i.tax_rate > 0 '
+      'THEN ($_invoiceItemNetSql) / (1 + i.tax_rate) '
+      'ELSE $_invoiceItemNetSql END';
+
+  // Money text for report PDFs. An empty symbol means the report mixes
+  // currencies ("All currencies"), so only the number is shown.
+  static String _pdfMoney(String currencySymbol, double v) =>
+      currencySymbol.isEmpty
+          ? v.toStringAsFixed(2)
+          : '$currencySymbol ${v.toStringAsFixed(2)}';
+
+  // ── Batch loader: invoice totals computed in Dart (accurate, no N+1) ────────
+
+  static Future<List<_InvRow>> _loadRows({
+    String type = 'Invoice',
+    DateTime? from,
+    DateTime? to,
+    String? currencyCode,
+    String? customerKey,
+  }) async {
+    final db = await _db.database;
+
+    final sb = StringBuffer(
+        "type = ? AND deleted_at IS NULL AND (status IS NULL OR status != 'declined')");
+    final args = <dynamic>[type];
+    if (from != null) {
+      sb.write(' AND date >= ?');
+      args.add(AppDate.dateKeyStart(from));
+    }
+    if (to != null) {
+      sb.write(' AND date <= ?');
+      args.add(AppDate.dateKeyEnd(to));
+    }
+    if (currencyCode != null) {
+      sb.write(' AND (currency_code = ? OR currency_code IS NULL)');
+      args.add(currencyCode);
+    }
+    if (customerKey != null) {
+      sb.write(" AND COALESCE(NULLIF(customer_id, ''), customer_name) = ?");
+      args.add(customerKey);
+    }
+
+    final invRows = await db.query(
+      'invoices',
+      columns: [
+        'id',
+        'customer_id',
+        'customer_name',
+        'date',
+        'due_date',
+        'tax_rate',
+        'tax_mode',
+        'additional_costs',
+        'invoice_discount_type',
+        'invoice_discount_value',
+        'currency_code',
+        'currency_symbol',
+      ],
+      where: sb.toString(),
+      whereArgs: args,
+    );
+    if (invRows.isEmpty) return [];
+
+    // Subquery instead of one `?` per id — see Issues.md #36.
+    final invSubquery = '(SELECT id FROM invoices WHERE $sb)';
+
+    final itemRows = await db.rawQuery(
+      'SELECT invoice_id, quantity, unit_price, product_price, discount, '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax, '
+      'product_purchase_price '
+      'FROM invoice_items WHERE invoice_id IN $invSubquery',
+      args,
+    );
+
+    final payRows = await db.rawQuery(
+      'SELECT invoice_id, COALESCE(SUM(amount_paid), 0.0) AS paid '
+      'FROM invoice_payments WHERE invoice_id IN $invSubquery '
+      'GROUP BY invoice_id',
+      args,
+    );
+
+    final itemsByInv = <String, List<Map<String, dynamic>>>{};
+    for (final r in itemRows) {
+      (itemsByInv[r['invoice_id'] as String] ??= [])
+          .add(r as Map<String, dynamic>);
+    }
+
+    final paidByInv = <String, double>{
+      for (final r in payRows)
+        r['invoice_id'] as String: (r['paid'] as num).toDouble()
+    };
+
+    return invRows.map((inv) {
+      final id = inv['id'] as String;
+      final taxMode = TaxModeExtension.fromKey(inv['tax_mode'] as String?);
+      final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
+      final items = itemsByInv[id] ?? [];
+      final paid = paidByInv[id] ?? 0.0;
+
+      final addCosts =
+          AdditionalCost.listFromJson(inv['additional_costs'] as String?)
+              .fold(0.0, (s, c) => s + c.amount);
+      final totals = InvoiceTotalsCalculator.totals(
+        lines: items.map((r) => InvoiceTotalsCalculator.lineFromDbRow(r,
+            taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
+        taxMode: taxMode,
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.fraction,
+        additionalCostsTotal: addCosts,
+        invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
+            inv['invoice_discount_type'] as String?),
+        invoiceDiscountValue:
+            (inv['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+      );
+      final total = totals.total;
+      final outstanding =
+          InvoiceCalculator.outstanding(total: total, paid: paid);
+
+      // Invoice-level discount applies to the whole pre-discount total; give
+      // the tax-exclusive product-revenue portion its proportional share so
+      // profit stays consistent with `billed`.
+      final netRevenue = totals.preDiscountTotal <= 0
+          ? totals.subtotal
+          : totals.subtotal -
+              totals.invoiceDiscountAmount *
+                  (totals.subtotal / totals.preDiscountTotal);
+      final cogs = items.fold<double>(
+          0.0,
+          (s, r) =>
+              s +
+              (((r['quantity'] as num?)?.toDouble() ?? 0.0) *
+                  ((r['product_purchase_price'] as num?)?.toDouble() ?? 0.0)));
+
+      return _InvRow(
+        id: id,
+        customerKey: CustomerIdentity.key(
+          id: inv['customer_id'] as String?,
+          name: inv['customer_name'] as String?,
+        ),
+        customerName:
+            CustomerIdentity.displayName(inv['customer_name'] as String?),
+        date: inv['date'] as String? ?? '',
+        dueDate: inv['due_date'] as String?,
+        total: total,
+        paid: paid,
+        outstanding: outstanding,
+        netRevenue: netRevenue,
+        cogs: cogs,
+        currencyCode: inv['currency_code'] as String? ?? 'INR',
+        currencySymbol: inv['currency_symbol'] as String? ?? 'Rs.',
+      );
+    }).toList();
+  }
+
+  // ── 1. Revenue KPIs ────────────────────────────────────────────────────────
+
+  static Future<RevenueKpi> getRevenueSummary(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
+    if (rows.isEmpty) return RevenueKpi.empty;
+
+    double billed = 0,
+        collected = 0,
+        outstanding = 0,
+        profit = 0,
+        realizedProfit = 0;
+    for (final r in rows) {
+      billed += r.total;
+      collected += r.paid;
+      outstanding += r.outstanding;
+      final margin = r.netRevenue - r.cogs;
+      profit += margin;
+      final collectedRatio =
+          r.total > 0 ? (r.paid / r.total).clamp(0.0, 1.0) : 0.0;
+      realizedProfit += margin * collectedRatio;
+    }
+    return RevenueKpi(
+      invoiceCount: rows.length,
+      billed: billed,
+      collected: collected,
+      outstanding: outstanding,
+      avgInvoiceValue: billed / rows.length,
+      profit: profit,
+      realizedProfit: realizedProfit,
+    );
+  }
+
+  /// Count of sold line items in [from]..[to] with no purchase-price
+  /// snapshot (0 or null) — i.e. sales made before purchase price was set on
+  /// the product, or before this feature existed. Profit/margin figures are
+  /// understated by this many items' worth of unknown cost.
+  static Future<int> getMissingCostItemCount(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+    final rows = await db.rawQuery(
+      "SELECT COUNT(*) AS cnt "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ?",
+      args,
+    );
+    return (rows.first['cnt'] as num?)?.toInt() ?? 0;
+  }
+
+  // ── 2. Monthly revenue trend ───────────────────────────────────────────────
+
+  static Future<List<MonthlyPoint>> getMonthlyRevenueTrend(
+      DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
+    final db = await _db.database;
+
+    final currencyFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    // date_paid is a date-only key ('yyyy-MM-dd'), which sorts before
+    // 'yyyy-MM-ddT00:00...', so the start is the plain date or payments on
+    // the first day are dropped.
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      AppDate.dateKey(from),
+      AppDate.dateKeyEnd(to),
+    ];
+
+    // Collected grouped by payment date (more accurate for cash-flow view)
+    final collectedRows = await db.rawQuery(
+      "SELECT strftime('%Y-%m', ip.date_paid) AS month, "
+      "COALESCE(SUM(ip.amount_paid), 0.0) AS collected "
+      "FROM invoice_payments ip "
+      "JOIN invoices i ON ip.invoice_id = i.id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "$currencyFilter"
+      "AND ip.date_paid >= ? AND ip.date_paid <= ? "
+      "GROUP BY month ORDER BY month",
+      args,
+    );
+
+    final collectedByMonth = <String, double>{
+      for (final r in collectedRows)
+        r['month'] as String: (r['collected'] as num).toDouble()
+    };
+
+    // Billed / net sales / COGS / outstanding / count grouped by invoice date
+    final billedByMonth = <String, double>{};
+    final netByMonth = <String, double>{};
+    final cogsByMonth = <String, double>{};
+    final outstandingByMonth = <String, double>{};
+    final countByMonth = <String, int>{};
+    for (final r in rows) {
+      if (r.date.length < 7) continue;
+      final m = r.date.substring(0, 7);
+      billedByMonth[m] = (billedByMonth[m] ?? 0) + r.total;
+      netByMonth[m] = (netByMonth[m] ?? 0) + r.netRevenue;
+      cogsByMonth[m] = (cogsByMonth[m] ?? 0) + r.cogs;
+      outstandingByMonth[m] = (outstandingByMonth[m] ?? 0) + r.outstanding;
+      countByMonth[m] = (countByMonth[m] ?? 0) + 1;
+    }
+
+    final allMonths = {...billedByMonth.keys, ...collectedByMonth.keys}.toList()
+      ..sort();
+
+    return allMonths
+        .map((m) => MonthlyPoint(
+              month: m,
+              billed: billedByMonth[m] ?? 0,
+              collected: collectedByMonth[m] ?? 0,
+              profit: (netByMonth[m] ?? 0) - (cogsByMonth[m] ?? 0),
+              invoiceCount: countByMonth[m] ?? 0,
+              netSales: netByMonth[m] ?? 0,
+              cogs: cogsByMonth[m] ?? 0,
+              outstanding: outstandingByMonth[m] ?? 0,
+            ))
+        .toList();
+  }
+
+  // ── 2b. Daily sales/profit trend ────────────────────────────────────────────
+
+  static Future<List<DailyPoint>> getDailyRevenueTrend(
+      DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
+
+    // Sales = tax-exclusive product revenue after invoice discount; profit
+    // subtracts COGS. Both keep the same basis as the Revenue-tab profit KPI.
+    final countByDay = <String, int>{};
+    final netByDay = <String, double>{};
+    final cogsByDay = <String, double>{};
+    for (final r in rows) {
+      if (r.date.length < 10) continue;
+      final d = r.date.substring(0, 10);
+      countByDay[d] = (countByDay[d] ?? 0) + 1;
+      netByDay[d] = (netByDay[d] ?? 0) + r.netRevenue;
+      cogsByDay[d] = (cogsByDay[d] ?? 0) + r.cogs;
+    }
+
+    final days = countByDay.keys.toList()..sort();
+    return days
+        .map((d) => DailyPoint(
+              date: d,
+              invoiceCount: countByDay[d]!,
+              billed: netByDay[d] ?? 0.0,
+              cogs: cogsByDay[d] ?? 0.0,
+            ))
+        .toList();
+  }
+
+  // ── 3. Payment status breakdown ────────────────────────────────────────────
+
+  static Future<StatusBreakdown> getPaymentStatusBreakdown(
+      DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
+    int paid = 0, partial = 0, unpaid = 0;
+    for (final r in rows) {
+      switch (InvoiceCalculator.paymentStatus(total: r.total, paid: r.paid)) {
+        case PaymentStatus.unpaid:
+          unpaid++;
+        case PaymentStatus.paid:
+          paid++;
+        case PaymentStatus.partial:
+          partial++;
+      }
+    }
+    return StatusBreakdown(paid: paid, partial: partial, unpaid: unpaid);
+  }
+
+  // ── 4. Aged receivables (all time, all overdue) ────────────────────────────
+
+  static Future<List<AgedReceivable>> getAgedReceivables(
+      {String? currencyCode}) async {
+    final rows = await _loadRows(currencyCode: currencyCode);
+    final now = DateTime.now();
+    final result = <AgedReceivable>[];
+
+    for (final r in rows) {
+      if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
+      final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
+      final bool noDueDate = dueDate == null;
+      final daysOverdue =
+          InvoiceCalculator.daysOverdue(dueDate: dueDate, asOf: now);
+      result.add(AgedReceivable(
+        invoiceId: r.id,
+        customerName: r.customerName,
+        outstanding: r.outstanding,
+        daysOverdue: daysOverdue,
+        hasNoDueDate: noDueDate,
+      ));
+    }
+    // Sort: no-due-date last, then by days overdue descending
+    result.sort((a, b) {
+      if (a.hasNoDueDate != b.hasNoDueDate) return a.hasNoDueDate ? 1 : -1;
+      return b.daysOverdue.compareTo(a.daysOverdue);
+    });
+    return result;
+  }
+
+  /// A/R Aging Summary: outstanding balance per customer split into aging
+  /// buckets (all-time, as of today). Bucket boundaries match
+  /// [getAgedReceivables]. Sorted by total outstanding descending.
+  static Future<List<AgedReceivableSummaryRow>> getAgedReceivableSummary(
+      {String? currencyCode}) async {
+    final rows = await _loadRows(currencyCode: currencyCode);
+    final now = DateTime.now();
+    // Per customer: [current, 0-30, 31-60, 61-90, 90+, noDueDate]
+    final buckets = <String, List<double>>{};
+    final names = <String, String>{};
+
+    for (final r in rows) {
+      if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
+      final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
+      final b = buckets.putIfAbsent(
+          r.customerKey, () => <double>[0, 0, 0, 0, 0, 0]);
+      names[r.customerKey] = r.customerName;
+      if (dueDate == null) {
+        b[5] += r.outstanding;
+        continue;
+      }
+      final d = InvoiceCalculator.daysOverdue(dueDate: dueDate, asOf: now);
+      final idx = d == 0
+          ? 0
+          : d <= 30
+              ? 1
+              : d <= 60
+                  ? 2
+                  : d <= 90
+                      ? 3
+                      : 4;
+      b[idx] += r.outstanding;
+    }
+
+    final result = buckets.entries
+        .map((e) => AgedReceivableSummaryRow(
+              customerName: names[e.key] ?? e.key,
+              current: e.value[0],
+              d0to30: e.value[1],
+              d31to60: e.value[2],
+              d61to90: e.value[3],
+              d90plus: e.value[4],
+              noDueDate: e.value[5],
+            ))
+        .toList()
+      ..sort((a, b) => b.total.compareTo(a.total));
+    return result;
+  }
+
+  /// Total outstanding (all-time, not date-bound) per customer, keyed by
+  /// customer_id — for a customer-list "Outstanding" column/filter/sort.
+  static Future<Map<String, double>> getOutstandingByCustomer(
+      {String? currencyCode}) async {
+    final rows = await _loadRows(currencyCode: currencyCode);
+    final result = <String, double>{};
+    for (final r in rows) {
+      if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
+      result[r.customerKey] = (result[r.customerKey] ?? 0) + r.outstanding;
+    }
+    return result;
+  }
+
+  /// Distinct currency codes actually used across (non-deleted) invoices —
+  /// for a currency picker, e.g. next to the Outstanding column.
+  static Future<List<String>> getInvoiceCurrencies() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      "SELECT DISTINCT currency_code FROM invoices "
+      "WHERE deleted_at IS NULL AND type = 'Invoice' AND currency_code IS NOT NULL",
+    );
+    final codes = rows.map((r) => r['currency_code'] as String).toList();
+    codes.sort();
+    return codes;
+  }
+
+  // ── 5. Tax collected by rate ───────────────────────────────────────────────
+
+  static Future<List<TaxBucket>> getTaxByRate(DateTime from, DateTime to,
+      {String? currencyCode}) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final dateArgs = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+
+    final taxByRate = <double, double>{};
+    final taxableByRate = <double, double>{};
+
+    // Per-item mode: tax computed per line item's product_tax_rate
+    final perItemRows = await db.rawQuery(
+      "SELECT ii.product_tax_rate AS rate, "
+      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "THEN $_invoiceItemNetSql * ii.product_tax_rate / (100 + ii.product_tax_rate) "
+      "ELSE $_invoiceItemNetSql * ii.product_tax_rate / 100 "
+      "END) AS tax_amount, "
+      "SUM(CASE WHEN ii.product_price_includes_tax = 1 "
+      "THEN $_invoiceItemNetSql * 100.0 / (100 + ii.product_tax_rate) "
+      "ELSE $_invoiceItemNetSql END) AS taxable_amount "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "AND i.tax_mode = 'per_item' "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ? "
+      "AND ii.product_tax_rate > 0 "
+      "GROUP BY ii.product_tax_rate",
+      dateArgs,
+    );
+    for (final r in perItemRows) {
+      final rate = (r['rate'] as num).toDouble();
+      taxByRate[rate] =
+          (taxByRate[rate] ?? 0) + ((r['tax_amount'] as num?)?.toDouble() ?? 0);
+      taxableByRate[rate] = (taxableByRate[rate] ?? 0) +
+          ((r['taxable_amount'] as num?)?.toDouble() ?? 0);
+    }
+
+    // Global mode: single tax rate applied to the invoice subtotal
+    final globalInvRows = await db.rawQuery(
+      "SELECT i.id, i.tax_rate, i.additional_costs "
+      "FROM invoices i "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ?",
+      dateArgs,
+    );
+
+    if (globalInvRows.isNotEmpty) {
+      // Subquery instead of one `?` per id — see Issues.md #36.
+      final itemRows = await db.rawQuery(
+        "SELECT invoice_id, quantity, unit_price, product_price, discount, "
+        "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
+        "FROM invoice_items WHERE invoice_id IN ("
+        "SELECT i.id FROM invoices i "
+        "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+        "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
+        "$ccFilter"
+        "AND i.date >= ? AND i.date <= ?)",
+        dateArgs,
+      );
+      final itemsByInv = <String, List<Map<String, dynamic>>>{};
+      for (final r in itemRows) {
+        (itemsByInv[r['invoice_id'] as String] ??= [])
+            .add(r as Map<String, dynamic>);
+      }
+      for (final inv in globalInvRows) {
+        final id = inv['id'] as String;
+        final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
+        final totals = InvoiceTotalsCalculator.totals(
+          lines: (itemsByInv[id] ?? []).map((r) =>
+              InvoiceTotalsCalculator.lineFromDbRow(r,
+                  taxMode: TaxMode.global,
+                  globalTaxRatePercent: taxRate * 100)),
+          taxMode: TaxMode.global,
+          globalTaxRate: taxRate,
+          globalTaxRateFormat: TaxRateFormat.fraction,
+        );
+        final tax = totals.tax;
+        // Round so float noise (0.28 * 100 = 28.000000000000004) does not
+        // make a second bucket for the same rate.
+        final ratePercent = double.parse((taxRate * 100).toStringAsFixed(2));
+        if (tax > 0) {
+          taxByRate[ratePercent] = (taxByRate[ratePercent] ?? 0) + tax;
+          taxableByRate[ratePercent] =
+              (taxableByRate[ratePercent] ?? 0) + totals.subtotal;
+        }
+      }
+    }
+
+    return (taxByRate.entries
+        .map((e) => TaxBucket(
+              rate: e.key,
+              taxCollected: e.value,
+              taxableAmount: taxableByRate[e.key] ?? 0,
+            ))
+        .toList()
+      ..sort((a, b) => a.rate.compareTo(b.rate)));
+  }
+
+  // ── 6. Top customers ──────────────────────────────────────────────────────
+
+  static Future<List<TopCustomer>> getTopCustomers(
+    DateTime from,
+    DateTime to, {
+    int limit = 500,
+    String? currencyCode,
+  }) async {
+    final rows =
+        await _loadRows(from: from, to: to, currencyCode: currencyCode);
+
+    final byCustomer = <String, List<_InvRow>>{};
+    for (final r in rows) {
+      (byCustomer[r.customerKey] ??= []).add(r);
+    }
+
+    final result = byCustomer.entries.map((e) {
+      double billed = 0, collected = 0, outstanding = 0;
+      for (final r in e.value) {
+        billed += r.total;
+        collected += r.paid;
+        outstanding += r.outstanding;
+      }
+      return TopCustomer(
+        name: e.value.first.customerName,
+        invoiceCount: e.value.length,
+        billed: billed,
+        collected: collected,
+        outstanding: outstanding,
+      );
+    }).toList()
+      ..sort((a, b) => b.billed.compareTo(a.billed));
+
+    return result.take(limit).toList();
+  }
+
+  static Future<List<CustomerStatementCustomer>> getStatementCustomers({
+    String? currencyCode,
+  }) async {
+    final db = await _db.database;
+    final sb = StringBuffer(
+      "type = 'Invoice' AND deleted_at IS NULL "
+      "AND COALESCE(NULLIF(customer_id, ''), customer_name) IS NOT NULL",
+    );
+    final args = <Object?>[];
+    if (currencyCode != null) {
+      sb.write(' AND (currency_code = ? OR currency_code IS NULL)');
+      args.add(currencyCode);
+    }
+
+    final rows = await db.rawQuery(
+      "SELECT COALESCE(NULLIF(customer_id, ''), customer_name) AS customer_key, "
+      "COALESCE(NULLIF(customer_name, ''), 'Unknown') AS customer_name, "
+      'COUNT(*) AS invoice_count '
+      'FROM invoices '
+      'WHERE ${sb.toString()} '
+      'GROUP BY customer_key '
+      'ORDER BY customer_name COLLATE NOCASE',
+      args,
+    );
+
+    return rows
+        .map((r) => CustomerStatementCustomer(
+              key: CustomerIdentity.key(
+                id: r['customer_key'] as String?,
+                name: r['customer_name'] as String?,
+              ),
+              name: CustomerIdentity.displayName(r['customer_name'] as String?),
+              invoiceCount: (r['invoice_count'] as num).toInt(),
+            ))
+        .toList();
+  }
+
+  static Future<List<CustomerStatement>> getCustomerStatements(
+    String customerKey,
+    DateTime from,
+    DateTime to, {
+    String? currencyCode,
+  }) async {
+    final rows = await _loadRows(
+      customerKey: customerKey,
+      currencyCode: currencyCode,
+    );
+    if (rows.isEmpty) return [];
+
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    // Payment dates are date-only keys, which sort before f on the same day.
+    final paymentFrom = AppDate.dateKey(from);
+    final byCurrency = <String, List<_InvRow>>{};
+    for (final row in rows) {
+      (byCurrency[row.currencyCode] ??= []).add(row);
+    }
+
+    final statements = <CustomerStatement>[];
+    for (final entry in byCurrency.entries) {
+      final currencyRows = entry.value;
+      final ids = currencyRows.map((r) => r.id).toList();
+      final paymentRows = await queryInChunks(
+        ids,
+        (chunk, ph) => db.rawQuery(
+          'SELECT invoice_id, receipt_number, amount_paid, date_paid, '
+          'payment_method, notes '
+          'FROM invoice_payments WHERE invoice_id IN ($ph) '
+          'ORDER BY date_paid ASC, rowid ASC',
+          chunk,
+        ),
+      );
+      final invoicesById = {for (final r in currencyRows) r.id: r};
+      final drafts = <_StatementLineDraft>[];
+      double opening = 0;
+      double invoiced = 0;
+      double paid = 0;
+      double overdue = 0;
+
+      for (final invoice in currencyRows) {
+        if (invoice.date.compareTo(f) < 0) {
+          opening += invoice.total;
+        } else if (invoice.date.compareTo(t) <= 0) {
+          invoiced += invoice.total;
+          drafts.add(_StatementLineDraft(
+            date: invoice.date,
+            order: 0,
+            type: 'Invoice',
+            reference: invoice.id,
+            description: 'Invoice raised',
+            debit: invoice.total,
+            credit: 0,
+          ));
+        }
+
+        final dueDate = invoice.dueDate;
+        if (InvoiceCalculator.isOverdue(
+          dueDate: dueDate == null ? null : DateTime.tryParse(dueDate),
+          outstanding: invoice.outstanding,
+        )) {
+          overdue += invoice.outstanding;
+        }
+      }
+
+      for (final payment in paymentRows) {
+        final invoice = invoicesById[payment['invoice_id'] as String];
+        if (invoice == null) continue;
+        final date = payment['date_paid'] as String? ?? '';
+        final amount = (payment['amount_paid'] as num?)?.toDouble() ?? 0;
+        if (date.compareTo(paymentFrom) < 0) {
+          opening -= amount;
+        } else if (date.compareTo(t) <= 0) {
+          paid += amount;
+          final method = payment['payment_method'] as String?;
+          drafts.add(_StatementLineDraft(
+            date: date,
+            order: 1,
+            type: 'Payment',
+            reference: payment['receipt_number'] as String? ?? invoice.id,
+            description: method == null || method.isEmpty
+                ? 'Payment for ${invoice.id}'
+                : 'Payment for ${invoice.id} ($method)',
+            debit: 0,
+            credit: amount,
+          ));
+        }
+      }
+
+      // Payment dates are date-only keys and invoice dates are full
+      // timestamps ('yyyy-MM-dd' sorts before 'yyyy-MM-ddT...'), so compare
+      // the day first. On the same day the invoice comes before its payment.
+      String day(String d) => d.length > 10 ? d.substring(0, 10) : d;
+      drafts.sort((a, b) {
+        final byDay = day(a.date).compareTo(day(b.date));
+        if (byDay != 0) return byDay;
+        final byOrder = a.order.compareTo(b.order);
+        if (byOrder != 0) return byOrder;
+        return a.date.compareTo(b.date);
+      });
+
+      var running = opening;
+      final lines = drafts.map((draft) {
+        running += draft.debit - draft.credit;
+        return CustomerStatementLine(
+          date: draft.date,
+          type: draft.type,
+          reference: draft.reference,
+          description: draft.description,
+          debit: draft.debit,
+          credit: draft.credit,
+          balance: running,
+        );
+      }).toList();
+
+      statements.add(CustomerStatement(
+        customerKey: customerKey,
+        customerName: currencyRows.first.customerName,
+        currencyCode: entry.key,
+        currencySymbol: currencyRows.first.currencySymbol,
+        openingBalance: opening,
+        invoiced: invoiced,
+        paid: paid,
+        closingBalance: running,
+        overdueBalance: overdue,
+        lines: lines,
+      ));
+    }
+
+    statements.sort((a, b) => a.currencyCode.compareTo(b.currencyCode));
+    return statements;
+  }
+
+  // ── 7. Top products ───────────────────────────────────────────────────────
+
+  static Future<List<TopProduct>> getTopProducts(
+    DateTime from,
+    DateTime to, {
+    int limit = 500,
+    String? currencyCode,
+    bool rankByProfit = false,
+  }) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final ccFilter = currencyCode != null
+        ? 'AND (i.currency_code = ? OR i.currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+      limit,
+    ];
+    final orderBy = rankByProfit
+        ? '(SUM($_invoiceItemTaxableNetSql) - SUM(ii.quantity * ii.product_purchase_price))'
+        : 'revenue';
+    final rows = await db.rawQuery(
+      "SELECT ii.product_name, "
+      "SUM(ii.quantity) AS units_sold, "
+      "SUM($_invoiceItemTaxableNetSql) AS revenue, "
+      "SUM($_invoiceItemDiscountSql) AS discount_given, "
+      "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
+      "FROM invoice_items ii "
+      "JOIN invoices i ON i.id = ii.invoice_id "
+      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "AND (i.status IS NULL OR i.status != 'declined') "
+      "$ccFilter"
+      "AND i.date >= ? AND i.date <= ? "
+      "GROUP BY ii.product_name ORDER BY $orderBy DESC LIMIT ?",
+      args,
+    );
+    return rows
+        .map((r) => TopProduct(
+              name: r['product_name'] as String? ?? 'Unknown',
+              unitsSold: (r['units_sold'] as num).toDouble(),
+              revenue: (r['revenue'] as num).toDouble(),
+              discountGiven: (r['discount_given'] as num).toDouble(),
+              cogs: (r['cogs'] as num?)?.toDouble() ?? 0.0,
+            ))
+        .toList();
+  }
+
+  // ── 7b. Inventory valuation ───────────────────────────────────────────────
+  // "Tracked" products = type='product' AND unlimited_stock=0 — the only rows
+  // with a meaningful "capital blocked in stock" figure. Services and
+  // unlimited-stock items are excluded from the totals (counted separately).
+
+  static const _trackedProductWhere =
+      "type = 'product' AND unlimited_stock = 0";
+
+  static Future<InventoryValuationSummary> getInventoryValuationSummary() async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT COALESCE(SUM(stock * purchase_price), 0) AS stock_value, '
+      'COALESCE(SUM(stock * price), 0) AS retail_value, '
+      'COALESCE(SUM(stock), 0) AS total_units, '
+      'COUNT(*) AS product_count '
+      'FROM products WHERE $_trackedProductWhere',
+    );
+    final excludedRows = await db.rawQuery(
+      "SELECT COUNT(*) AS excluded_count FROM products "
+      "WHERE NOT ($_trackedProductWhere)",
+    );
+    final r = rows.first;
+    return InventoryValuationSummary(
+      stockValue: (r['stock_value'] as num).toDouble(),
+      retailValue: (r['retail_value'] as num).toDouble(),
+      totalUnits: (r['total_units'] as num).toInt(),
+      productCount: (r['product_count'] as num).toInt(),
+      excludedCount: (excludedRows.first['excluded_count'] as num).toInt(),
+    );
+  }
+
+  /// [limit] caps the row list for on-screen display; pass null for exports
+  /// so the file always contains every tracked product, never a partial set.
+  static Future<List<InventoryValuationRow>> getInventoryValuationRows({
+    int? limit = 500,
+  }) async {
+    final db = await _db.database;
+    final rows = await db.rawQuery(
+      'SELECT id, name, stock, purchase_price, price, unit FROM products '
+      'WHERE $_trackedProductWhere '
+      'ORDER BY (stock * purchase_price) DESC'
+      '${limit != null ? ' LIMIT $limit' : ''}',
+    );
+    return rows
+        .map((r) => InventoryValuationRow(
+              productId: r['id'] as String? ?? '',
+              name: r['name'] as String? ?? '',
+              stock: (r['stock'] as num?)?.toInt() ?? 0,
+              purchasePrice: (r['purchase_price'] as num?)?.toDouble() ?? 0.0,
+              price: (r['price'] as num?)?.toDouble() ?? 0.0,
+              unit: r['unit'] as String? ?? '',
+            ))
+        .toList();
+  }
+
+  static String exportInventoryValuationCsv(
+    List<InventoryValuationRow> rows,
+    InventoryValuationSummary summary,
+  ) {
+    return buildQuotedCsv([
+      ['SL', 'Product', 'Stock', 'Purchase Price', 'Stock Value', 'Sale Value'],
+      for (var i = 0; i < rows.length; i++)
+        [
+          i + 1,
+          rows[i].name,
+          rows[i].stock,
+          rows[i].purchasePrice.toStringAsFixed(2),
+          rows[i].stockValue.toStringAsFixed(2),
+          rows[i].retailValue.toStringAsFixed(2),
+        ],
+      [
+        '',
+        'Total',
+        summary.totalUnits,
+        '',
+        summary.stockValue.toStringAsFixed(2),
+        summary.retailValue.toStringAsFixed(2),
+      ],
+    ]);
+  }
+
+  static Future<Uint8List> exportInventoryValuationPdf(
+    List<InventoryValuationRow> rows,
+    InventoryValuationSummary summary, {
+    required String currencySymbol,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'INVENTORY VALUATION',
+                generatedOn: generatedOn),
+            pw.Text(
+                'Blocked value: ${money(summary.stockValue)}   •   '
+                '${summary.productCount} product(s)',
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'SL',
+              'Product',
+              'Stock',
+              'Purchase Price',
+              'Stock Value',
+              'Sale Value',
+            ],
+            data: [
+              for (var i = 0; i < rows.length; i++)
+                [
+                  '${i + 1}',
+                  rows[i].name,
+                  '${rows[i].stock}',
+                  money(rows[i].purchasePrice),
+                  money(rows[i].stockValue),
+                  money(rows[i].retailValue),
+                ],
+              [
+                '',
+                'Total',
+                '${summary.totalUnits}',
+                '',
+                money(summary.stockValue),
+                money(summary.retailValue),
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  // ── 8. Quotation conversion ───────────────────────────────────────────────
+
+  static Future<QuotationStats> getQuotationStats(
+    DateTime from,
+    DateTime to, {
+    String? currencyCode,
+  }) async {
+    final db = await _db.database;
+    final f = AppDate.dateKeyStart(from);
+    final t = AppDate.dateKeyEnd(to);
+    final currencyFilter = currencyCode != null
+        ? 'AND (currency_code = ? OR currency_code IS NULL) '
+        : '';
+    final args = <Object?>[
+      if (currencyCode != null) currencyCode,
+      f,
+      t,
+    ];
+
+    final qr = await db.rawQuery(
+      "SELECT COUNT(*) AS cnt FROM invoices "
+      "WHERE type = 'Quotation' AND deleted_at IS NULL "
+      "$currencyFilter"
+      "AND date >= ? AND date <= ?",
+      args,
+    );
+    final quotationsIssued = (qr.first['cnt'] as int?) ?? 0;
+
+    final ir = await db.rawQuery(
+      "SELECT COUNT(*) AS cnt FROM invoices "
+      "WHERE type = 'Invoice' AND deleted_at IS NULL "
+      "$currencyFilter"
+      "AND date >= ? AND date <= ?",
+      args,
+    );
+    final invoicesInPeriod = (ir.first['cnt'] as int?) ?? 0;
+
+    final rate = quotationsIssued == 0
+        ? 0.0
+        : (invoicesInPeriod / quotationsIssued * 100).clamp(0.0, 100.0);
+
+    return QuotationStats(
+      quotationsIssued: quotationsIssued,
+      invoicesInPeriod: invoicesInPeriod,
+      conversionRate: rate,
+    );
+  }
+
+  // ── CSV export helpers ─────────────────────────────────────────────────────
+
+  static String exportDailyReportCsv(List<DailyPoint> rows) {
+    return buildQuotedCsv([
+      ['Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+      for (final d in rows)
+        [
+          d.date,
+          d.invoiceCount,
+          d.billed.toStringAsFixed(2),
+          d.cogs.toStringAsFixed(2),
+          d.profit.toStringAsFixed(2),
+          d.marginPercent.toStringAsFixed(1),
+        ],
+    ]);
+  }
+
+  static String exportTrendCsv(List<MonthlyPoint> trend) {
+    final tInvoices = trend.fold<int>(0, (a, p) => a + p.invoiceCount);
+    final tBilled = trend.fold<double>(0, (a, p) => a + p.billed);
+    final tCollected = trend.fold<double>(0, (a, p) => a + p.collected);
+    final tOutstanding = trend.fold<double>(0, (a, p) => a + p.outstanding);
+    final tCogs = trend.fold<double>(0, (a, p) => a + p.cogs);
+    final tNet = trend.fold<double>(0, (a, p) => a + p.netSales);
+    final tProfit = trend.fold<double>(0, (a, p) => a + p.profit);
+    final tMargin = tNet == 0 ? 0.0 : (tProfit / tNet) * 100;
+    return buildQuotedCsv([
+      [
+        'Month',
+        'Invoices',
+        'Billed',
+        'Collected',
+        'Outstanding',
+        'COGS',
+        'Gross Profit',
+        'Margin %'
+      ],
+      for (final p in trend)
+        [
+          p.month,
+          p.invoiceCount,
+          p.billed.toStringAsFixed(2),
+          p.collected.toStringAsFixed(2),
+          p.outstanding.toStringAsFixed(2),
+          p.cogs.toStringAsFixed(2),
+          p.profit.toStringAsFixed(2),
+          p.marginPercent.toStringAsFixed(1),
+        ],
+      [
+        'Total',
+        tInvoices,
+        tBilled.toStringAsFixed(2),
+        tCollected.toStringAsFixed(2),
+        tOutstanding.toStringAsFixed(2),
+        tCogs.toStringAsFixed(2),
+        tProfit.toStringAsFixed(2),
+        tMargin.toStringAsFixed(1),
+      ],
+    ]);
+  }
+
+  static String exportTopCustomersCsv(List<TopCustomer> list) {
+    final tInvoices = list.fold<int>(0, (a, c) => a + c.invoiceCount);
+    final tBilled = list.fold<double>(0, (a, c) => a + c.billed);
+    final tCollected = list.fold<double>(0, (a, c) => a + c.collected);
+    final tOutstanding = list.fold<double>(0, (a, c) => a + c.outstanding);
+    return buildQuotedCsv([
+      ['Customer', 'Invoices', 'Billed', 'Collected', 'Outstanding'],
+      for (final c in list)
+        [
+          c.name,
+          c.invoiceCount,
+          c.billed.toStringAsFixed(2),
+          c.collected.toStringAsFixed(2),
+          c.outstanding.toStringAsFixed(2),
+        ],
+      [
+        'Total',
+        tInvoices,
+        tBilled.toStringAsFixed(2),
+        tCollected.toStringAsFixed(2),
+        tOutstanding.toStringAsFixed(2),
+      ],
+    ]);
+  }
+
+  static String exportCustomerStatementsCsv(
+      List<CustomerStatement> statements) {
+    final blocks = <String>[];
+    for (final statement in statements) {
+      blocks.add(buildQuotedCsv([
+        [
+          'Customer',
+          statement.customerName,
+          'Currency',
+          statement.currencyCode
+        ],
+        ['Opening Balance', statement.openingBalance.toStringAsFixed(2)],
+        ['Invoiced', statement.invoiced.toStringAsFixed(2)],
+        ['Paid', statement.paid.toStringAsFixed(2)],
+        ['Closing Balance', statement.closingBalance.toStringAsFixed(2)],
+        ['Overdue Balance', statement.overdueBalance.toStringAsFixed(2)],
+        [
+          'Date',
+          'Type',
+          'Reference',
+          'Description',
+          'Debit',
+          'Credit',
+          'Balance'
+        ],
+        for (final line in statement.lines)
+          [
+            line.date,
+            line.type,
+            line.reference,
+            line.description,
+            line.debit.toStringAsFixed(2),
+            line.credit.toStringAsFixed(2),
+            line.balance.toStringAsFixed(2),
+          ],
+      ]));
+    }
+    return blocks.join('\n\n');
+  }
+
+  static String exportTopProductsCsv(List<TopProduct> list) {
+    final tUnits = list.fold<double>(0, (a, p) => a + p.unitsSold);
+    final tRevenue = list.fold<double>(0, (a, p) => a + p.revenue);
+    final tDiscount = list.fold<double>(0, (a, p) => a + p.discountGiven);
+    final tProfit = list.fold<double>(0, (a, p) => a + p.profit);
+    final tMargin = tRevenue == 0 ? 0.0 : (tProfit / tRevenue) * 100;
+    return buildQuotedCsv([
+      ['SL', 'Product', 'Units Sold', 'Revenue', 'Discount Given', 'Profit', 'Margin %'],
+      for (var i = 0; i < list.length; i++)
+        [
+          i + 1,
+          list[i].name,
+          list[i].unitsSold.toStringAsFixed(2),
+          list[i].revenue.toStringAsFixed(2),
+          list[i].discountGiven.toStringAsFixed(2),
+          list[i].profit.toStringAsFixed(2),
+          list[i].marginPercent.toStringAsFixed(1),
+        ],
+      [
+        '',
+        'Total',
+        tUnits.toStringAsFixed(2),
+        tRevenue.toStringAsFixed(2),
+        tDiscount.toStringAsFixed(2),
+        tProfit.toStringAsFixed(2),
+        tMargin.toStringAsFixed(1),
+      ],
+    ]);
+  }
+
+  static String exportAgedReceivablesCsv(List<AgedReceivable> list) {
+    final total = list.fold<double>(0, (a, r) => a + r.outstanding);
+    return buildQuotedCsv([
+      ['Invoice ID', 'Customer', 'Outstanding', 'Days Overdue'],
+      for (final r in list)
+        [
+          r.invoiceId,
+          r.customerName,
+          r.outstanding.toStringAsFixed(2),
+          r.hasNoDueDate ? '' : r.daysOverdue,
+        ],
+      ['Total', '', total.toStringAsFixed(2), ''],
+    ]);
+  }
+
+  static String exportAgedReceivableSummaryCsv(
+      List<AgedReceivableSummaryRow> list) {
+    double c = 0, a30 = 0, a60 = 0, a90 = 0, a90p = 0, nd = 0, t = 0;
+    for (final r in list) {
+      c += r.current;
+      a30 += r.d0to30;
+      a60 += r.d31to60;
+      a90 += r.d61to90;
+      a90p += r.d90plus;
+      nd += r.noDueDate;
+      t += r.total;
+    }
+    return buildQuotedCsv([
+      [
+        'Customer',
+        'Current',
+        '0-30',
+        '31-60',
+        '61-90',
+        '90+',
+        'No Due Date',
+        'Total'
+      ],
+      for (final r in list)
+        [
+          r.customerName,
+          r.current.toStringAsFixed(2),
+          r.d0to30.toStringAsFixed(2),
+          r.d31to60.toStringAsFixed(2),
+          r.d61to90.toStringAsFixed(2),
+          r.d90plus.toStringAsFixed(2),
+          r.noDueDate.toStringAsFixed(2),
+          r.total.toStringAsFixed(2),
+        ],
+      [
+        'Total',
+        c.toStringAsFixed(2),
+        a30.toStringAsFixed(2),
+        a60.toStringAsFixed(2),
+        a90.toStringAsFixed(2),
+        a90p.toStringAsFixed(2),
+        nd.toStringAsFixed(2),
+        t.toStringAsFixed(2),
+      ],
+    ]);
+  }
+
+  static String exportTaxCsv(List<TaxBucket> list) {
+    final tTaxable = list.fold<double>(0, (a, b) => a + b.taxableAmount);
+    final tTax = list.fold<double>(0, (a, b) => a + b.taxCollected);
+    final tGross = list.fold<double>(0, (a, b) => a + b.gross);
+    return buildQuotedCsv([
+      ['Tax Rate (%)', 'Taxable Amount', 'Tax', 'Gross'],
+      for (final b in list)
+        [
+          b.rate.toStringAsFixed(b.rate % 1 == 0 ? 0 : 1),
+          b.taxableAmount.toStringAsFixed(2),
+          b.taxCollected.toStringAsFixed(2),
+          b.gross.toStringAsFixed(2),
+        ],
+      [
+        'Total',
+        tTaxable.toStringAsFixed(2),
+        tTax.toStringAsFixed(2),
+        tGross.toStringAsFixed(2),
+      ],
+    ]);
+  }
+
+  // ── 9. Invoice status list ─────────────────────────────────────────────────
+
+  static Future<List<InvoiceStatusRow>> getInvoiceStatusList(
+    DateTime from,
+    DateTime to, {
+    String? currencyCode,
+  }) async {
+    final rows = await _loadRows(
+      from: from,
+      to: to,
+      currencyCode: currencyCode,
+    );
+    final now = DateTime.now();
+    final result = rows.map((r) {
+      final dueDate = r.dueDate != null ? DateTime.tryParse(r.dueDate!) : null;
+      final noDueDate = r.dueDate == null;
+      final daysOverdue =
+          InvoiceCalculator.daysOverdue(dueDate: dueDate, asOf: now);
+
+      final status = switch (
+          InvoiceCalculator.paymentStatus(total: r.total, paid: r.paid)) {
+        PaymentStatus.paid => 'Paid',
+        PaymentStatus.partial => 'Partial',
+        PaymentStatus.unpaid => 'Unpaid',
+      };
+
+      final isOverdue = InvoiceCalculator.isOverdue(
+        dueDate: dueDate,
+        outstanding: r.outstanding,
+        asOf: now,
+      );
+
+      return InvoiceStatusRow(
+        id: r.id,
+        date: r.date,
+        dueDate: r.dueDate,
+        customerName: r.customerName,
+        total: r.total,
+        paid: r.paid,
+        outstanding: r.outstanding,
+        daysOverdue: daysOverdue,
+        hasNoDueDate: noDueDate,
+        status: status,
+        isOverdue: isOverdue,
+      );
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    return result;
+  }
+
+  static String exportInvoiceStatusCsv(List<InvoiceStatusRow> list) {
+    final tTotal = list.fold<double>(0, (a, r) => a + r.total);
+    final tPaid = list.fold<double>(0, (a, r) => a + r.paid);
+    final tOutstanding = list.fold<double>(0, (a, r) => a + r.outstanding);
+    return buildQuotedCsv([
+      [
+        'Date',
+        'Invoice ID',
+        'Customer',
+        'Total',
+        'Paid',
+        'Outstanding',
+        'Status',
+        'Days Overdue',
+      ],
+      for (final r in list)
+        [
+          r.date,
+          r.id,
+          r.customerName,
+          r.total.toStringAsFixed(2),
+          r.paid.toStringAsFixed(2),
+          r.outstanding.toStringAsFixed(2),
+          r.status,
+          r.hasNoDueDate ? '' : r.daysOverdue,
+        ],
+      [
+        'Total',
+        '',
+        '',
+        tTotal.toStringAsFixed(2),
+        tPaid.toStringAsFixed(2),
+        tOutstanding.toStringAsFixed(2),
+        '',
+        '',
+      ],
+    ]);
+  }
+
+  // ── PDF export ──────────────────────────────────────────────────────────────
+
+  static Future<Uint8List> exportDailyReportPdf(
+    List<DailyPoint> rows, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+    String fmtDate(String v) {
+      final d = DateTime.tryParse(v);
+      return d == null ? v : DateFormat(dateFmt, 'en_US').format(d);
+    }
+
+    final totalInvoices = rows.fold<int>(0, (a, d) => a + d.invoiceCount);
+    final totalSales = rows.fold<double>(0, (a, d) => a + d.billed);
+    final totalCogs = rows.fold<double>(0, (a, d) => a + d.cogs);
+    final totalProfit = totalSales - totalCogs;
+    final totalMargin = totalSales == 0 ? 0.0 : (totalProfit / totalSales) * 100;
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company, title: 'DAILY SALES & PROFIT REPORT', generatedOn: generatedOn),
+            pw.Text(dateRangeLabel,
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(fontSize: PdfLayout.footerBrandingFontSize, color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: ['SL', 'Date', 'Invoices', 'Sales', 'COGS', 'Profit', 'Margin %'],
+            data: List<List<String>>.generate(rows.length, (i) {
+              final d = rows[i];
+              return [
+                '${i + 1}',
+                fmtDate(d.date),
+                '${d.invoiceCount}',
+                money(d.billed),
+                money(d.cogs),
+                money(d.profit),
+                '${d.marginPercent.toStringAsFixed(1)}%',
+              ];
+            }),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration: const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+              6: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+          pw.SizedBox(height: 12),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              children: [
+                pw.Text(
+                  'Total — Invoices: $totalInvoices   Sales: ${money(totalSales)}   '
+                  'COGS: ${money(totalCogs)}   Profit: ${money(totalProfit)}   '
+                  'Margin: ${totalMargin.toStringAsFixed(1)}%',
+                  style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static Future<Uint8List> exportRevenueReportPdf(
+    List<MonthlyPoint> trend,
+    RevenueKpi kpi, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+    String monthLabel(String m) {
+      final d = DateTime.tryParse('$m-01');
+      return d == null ? m : DateFormat('MMM yyyy', 'en_US').format(d);
+    }
+
+    final tInvoices = trend.fold<int>(0, (a, p) => a + p.invoiceCount);
+    final tBilled = trend.fold<double>(0, (a, p) => a + p.billed);
+    final tCollected = trend.fold<double>(0, (a, p) => a + p.collected);
+    final tOutstanding = trend.fold<double>(0, (a, p) => a + p.outstanding);
+    final tCogs = trend.fold<double>(0, (a, p) => a + p.cogs);
+    final tProfit = trend.fold<double>(0, (a, p) => a + p.profit);
+    final tNet = trend.fold<double>(0, (a, p) => a + p.netSales);
+    final tMargin = tNet == 0 ? 0.0 : (tProfit / tNet) * 100;
+
+    pw.Widget kpiTile(String label, String value) => pw.Expanded(
+          child: pw.Container(
+            padding: const pw.EdgeInsets.all(8),
+            margin: const pw.EdgeInsets.only(right: 6),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.grey100,
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(label,
+                    style: const pw.TextStyle(
+                        fontSize: 8, color: PdfColors.grey700)),
+                pw.SizedBox(height: 2),
+                pw.Text(value,
+                    style: pw.TextStyle(
+                        fontSize: 10, fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+          ),
+        );
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'REVENUE REPORT',
+                generatedOn: generatedOn),
+            pw.Text(dateRangeLabel,
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.Row(children: [
+            kpiTile('Total Billed', money(kpi.billed)),
+            kpiTile('Total Collected', money(kpi.collected)),
+            kpiTile('Outstanding', money(kpi.outstanding)),
+          ]),
+          pw.SizedBox(height: 6),
+          pw.Row(children: [
+            kpiTile('Avg Invoice Value', money(kpi.avgInvoiceValue)),
+            kpiTile('Total Profit', money(kpi.profit)),
+            kpiTile('Realized Profit', money(kpi.realizedProfit)),
+          ]),
+          pw.SizedBox(height: 16),
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'Month',
+              'Invoices',
+              'Billed',
+              'Collected',
+              'Outstanding',
+              'COGS',
+              'Gross Profit',
+              'Margin %'
+            ],
+            data: [
+              for (final p in trend)
+                [
+                  monthLabel(p.month),
+                  '${p.invoiceCount}',
+                  money(p.billed),
+                  money(p.collected),
+                  money(p.outstanding),
+                  money(p.cogs),
+                  money(p.profit),
+                  '${p.marginPercent.toStringAsFixed(1)}%',
+                ],
+              [
+                'Total',
+                '$tInvoices',
+                money(tBilled),
+                money(tCollected),
+                money(tOutstanding),
+                money(tCogs),
+                money(tProfit),
+                '${tMargin.toStringAsFixed(1)}%',
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerRight,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+              6: pw.Alignment.centerRight,
+              7: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static Future<Uint8List> exportAgedReceivablesPdf(
+    List<AgedReceivableSummaryRow> summary,
+    List<AgedReceivable> detail, {
+    required String currencySymbol,
+    required String asOfLabel,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+
+    double sc = 0, s30 = 0, s60 = 0, s90 = 0, s90p = 0, snd = 0, st = 0;
+    for (final r in summary) {
+      sc += r.current;
+      s30 += r.d0to30;
+      s60 += r.d31to60;
+      s90 += r.d61to90;
+      s90p += r.d90plus;
+      snd += r.noDueDate;
+      st += r.total;
+    }
+    final detailTotal = detail.fold<double>(0, (a, r) => a + r.outstanding);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'ACCOUNTS RECEIVABLE AGING',
+                generatedOn: generatedOn),
+            pw.Text(asOfLabel,
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.Text('Summary by customer',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'Customer',
+              'Current',
+              '0-30',
+              '31-60',
+              '61-90',
+              '90+',
+              'No Due Date',
+              'Total'
+            ],
+            data: [
+              for (final r in summary)
+                [
+                  r.customerName,
+                  money(r.current),
+                  money(r.d0to30),
+                  money(r.d31to60),
+                  money(r.d61to90),
+                  money(r.d90plus),
+                  money(r.noDueDate),
+                  money(r.total),
+                ],
+              [
+                'Total',
+                money(sc),
+                money(s30),
+                money(s60),
+                money(s90),
+                money(s90p),
+                money(snd),
+                money(st),
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 8,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              for (var i = 1; i <= 7; i++) i: pw.Alignment.centerRight,
+            },
+            cellHeight: 20,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+          pw.SizedBox(height: 18),
+          pw.Text('Detail by invoice',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.TableHelper.fromTextArray(
+            headers: ['Customer', 'Invoice ID', 'Outstanding', 'Days Overdue'],
+            data: [
+              for (final r in detail)
+                [
+                  r.customerName,
+                  r.invoiceId,
+                  money(r.outstanding),
+                  r.hasNoDueDate ? '-' : '${r.daysOverdue}',
+                ],
+              ['Total', '', money(detailTotal), ''],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static Future<Uint8List> exportTaxReportPdf(
+    List<TaxBucket> buckets, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+    final tTaxable = buckets.fold<double>(0, (a, b) => a + b.taxableAmount);
+    final tTax = buckets.fold<double>(0, (a, b) => a + b.taxCollected);
+    final tGross = buckets.fold<double>(0, (a, b) => a + b.gross);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'TAX REPORT',
+                generatedOn: generatedOn),
+            pw.Text(dateRangeLabel,
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.Text(
+                'Accrual basis — tax charged on invoices dated in this period, '
+                'before payment.',
+                style: const pw.TextStyle(
+                    fontSize: 8, color: PdfColors.grey600)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: ['Tax Rate', 'Taxable Amount', 'Tax', 'Gross'],
+            data: [
+              for (final b in buckets)
+                [
+                  '${b.rate.toStringAsFixed(b.rate % 1 == 0 ? 0 : 1)}%',
+                  money(b.taxableAmount),
+                  money(b.taxCollected),
+                  money(b.gross),
+                ],
+              [
+                'Total',
+                money(tTaxable),
+                money(tTax),
+                money(tGross),
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerRight,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static Future<Uint8List> exportTopCustomersPdf(
+    List<TopCustomer> list, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+    final tInvoices = list.fold<int>(0, (a, c) => a + c.invoiceCount);
+    final tBilled = list.fold<double>(0, (a, c) => a + c.billed);
+    final tCollected = list.fold<double>(0, (a, c) => a + c.collected);
+    final tOutstanding = list.fold<double>(0, (a, c) => a + c.outstanding);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'CUSTOMER OVERVIEW',
+                generatedOn: generatedOn),
+            pw.Text(dateRangeLabel,
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'SL',
+              'Customer',
+              'Invoices',
+              'Billed',
+              'Collected',
+              'Outstanding'
+            ],
+            data: [
+              for (var i = 0; i < list.length; i++)
+                [
+                  '${i + 1}',
+                  list[i].name,
+                  '${list[i].invoiceCount}',
+                  money(list[i].billed),
+                  money(list[i].collected),
+                  money(list[i].outstanding),
+                ],
+              [
+                '',
+                'Total',
+                '$tInvoices',
+                money(tBilled),
+                money(tCollected),
+                money(tOutstanding),
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static Future<Uint8List> exportTopProductsPdf(
+    List<TopProduct> list, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+    bool rankByProfit = false,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+    final tUnits = list.fold<double>(0, (a, p) => a + p.unitsSold);
+    final tRevenue = list.fold<double>(0, (a, p) => a + p.revenue);
+    final tDiscount = list.fold<double>(0, (a, p) => a + p.discountGiven);
+    final tProfit = list.fold<double>(0, (a, p) => a + p.profit);
+    final tMargin = tRevenue == 0 ? 0.0 : (tProfit / tRevenue) * 100;
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'PRODUCT PERFORMANCE',
+                generatedOn: generatedOn),
+            pw.Text(
+                '$dateRangeLabel   •   Ranked by '
+                '${rankByProfit ? 'profit' : 'revenue'}',
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'SL',
+              'Product',
+              'Units Sold',
+              'Revenue',
+              'Discount Given',
+              'Profit',
+              'Margin %'
+            ],
+            data: [
+              for (var i = 0; i < list.length; i++)
+                [
+                  '${i + 1}',
+                  list[i].name,
+                  list[i].unitsSold.toStringAsFixed(2),
+                  money(list[i].revenue),
+                  money(list[i].discountGiven),
+                  money(list[i].profit),
+                  '${list[i].marginPercent.toStringAsFixed(1)}%',
+                ],
+              [
+                '',
+                'Total',
+                tUnits.toStringAsFixed(2),
+                money(tRevenue),
+                money(tDiscount),
+                money(tProfit),
+                '${tMargin.toStringAsFixed(1)}%',
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerRight,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+              6: pw.Alignment.centerRight,
+            },
+            cellHeight: 22,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static Future<Uint8List> exportInvoiceStatusPdf(
+    List<InvoiceStatusRow> list, {
+    required String currencySymbol,
+    required String dateRangeLabel,
+    bool showFooterBranding = true,
+  }) async {
+    final theme = await PdfFontService.loadTheme();
+    final doc = pw.Document(theme: theme);
+    final company = await BackendServices.companyInfo.getCompanyInfo();
+    final dateFmt = (await BackendServices.settings.getDateFormat()).key;
+    final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
+
+    String money(double v) => _pdfMoney(currencySymbol, v);
+    String fmtDate(String v) {
+      final d = DateTime.tryParse(v);
+      return d == null ? v : DateFormat(dateFmt, 'en_US').format(d);
+    }
+
+    final tTotal = list.fold<double>(0, (a, r) => a + r.total);
+    final tPaid = list.fold<double>(0, (a, r) => a + r.paid);
+    final tOutstanding = list.fold<double>(0, (a, r) => a + r.outstanding);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
+        header: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            PdfReportHeader.build(
+                company: company,
+                title: 'INVOICE STATUS',
+                generatedOn: generatedOn),
+            pw.Text(dateRangeLabel,
+                style: const pw.TextStyle(
+                    fontSize: 10, color: PdfColors.grey700)),
+            pw.SizedBox(height: 12),
+          ],
+        ),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 16),
+          child: pw.Text(
+            showFooterBranding
+                ? "Page ${context.pageNumber} of ${context.pagesCount}  -  Generated by ${AppConfig.brandName}"
+                : "Page ${context.pageNumber} of ${context.pagesCount}",
+            style: pw.TextStyle(
+                fontSize: PdfLayout.footerBrandingFontSize,
+                color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          pw.TableHelper.fromTextArray(
+            headers: [
+              'SL',
+              'Date',
+              'Invoice ID',
+              'Customer',
+              'Total',
+              'Paid',
+              'Outstanding',
+              'Status'
+            ],
+            data: [
+              for (var i = 0; i < list.length; i++)
+                [
+                  '${i + 1}',
+                  fmtDate(list[i].date),
+                  list[i].id,
+                  list[i].customerName,
+                  money(list[i].total),
+                  money(list[i].paid),
+                  money(list[i].outstanding),
+                  list[i].status,
+                ],
+              [
+                '',
+                '',
+                '',
+                'Total',
+                money(tTotal),
+                money(tPaid),
+                money(tOutstanding),
+                '',
+              ],
+            ],
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 8,
+                color: PdfColors.white),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfReportHeader.accentColor),
+            cellAlignments: {
+              0: pw.Alignment.centerRight,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerLeft,
+              3: pw.Alignment.centerLeft,
+              4: pw.Alignment.centerRight,
+              5: pw.Alignment.centerRight,
+              6: pw.Alignment.centerRight,
+              7: pw.Alignment.centerRight,
+            },
+            cellHeight: 20,
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+}

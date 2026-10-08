@@ -1,0 +1,235 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:invoiceo/common/common.dart';
+import 'package:invoiceo/models/additional_cost.dart';
+import 'package:invoiceo/models/company_info.dart';
+import 'package:invoiceo/models/customer.dart';
+import 'package:invoiceo/models/invoice.dart';
+import 'package:invoiceo/models/invoice_item.dart';
+import 'package:invoiceo/models/product.dart';
+import 'package:invoiceo/services/pdf/pdf_template_gridclassic.dart';
+import 'package:invoiceo/utils/amount_in_words.dart';
+
+final _company = CompanyInfo(
+  name: 'MADATHIL HARDWARE',
+  address: 'PALOLIKKUND ROAD VALAPURAM',
+  phone: '9778146009',
+  email: '',
+  website: '',
+  gstin: '32CHMPN7497M1ZF',
+);
+
+Invoice _sampleInvoice({
+  double discount = 0,
+  bool discountPerUnit = false,
+  double taxRate = 0,
+  TaxMode taxMode = TaxMode.none,
+  List<AdditionalCost> additionalCosts = const [],
+}) {
+  Product getProduct()
+  {
+    final product = Product(
+      id: 'p1',
+      name: 'CEMENT ACC',
+      description: '',
+      price: 370,
+      stock: 10,
+      hsncode: '2523',
+      tax_rate: taxRate.toInt(),
+    );
+    return product;
+  }
+  Invoice inv =  Invoice(
+    id: 'inv1',
+    invoiceNumber: '212',
+    customer: Customer(
+      id: 'c1',
+      name: 'HAMEED PT ZAMZAM',
+      email: '',
+      phone: '',
+      address: 'PULAKKATTUTHODI PERINTHALMANNA',
+      gstin: '',
+    ),
+    items:List.generate(
+        350,
+        (index) => InvoiceItem(
+      product: getProduct(),
+      quantity: index + 1, // Example: 1, 2, 3, ..., 10
+      discount: discount,
+      discountPerUnit: discountPerUnit,
+    ),
+  ),
+    date: DateTime(2026, 7, 17, 9, 25, 13),
+    type: 'Invoice',
+    taxRate: taxRate,
+    taxMode: taxMode,
+    additionalCosts: additionalCosts,
+  );
+
+  return inv;
+}
+
+void main() {
+  test('amount in words matches expected Indian numbering', () {
+    expect(AmountInWords.amount(1110), 'One Thousand One Hundred and Ten Only');
+    expect(AmountInWords.amount(0), 'Zero Only');
+    expect(AmountInWords.amount(100000), 'One Lakh Only');
+  });
+
+  for (final pageFormat in [PdfPageFormat.a4, PdfPageFormat.a5, PdfPageFormat.a6])
+  {
+    for (final showQuantity in [true, false]) {
+      for (final landscape in [false, true]) {
+        test(
+            'gridClassic template renders on ${pageFormat == PdfPageFormat.a4 ? 'A4' : pageFormat == PdfPageFormat.a5 ? 'A5' : 'A6'} '
+            '${landscape ? 'landscape' : 'portrait'} (showQuantity=$showQuantity)',
+            () async {
+          final doc = pw.Document();
+
+          pw.MultiPage w = buildGridClassicTemplate(
+            _sampleInvoice(),
+            _company,
+            'Rs.',
+            '',
+            showQuantity: showQuantity,
+            pageFormat: pageFormat,
+            landscape: landscape,
+            showFooterBranding: true,
+            showTypeTag: false,
+            showTotalQuantity: true,
+          );
+
+          doc.addPage(w);
+          final bytes = await doc.save();
+          expect(bytes, isNotEmpty);
+          final name = pageFormat == PdfPageFormat.a4 ? 'a4' : pageFormat == PdfPageFormat.a5 ? "a5" : "a6";
+          final orient = landscape ? '_landscape' : '';
+          final outputPath = 'output/invoiceo_grid_pdf_$name$showQuantity$orient.pdf';
+          final outputFile = File(outputPath);
+          await outputFile.parent.create(recursive: true);
+          await outputFile.writeAsBytes(await doc.save());
+        });
+      }
+    }
+  }
+
+  test('gridClassic renders with discount, tax, additional costs and previous balance',
+      () async {
+    final doc = pw.Document();
+    final inv = _sampleInvoice(
+      discount: 10,
+      discountPerUnit: true,
+      taxRate: 0.18,
+      taxMode: TaxMode.global,
+      additionalCosts: const [AdditionalCost(label: 'Shipping', amount: 50)],
+    );
+
+    double total = 0.0;
+    for(final p in inv.items)
+    {
+      total += p.total;
+    }
+
+    if(kDebugMode) print(total);
+
+    pw.MultiPage p = buildGridClassicTemplate(
+        inv,
+        _company,
+        'Rs.',
+        '',
+        showDiscount: true,
+        previousBalanceDue: 200,
+        showFooterBranding: true,
+        showTotalQuantity: true
+    );
+
+    doc.addPage(p);
+    final bytes = await doc.save();
+    expect(bytes, isNotEmpty);
+    final outputPath = 'output/invoiceo_grid_pdf.pdf';
+    final outputFile = File(outputPath);
+    await outputFile.parent.create(recursive: true);
+    await outputFile.writeAsBytes(await doc.save());
+  });
+
+  test('gridClassic renders watermark behind items table across a multi-page invoice',
+      () async {
+    final watermarkBytes =
+        await File('assets/images/watermark.png').readAsBytes();
+    final doc = pw.Document();
+
+    pw.MultiPage w = buildGridClassicTemplate(
+      _sampleInvoice(),
+      _company,
+      'Rs.',
+      '',
+      pageFormat: PdfPageFormat.a4,
+      showFooterBranding: true,
+      showTotalQuantity: true,
+      watermarkBytes: watermarkBytes,
+      watermarkOpacity: 0.15,
+    );
+
+    doc.addPage(w);
+    final bytes = await doc.save();
+    expect(bytes, isNotEmpty);
+    final outputPath = 'output/invoiceo_grid_pdf_watermark.pdf';
+    final outputFile = File(outputPath);
+    await outputFile.parent.create(recursive: true);
+    await outputFile.writeAsBytes(await doc.save());
+  });
+
+  for (final landscape in [false, true]) {
+    test(
+        'gridClassic A4 renders all metadata columns (${landscape ? 'landscape' : 'portrait'})',
+        () async {
+      final inv = _sampleInvoice();
+      for (final it in inv.items) {
+        it.metadata = ProductMetadata(
+          productId: it.product.id,
+          storageLocation: 'Rack B-3',
+          containerNumber: 'CN-90211',
+          batchNumber: 'B/2026/07',
+          expiryDate: '2027-01-31',
+          manufactureDate: '2026-01-31',
+          manufactureName: 'ACC Cements',
+          supplierName: 'ACC Ltd',
+          skuCode: 'SKU-CEM-50',
+          notes: 'handle dry',
+        );
+      }
+      final doc = pw.Document();
+      doc.addPage(buildGridClassicTemplate(
+        inv,
+        _company,
+        'Rs.',
+        '',
+        pageFormat: PdfPageFormat.a4,
+        landscape: landscape,
+        showTotalQuantity: true,
+        datePattern: 'dd MMM yyyy',
+        metadataColumns: const {
+          'storageLocation': true,
+          'containerNumber': true,
+          'batchNumber': true,
+          'expiryDate': true,
+          'manufactureDate': true,
+          'manufactureName': true,
+          'supplierName': true,
+          'skuCode': true,
+          'notes': true,
+        },
+      ));
+      final bytes = await doc.save();
+      expect(bytes, isNotEmpty);
+      final f = File(
+          'output/invoiceo_grid_pdf_metadata_${landscape ? 'landscape' : 'portrait'}.pdf');
+      await f.parent.create(recursive: true);
+      await f.writeAsBytes(bytes);
+    });
+  }
+}

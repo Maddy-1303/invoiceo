@@ -1,0 +1,3468 @@
+{
+  "@@locale": "en",
+  "appTitle": "Invoiceo",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "actionSave": "Save",
+  "actionCancel": "Cancel",
+  "actionSkip": "Skip",
+  "actionNext": "Next",
+  "actionBack": "Back",
+  "actionGetStarted": "Get Started",
+  "commonLanguage": "Language",
+  "commonBeta": "Beta",
+  "commonSystemDefault": "System Default",
+  "commonTheme": "Theme",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSystem": "System",
+  "onboardingStepCompanyTitle": "Company",
+  "onboardingStepCompanySubtitle": "Tell us about your business",
+  "onboardingStepInvoiceTitle": "Invoice Settings",
+  "onboardingStepInvoiceSubtitle": "Set up how your invoices work",
+  "onboardingStepAppearanceTitle": "Invoice Appearance",
+  "onboardingStepAppearanceSubtitle": "Pick a page size and template",
+  "onboardingStepDoneTitle": "All Set",
+  "onboardingCompanyNameLabel": "Company Name",
+  "onboardingCountryLabel": "Country",
+  "onboardingLogoLabel": "Company Logo",
+  "onboardingCurrencyLabel": "Currency",
+  "onboardingDateFormatLabel": "Date Format",
+  "onboardingInvoiceStartingNumberLabel": "Invoice Starting Number",
+  "onboardingLeadingZerosLabel": "Leading Zeros",
+  "onboardingLeadingZerosSubtitle": "Pad invoice numbers to 8 digits (e.g. 00000007)",
+  "onboardingDefaultTaxRateLabel": "Default Tax Rate (%)",
+  "onboardingPageSizeLabel": "Page Size",
+  "onboardingTemplateLabel": "Invoice Template",
+  "onboardingDoneHeadline": "You're all set!",
+  "onboardingDoneBody": "Your company, invoice and template details are saved. You can update any of these later from Settings.",
+  "splashInitErrorTitle": "Initialization Error",
+  "splashInitErrorMessage": "Failed to initialize the database.\n\n{error}",
+  "@splashInitErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "actionRetry": "Retry",
+  "splashInitializingMessage": "Initializing App...",
+  "testGateNoInternetTitle": "Test installer needs internet access to verify.",
+  "testGateExpiredTitle": "This test build has expired.",
+  "testGateNoInternetSubtitle": "Connect to the internet and retry.",
+  "testGateExpiredSubtitle": "Contact support: {email}",
+  "@testGateExpiredSubtitle": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardSessionExpiredMessage": "Session expired due to inactivity.",
+  "dashboardUnknownTabLabel": "Unknown tab",
+  "dashboardInvoiceLayoutTooltip": "Invoice layout: {layout} — tap for info",
+  "@dashboardInvoiceLayoutTooltip": {
+    "placeholders": {
+      "layout": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardLayoutNew": "New",
+  "dashboardLayoutClassic": "Classic",
+  "dashboardInvoiceLayoutDialogTitle": "Invoice layout",
+  "dashboardInvoiceLayoutDialogBody": "You're using the {layout} \"New Invoice\" layout. You can switch it from Settings > Accessibility. Note: switching mid-edit discards any unsaved changes on this form.",
+  "@dashboardInvoiceLayoutDialogBody": {
+    "placeholders": {
+      "layout": {
+        "type": "String"
+      }
+    }
+  },
+  "actionClose": "Close",
+  "dashboardOpenSettingsAction": "Open Settings",
+  "dashboardCollapseSidebarTooltip": "Collapse sidebar",
+  "dashboardExpandSidebarTooltip": "Expand sidebar",
+  "navDashboard": "Dashboard",
+  "navNewInvoice": "New Invoice",
+  "navInvoices": "Invoices",
+  "navQuotations": "Quotations",
+  "navReceipts": "Receipts",
+  "navCustomers": "Customers",
+  "navProducts": "Products",
+  "navReports": "Reports",
+  "navSettings": "Settings",
+  "modernNavSectionSales": "Sales",
+  "modernNavSectionCatalog": "Catalog",
+  "modernNavSectionBusiness": "Business",
+  "modernTopBarSearchHint": "Search anything... (Ctrl+K)",
+  "modernHelpSupport": "Help & Support",
+  "modernCreateNewTooltip": "Create new",
+  "modernDashGreetingMorning": "Good morning, {name}",
+  "@modernDashGreetingMorning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modernDashGreetingAfternoon": "Good afternoon, {name}",
+  "@modernDashGreetingAfternoon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modernDashGreetingEvening": "Good evening, {name}",
+  "@modernDashGreetingEvening": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modernDashSubtitle": "Here's what's happening with your business today.",
+  "modernDashSalesOverview": "Sales Overview",
+  "modernDashRecentInvoices": "Recent Invoices",
+  "modernDashLowStockProducts": "Low Stock Products",
+  "modernDashVsLastMonth": "vs last month",
+  "modernDashVsPreviousPeriod": "vs previous period",
+  "modernDashLowStockCount": "{count} low stock",
+  "@modernDashLowStockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modernDashLast12Months": "Last 12 months",
+  "modernDashThisMonth": "This month",
+  "modernDashLastMonth": "Last month",
+  "modernDashInvoiceNo": "Invoice No.",
+  "modernDashAddCustomer": "Add Customer",
+  "modernDashAddProduct": "Add Product",
+  "modernDashViewReports": "View Reports",
+  "modernDashUpdateStock": "Update stock",
+  "modernDashNewStockLabel": "New stock",
+  "modernDashNoLowStock": "No products are low on stock.",
+  "modernDashNoData": "No data for this period",
+  "mInvSubtitle": "Add the customer, items and billing details.",
+  "mInvCustomerSearchHint": "Search customer or type a walk-in customer's name...",
+  "mInvAddNew": "Add New",
+  "mInvNewCustomerTitle": "New customer",
+  "mInvEditCustomerTitle": "Edit customer",
+  "mInvSaveToCustomerList": "Save to customer list",
+  "mInvUpdateCustomer": "Update customer",
+  "mInvItems": "Items",
+  "mInvClearAll": "Clear All",
+  "mInvClearAllConfirm": "Remove all items from this document?",
+  "mInvAddAnotherItem": "Add another item",
+  "mInvDetailsTitle": "{type} Details",
+  "@mInvDetailsTitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mInvAdvancedOptions": "Advanced Options",
+  "mInvChargesAdjustments": "Charges & Adjustments",
+  "mInvStatusAddCustomer": "Add a customer",
+  "mInvStatusAddCustomerSub": "Search for a customer, or type a walk-in customer's name.",
+  "mInvStatusAddItems": "Add items",
+  "mInvStatusAddItemsSub": "Search a product above, scan a barcode, or add a custom item.",
+  "mInvStatusReady": "Ready to create {type}",
+  "@mInvStatusReady": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mInvStatusReadyUpdate": "Ready to update {type}",
+  "@mInvStatusReadyUpdate": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mInvStatusReadySub": "Add more items or review the details, then create it.",
+  "mInvSaveDraft": "Save Draft",
+  "mInvDraftSaved": "Draft saved",
+  "mInvNothingToSave": "Add a customer or an item before saving a draft.",
+  "mInvSavePrint": "Save & Print",
+  "mInvUpdatePrint": "Update & Print",
+  "mInvPrintThermal": "Print thermal receipt",
+  "mInvPrintA4": "Print A4 PDF",
+  "mInvPreviewFirst": "Preview before printing",
+  "mInvCreateType": "Create {type}",
+  "@mInvCreateType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mInvUpdateType": "Update {type}",
+  "@mInvUpdateType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mInvCreateAndNew": "Create and start a new one",
+  "mInvCreateAndPreview": "Create and preview",
+  "mInvPdfNumberTitle": "Number on the PDF",
+  "mInvPdfNumberInfo": "Numbers are given automatically, one after another. To print a different number on the PDF, turn on \"Hide invoice number in PDF\" and type the number to print.",
+  "mInvDrafts": "Drafts",
+  "mInvContinueDraft": "Continue",
+  "mInvDeleteDraftConfirm": "Delete this draft?",
+  "mInvDraftSavedOn": "Saved {date}",
+  "@mInvDraftSavedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mListSubtitleInvoice": "Manage, search and track all your invoices",
+  "mListSubtitleQuotation": "Manage, search and track all your quotations",
+  "mListSubtitleReceipt": "Manage, search and track all your receipts",
+  "mListAllOfType": "All {items}",
+  "@mListAllOfType": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "mListPctOfTotal": "{pct}% of total",
+  "@mListPctOfTotal": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "mListMoreFilters": "More Filters",
+  "mListAllDates": "All dates",
+  "mListToday": "Today",
+  "mListNoDrafts": "No drafts saved",
+  "mSuccessSubtitle": "The {type} has been saved and is ready to use.",
+  "@mSuccessSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mSuccessIdLabel": "{type} ID",
+  "@mSuccessIdLabel": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mSuccessOpenType": "Open {type}",
+  "@mSuccessOpenType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mSuccessViewBeforePrint": "View before print",
+  "mSuccessSaveToDevice": "Save to device",
+  "mSuccessPrintType": "Print {type}",
+  "@mSuccessPrintType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mSuccessSendToPrinter": "Send to printer",
+  "mSuccessCreateNew": "Create New {type}",
+  "@mSuccessCreateNew": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "mSuccessGoToList": "Go to {list}",
+  "@mSuccessGoToList": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "mSuccessCopy": "Copy",
+  "mSuccessCopied": "Copied",
+  "mCustTypeLabel": "Customer Type",
+  "mCustAllTypes": "All types",
+  "mCustIndividual": "Individual",
+  "mCustBusiness": "Business",
+  "mCustColNameBusiness": "Name / Business",
+  "mCustColContact": "Contact",
+  "mCustColType": "Type",
+  "mCustOutstandingCurrency": "Outstanding currency",
+  "mCustReceivePayment": "Receive Payment",
+  "mCustDeleteSelectedTitle": "Delete selected customers ({count})?",
+  "@mCustDeleteSelectedTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mCustDeleteSelectedBody": "Existing invoices are not affected. This cannot be undone.",
+  "mCustDeletedCount": "{count, plural, =1{1 customer deleted} other{{count} customers deleted}}",
+  "@mCustDeletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "navServices": "Services",
+  "mProdSubtitle": "Manage your products, inventory and pricing",
+  "mSvcTitle": "Service Management",
+  "mSvcSubtitle": "Manage your services and pricing",
+  "mSvcNewService": "New Service",
+  "mProdTotalProducts": "Total Products",
+  "mProdAllProductsSub": "All products",
+  "mProdInStock": "In Stock",
+  "mProdInStockSub": "Available products",
+  "mProdLowStockSub": "Products need attention",
+  "mProdOutOfStockSub": "Not available",
+  "mSvcTotal": "Total Services",
+  "mSvcAllSub": "All services",
+  "mSvcWithTax": "With Tax",
+  "mSvcWithTaxSub": "Tax above 0%",
+  "mSvcTaxFree": "Tax-free",
+  "mSvcTaxFreeSub": "0% tax",
+  "mSvcNoSac": "Without SAC",
+  "mSvcNoSacSub": "No SAC code",
+  "mProdColSellingPrice": "Selling Price",
+  "mProdCopyName": "{name} (copy)",
+  "@mProdCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mProdDuplicated": "Copy saved — you can change it now",
+  "mProdDeleteSelectedTitle": "Delete selected items ({count})?",
+  "@mProdDeleteSelectedTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mProdDeleteSelectedBody": "Invoices already made are not affected. This cannot be undone.",
+  "mProdDeletedCount": "{count, plural, =1{1 item deleted} other{{count} items deleted}}",
+  "@mProdDeletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mSvcSearchHint": "Search services by name, alias, SAC, SKU…",
+  "mSvcDeleteAllTitle": "Delete All Services",
+  "mSvcDeleteAllBody": "{count, plural, =1{1 service will be permanently deleted. Existing invoices are not affected. This cannot be undone.} other{{count} services will be permanently deleted. Existing invoices are not affected. This cannot be undone.}}",
+  "@mSvcDeleteAllBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mSvcShowingRange": "Showing {from} to {to} of {total} services",
+  "@mSvcShowingRange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mSvcNoServicesFound": "No services found",
+  "mSvcAddFirstService": "Add your first service to get started",
+  "mSvcNoneToDelete": "No services to delete.",
+  "mSvcAllDeleted": "All services deleted.",
+  "mSvcDeleteAllError": "Error deleting services: {error}",
+  "@mSvcDeleteAllError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mSvcSaveButton": "Save Service",
+  "mSvcAdded": "Service added successfully!",
+  "mSvcImportCsvTitle": "Import Services from CSV",
+  "mSvcImported": "{count, plural, =1{Imported 1 service successfully!} other{Imported {count} services successfully!}}",
+  "@mSvcImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mSvcExportPdfChoice": "Export the current page ({pageSize} services) or all {allCount} services?",
+  "@mSvcExportPdfChoice": {
+    "placeholders": {
+      "pageSize": {
+        "type": "int"
+      },
+      "allCount": {
+        "type": "int"
+      }
+    }
+  },
+  "mSvcAllServicesLabel": "All Services",
+  "dashboardRoleAdmin": "Admin",
+  "dashboardRoleUser": "User",
+  "dashboardSupportTooltip": "Support",
+  "buyMeCoffeeLabel": "Buy me a coffee",
+  "dashboardLogoutTooltip": "Logout",
+  "dashboardTestBuildBadge": "TEST BUILD",
+  "dashboardTestBadgeShort": "TEST",
+  "dashboardKeyboardShortcutsTitle": "Keyboard Shortcuts",
+  "dashboardShortcutsBannerTitle": "New: Keyboard shortcuts",
+  "dashboardShortcutsBannerSubtitle": "Ctrl+Q for a new invoice, Ctrl+S to save, and more.",
+  "dashboardViewAllAction": "View all",
+  "dashboardLayoutBannerTitle": "New: Multiple dashboard layouts",
+  "dashboardLayoutBannerSubtitle": "Switch between Default, Classic, Bento, and Simple Feed using the grid icon in the top-right.",
+  "actionGotIt": "Got it",
+  "dashboardThemeBannerTitle": "New: Dark mode",
+  "dashboardThemeBannerSubtitle": "We're still polishing it — switch it on from Settings > Company Info and let us know what looks off.",
+  "dashboardSupportBannerTitle": "You've created {count} invoices!",
+  "@dashboardSupportBannerTitle": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardSupportBannerReviewSubtitle": "Enjoying Invoiceo? A quick review helps a lot.",
+  "dashboardSupportBannerSupportSubtitle": "Looks like Invoiceo is part of your workflow. If it's been helpful, consider supporting the project — whenever it feels right.",
+  "dashboardReviewAction": "Review",
+  "dashboardSupportAction": "Support",
+  "dashboardOverviewTitle": "Dashboard Overview",
+  "actionRefresh": "Refresh",
+  "helpSearchTooltip": "Search Help & Settings",
+  "dashboardOutOfStockCountLabel": "{count} out of stock",
+  "@dashboardOutOfStockCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardRevenueCollectedLabel": "Revenue Collected",
+  "dashboardOutstandingLabel": "Outstanding",
+  "dashboardOverdueCountLabel": "{count} overdue",
+  "@dashboardOverdueCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardRecentInvoicesTitle": "Recent Documents",
+  "dashboardLastFiveInvoicesLabel": "Last 5 documents",
+  "dashboardColDocumentNo": "Document no.",
+  "dashboardColType": "Type",
+  "dashboardNoInvoicesYetTitle": "No invoices yet",
+  "dashboardNoInvoicesYetSubtitle": "Create your first invoice to see it here",
+  "actionView": "View",
+  "actionEdit": "Edit",
+  "actionDuplicate": "Duplicate",
+  "actionPdfPreview": "PDF Preview",
+  "actionDownloadPdf": "Download PDF",
+  "actionPrint": "Print",
+  "actionPayment": "Payment",
+  "actionDelete": "Delete",
+  "actionRecordPayment": "Record Payment",
+  "dashboardDueDateLabel": "Due: {date}",
+  "@dashboardDueDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "labelInvoice": "Invoice",
+  "labelQuotation": "Quotation",
+  "labelReceipt": "Receipt",
+  "dashboardWelcomeBackMessage": "Welcome back, {username}",
+  "@dashboardWelcomeBackMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardBusinessGlanceSubtitle": "Here's your business at a glance",
+  "dashboardDueSoonTitle": "Due Soon",
+  "dashboardInvoiceCountLabel": "{count, plural, =1{1 invoice} other{{count} invoices}}",
+  "@dashboardInvoiceCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardTodayTomorrowLabel": "Today & Tomorrow",
+  "dashboardDueTodayBadge": "Due Today",
+  "dashboardDueTomorrowBadge": "Due Tomorrow",
+  "dashboardOverdueSectionTitle": "Overdue",
+  "dashboardOldestFirstLabel": "Oldest first",
+  "dashboardDaysOverdueLabel": "{days, plural, =1{1 day overdue} other{{days} days overdue}}",
+  "@dashboardDaysOverdueLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardNewStockQuantityLabel": "New Stock Quantity",
+  "actionUpdate": "Update",
+  "labelService": "Service",
+  "labelProduct": "Product",
+  "dashboardStockLabel": "Stock: {count}",
+  "@dashboardStockLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "actionUpdateStock": "Update Stock",
+  "paymentStatusPaid": "Paid",
+  "paymentStatusPartial": "Partial",
+  "paymentStatusUnpaid": "Unpaid",
+  "dashboardDuplicateInvoiceTitle": "Duplicate Invoice",
+  "dashboardDuplicateInvoiceBody": "Create a copy of Invoice #{number}\n({customerName}) as:",
+  "@dashboardDuplicateInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "customerName": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardDeleteInvoiceTitle": "Delete Invoice",
+  "dashboardDeleteInvoiceBody": "Are you sure you want to delete Invoice #{number}? This action cannot be undone.",
+  "@dashboardDeleteInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardLayoutTooltip": "Dashboard Layout",
+  "dashboardLayoutDefaultTitle": "Default",
+  "dashboardLayoutDefaultSubtitle": "Original layout",
+  "dashboardLayoutClassicSubtitle": "Charts + KPI grid",
+  "dashboardLayoutBentoTitle": "Bento",
+  "dashboardLayoutBentoSubtitle": "Hero chart + card grid",
+  "dashboardLayoutSimpleTitle": "Simple Feed",
+  "dashboardLayoutSimpleSubtitle": "Clean list view",
+  "dashboardTotalInvoicesLabel": "Total Invoices",
+  "dashboardRevenueLast6MonthsTitle": "Revenue — Last 6 Months",
+  "dashboardNoPaymentDataYetLabel": "No payment data yet",
+  "dashboardFinancialOverviewTitle": "Financial Overview",
+  "dashboardCollectedLabel": "Collected",
+  "dashboardInvoiceCountOverdueLabel": "{count, plural, =1{1 invoice overdue} other{{count} invoices overdue}}",
+  "@dashboardInvoiceCountOverdueLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardLastNLabel": "Last {n}",
+  "@dashboardLastNLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "labelCustomer": "Customer",
+  "labelAmount": "Amount",
+  "dashboardZeroLeftLabel": "0 left",
+  "labelStock": "Stock",
+  "actionPay": "Pay",
+  "dashboardQuickActionsTitle": "Quick Actions",
+  "dashboardPdfActionsTooltip": "PDF Actions",
+  "dashboardActionsTooltip": "Actions",
+  "dashboardTopCustomersTitle": "Top Customers",
+  "dashboardTopProductsTitle": "Top Products",
+  "dashboardUnitsLabel": "{qty} units",
+  "@dashboardUnitsLabel": {
+    "placeholders": {
+      "qty": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardBetaBadge": "BETA",
+  "dashboardOutOfStockSectionTitle": "Out of Stock",
+  "dashboardItemCountLabel": "{count, plural, =1{1 item} other{{count} items}}",
+  "@dashboardItemCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardTapToRestockLabel": "Tap to restock",
+  "createInvoiceUnsavedChangesTitle": "Unsaved changes",
+  "createInvoiceUnsavedChangesMessage": "You have unsaved changes in this invoice. Save them before leaving?",
+  "createInvoiceKeepEditingButton": "Keep Editing",
+  "actionDiscard": "Discard",
+  "createInvoiceErrorLoadingDataMessage": "Error loading data: {e}",
+  "@createInvoiceErrorLoadingDataMessage": {
+    "placeholders": {
+      "e": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceInsufficientStockTitle": "Insufficient Stock",
+  "createInvoiceInsufficientStockMessage": "Only {stock} unit(s) available. Add {qty} anyway?",
+  "@createInvoiceInsufficientStockMessage": {
+    "placeholders": {
+      "stock": {
+        "type": "int"
+      },
+      "qty": {
+        "type": "double"
+      }
+    }
+  },
+  "createInvoiceAddAnywayButton": "Add Anyway",
+  "createInvoiceOutOfStockTitle": "Out of Stock",
+  "createInvoiceOutOfStockMessage": "{name} is out of stock. Add anyway?",
+  "@createInvoiceOutOfStockMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceUnlimitedStockLabel": "Unlimited Stock",
+  "createInvoiceAvailableStockLabel": "Available Stock: {stock}",
+  "@createInvoiceAvailableStockLabel": {
+    "placeholders": {
+      "stock": {
+        "type": "int"
+      }
+    }
+  },
+  "fieldDiscountLabel": "Discount",
+  "fieldUnitPriceOverrideLabel": "Unit Price (override)",
+  "fieldExtraCostLabel": "Extra Cost (optional)",
+  "fieldInsertAtPositionLabel": "Insert at position",
+  "actionAdd": "Add",
+  "createInvoiceProductAlreadyAddedMessage": "This product has already been added",
+  "createInvoiceCustomerNameRequiredMessage": "Please provide customer name",
+  "createInvoiceAtLeastOneItemRequiredMessage": "Please add at least one item",
+  "createInvoiceCreatedSuccessMessage": "{invoiceTypeLabel} created successfully!",
+  "@createInvoiceCreatedSuccessMessage": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceErrorCreatingMessage": "Error creating invoice: {e}",
+  "@createInvoiceErrorCreatingMessage": {
+    "placeholders": {
+      "e": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceEditItemTitle": "Edit Item",
+  "createInvoiceCustomItemTitle": "Custom Item",
+  "fieldItemNameLabel": "Item Name",
+  "fieldAliasForPdfLabel": "Alias (for PDF)",
+  "fieldUnitPriceLabel": "Unit Price",
+  "fieldRateLabel": "Rate",
+  "fieldTaxRateLabel": "Tax Rate (%)",
+  "fieldPriceIncludesTaxLabel": "Price includes tax",
+  "createInvoicePhoneAlreadyInUseTitle": "Phone Number Already In Use",
+  "createInvoicePhoneAlreadyInUseMessage": "This phone number belongs to \"{ownerName}\".\n\nCannot save this customer with a phone number that already belongs to someone else.",
+  "@createInvoicePhoneAlreadyInUseMessage": {
+    "placeholders": {
+      "ownerName": {
+        "type": "String"
+      }
+    }
+  },
+  "actionOk": "OK",
+  "createInvoiceCustomerNameRequiredBeforeSavingMessage": "Please enter a customer name before saving",
+  "createInvoicePhoneChangedTitle": "Phone Number Changed",
+  "createInvoicePhoneChangedMessage": "The phone number for \"{name}\" was changed.\n\nUpdate their existing record, or save these details as a new customer?",
+  "@createInvoicePhoneChangedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceSaveAsNewButton": "Save as New",
+  "createInvoiceUpdateExistingButton": "Update Existing",
+  "createInvoiceCustomerUpdatedMessage": "{name} updated in customer list",
+  "@createInvoiceCustomerUpdatedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceCustomerAlreadyExistsTitle": "Customer Already Exists",
+  "createInvoiceCustomerAlreadyExistsMessage": "\"{name}\" is already saved with this phone number.\n\nUse their existing details, or update their record with the current information?",
+  "@createInvoiceCustomerAlreadyExistsMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceUseExistingButton": "Use Existing",
+  "createInvoiceUsingExistingCustomerMessage": "Using existing customer \"{name}\"",
+  "@createInvoiceUsingExistingCustomerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceCustomerSavedMessage": "{name} saved to customer list",
+  "@createInvoiceCustomerSavedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceCustomerRecordGoneMessage": "Customer record no longer exists",
+  "createInvoiceCustomerRefreshedMessage": "Customer details refreshed",
+  "fieldLabelLabel": "Label",
+  "hintLabelExample": "e.g. Shipping",
+  "tooltipRemove": "Remove",
+  "createInvoiceAddRowButton": "Add Row",
+  "fieldDiscountPerUnitLabel": "Discount per unit",
+  "createInvoiceDiscountPerUnitFormulaOn": "(price − discount) × qty",
+  "createInvoiceDiscountPerUnitFormulaOff": "(price × qty) − discount",
+  "createInvoicePrevBalanceShortLabel": "Prev. Balance",
+  "createInvoicePreviousBalanceDueLabel": "Previous Balance Due",
+  "createInvoiceDueShortLabel": "Due",
+  "createInvoiceTotalDueLabel": "Total Due",
+  "createInvoiceUpdatedSuccessMessage": "{invoiceTypeLabel} updated successfully!",
+  "@createInvoiceUpdatedSuccessMessage": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTotalBelowPaidMessage": "The new total is less than the {paid} already paid. Delete payments in Apply Payment first, or keep the total at or above that amount.",
+  "@createInvoiceTotalBelowPaidMessage": {
+    "placeholders": {
+      "paid": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceErrorUpdatingMessage": "Error updating invoice: {e}",
+  "@createInvoiceErrorUpdatingMessage": {
+    "placeholders": {
+      "e": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceCreatedHeadline": "{invoiceTypeLabel} Created Successfully!",
+  "@createInvoiceCreatedHeadline": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceIdLabel": "{invoiceTypeLabel} ID: {invoiceNumber}",
+  "@createInvoiceIdLabel": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      },
+      "invoiceNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceViewDetailsLabel": "View Details",
+  "createInvoicePreviewPdfLabel": "Preview PDF",
+  "createInvoicePreviewPdfTooltip": "Preview PDF (Shortcut: Ctrl+o)",
+  "createInvoicePrintPdfLabel": "Print PDF",
+  "createInvoicePrintPdfTooltip": "Print PDF (Shortcut: Ctrl+p)",
+  "actionDismiss": "Dismiss",
+  "createInvoiceCreateNewInvoiceButton": "Create New Invoice (Shortcut: Ctrl+q)",
+  "createInvoiceAppBarTitle": "Create New {invoiceTypeLabel}",
+  "@createInvoiceAppBarTitle": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "commonLoadingDataMessage": "Loading data...",
+  "createInvoiceAddItemBeforeCreatingMessage": "Add at least one item before creating the invoice.",
+  "createInvoiceCreatedTitleShort": "{invoiceTypeLabel} Created",
+  "@createInvoiceCreatedTitleShort": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceEditTitle": "Edit {invoiceTypeLabel}",
+  "@createInvoiceEditTitle": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceDuplicateAsTitle": "Duplicate as {invoiceTypeLabel}",
+  "@createInvoiceDuplicateAsTitle": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceNewShortLabel": "New",
+  "createInvoiceNewInvoiceShortcutLabel": "New Invoice (Shortcut: Ctrl+q)",
+  "createInvoiceSavingEllipsisLabel": "Saving...",
+  "createInvoiceSaveCustomerLabel": "Save customer",
+  "createInvoiceSelectExistingCustomerButton": "Select from existing",
+  "createInvoiceRefreshCustomerTooltip": "Refresh from saved customer",
+  "createInvoiceClearCustomerTooltip": "Clear customer selection",
+  "fieldCustomerNameRequiredLabel": "Customer Name *",
+  "fieldBusinessNameLabel": "Business Name",
+  "fieldPhoneLabel": "Phone",
+  "fieldGstinVatLabel": "GSTIN / VAT",
+  "fieldEmailLabel": "Email",
+  "fieldAddressLabel": "Address",
+  "tooltipEditInLargerView": "Edit in larger view",
+  "createInvoiceChooseCustomerTitle": "Choose a customer",
+  "createInvoiceSearchCustomerLabel": "Search customer",
+  "createInvoiceNoCustomersFoundMessage": "No customers found",
+  "createInvoiceDetailsHeading": "{invoiceTypeLabel} DETAILS",
+  "@createInvoiceDetailsHeading": {
+    "placeholders": {
+      "invoiceTypeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTypeFieldLabel": "Invoice type",
+  "createInvoiceTypeLockedHelperText": "Type can't be changed after creation",
+  "createInvoiceOrderDateLabel": "Order date",
+  "createInvoiceOrderTimeLabel": "Order time",
+  "createInvoiceDueDateLabel": "Due date",
+  "createInvoiceGstTitleLabel": "GST title",
+  "createInvoiceTaxTitleLabel": "Tax title",
+  "gstTitleTaxInvoiceLabel": "Tax Invoice",
+  "gstTitleBillOfSupplyLabel": "Bill of Supply",
+  "gstTitleInvoiceCumBillLabel": "Invoice-cum-Bill of Supply",
+  "gstTitleCashBillLabel": "Cash Bill",
+  "gstTitleCreditNoteLabel": "Credit Note",
+  "gstTitleDebitNoteLabel": "Debit Note",
+  "gstTitleRevisedInvoiceLabel": "Revised Invoice",
+  "createInvoiceSearchProductLabel": "Search & add a product or service (Ctrl+F)",
+  "createInvoiceCustomItemButton": "Custom item (Ctrl+M)",
+  "createInvoiceNoProductsFoundMessage": "No products found",
+  "createInvoiceItemAlreadyInProductListMessage": "\"{name}\" already exists in product list",
+  "@createInvoiceItemAlreadyInProductListMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceProductSavedMessage": "{name} saved to product list",
+  "@createInvoiceProductSavedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceSaveToProductListTooltip": "Save to product list",
+  "tooltipEditItem": "Edit item",
+  "tooltipRemoveItem": "Remove item",
+  "createInvoiceNoItemsAddedMessage": "No items added yet",
+  "createInvoiceSearchHintMessage": "Search below or press Ctrl+F",
+  "createInvoiceDiscountFieldLabel": "Invoice Discount",
+  "discountTypeAmountShortLabel": "Amt",
+  "createInvoiceNotesOptionalLabel": "Notes (optional)",
+  "createInvoiceNotesHint": "Payment terms, thank-you note…",
+  "createInvoiceNotesTitle": "Notes",
+  "createInvoiceHideNumberInPdfLabel": "Hide invoice number in PDF",
+  "createInvoiceCustomNumberLabel": "Custom number (optional)",
+  "createInvoiceCustomNumberHint": "e.g. QUO-2026-014 — shown in PDF instead",
+  "createInvoiceEnableTaxLabel": "Enable tax",
+  "createInvoiceGlobalRateTooltip": "Global rate",
+  "createInvoicePerItemRateTooltip": "Per item rate",
+  "createInvoiceDefaultTaxRateLabel": "Default tax rate",
+  "createInvoiceTaxRateFromProductMessage": "Tax rate from each product",
+  "createInvoiceInterStateLabel": "Interstate supply (IGST)",
+  "createInvoicePaymentUpiAccountLabel": "Payment UPI account",
+  "commonNoneLabel": "None",
+  "createInvoiceBankAccountLabel": "Bank account",
+  "fieldSubtotalLabel": "Subtotal",
+  "createInvoiceDiscountColonLabel": "Discount:",
+  "fieldTaxLabel": "Tax",
+  "createInvoiceExtraCostFallbackLabel": "Extra Cost",
+  "createInvoiceDiscountPercentLabel": "Invoice Discount ({toStringAsFixed}%):",
+  "@createInvoiceDiscountPercentLabel": {
+    "placeholders": {
+      "toStringAsFixed": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceInvoiceDiscountColonLabel": "Invoice Discount:",
+  "fieldTotalLabel": "Total",
+  "createInvoicePreviewLabel": "Preview",
+  "createInvoicePreviewTooltip": "Preview (Shortcut: Ctrl+o)",
+  "createInvoiceDownloadLabel": "Download",
+  "createInvoicePrintTooltip": "Print (Shortcut: Ctrl+p)",
+  "fieldUnitOverrideLabel": "Unit (override)",
+  "commonCustomEllipsisLabel": "Custom…",
+  "fieldCustomUnitLabel": "Custom unit",
+  "invoiceMgmtMoveToTrashTitle": "Move to Trash",
+  "invoiceMgmtMoveToTrashBody": "Move Invoice #{number} to trash?",
+  "@invoiceMgmtMoveToTrashBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtMovedToTrashMessage": "Invoice moved to trash.",
+  "invoiceMgmtFailedToLoadMessage": "Failed to load invoices: {error}",
+  "@invoiceMgmtFailedToLoadMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtExportToCsvTitle": "Export {type} to CSV",
+  "@invoiceMgmtExportToCsvTitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtExportAllRecordsLabel": "Export All Records",
+  "invoiceMgmtFilterByDateRangeLabel": "Or filter by date range:",
+  "invoiceMgmtFromDateLabel": "From Date",
+  "invoiceMgmtToDateLabel": "To Date",
+  "invoiceMgmtDateRangeInvalidMessage": "To date must be after From date.",
+  "actionExport": "Export",
+  "invoiceMgmtExportedRecordsMessage": "{count, plural, =1{Exported 1 record to: {path}} other{Exported {count} records to: {path}}}",
+  "@invoiceMgmtExportedRecordsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtExportFailedMessage": "Export failed: {error}",
+  "@invoiceMgmtExportFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtBulkMoveToTrashBody": "{count, plural, =1{Move 1 invoice to trash?} other{Move {count} invoices to trash?}}",
+  "@invoiceMgmtBulkMoveToTrashBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtBulkMovedToTrashMessage": "{count, plural, =1{1 invoice moved to trash.} other{{count} invoices moved to trash.}}",
+  "@invoiceMgmtBulkMovedToTrashMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtBulkDeleteFailedMessage": "Bulk delete failed: {error}",
+  "@invoiceMgmtBulkDeleteFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtBulkExportedCsvMessage": "{count, plural, =1{Exported 1 invoice to CSV} other{Exported {count} invoices to CSV}}",
+  "@invoiceMgmtBulkExportedCsvMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtCsvExportFailedMessage": "CSV export failed: {error}",
+  "@invoiceMgmtCsvExportFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDownloadPdfsTitle": "Download PDFs",
+  "invoiceMgmtSavePdfsPromptMessage": "{count, plural, =1{How would you like to save 1 PDF?} other{How would you like to save {count} PDFs?}}",
+  "@invoiceMgmtSavePdfsPromptMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtSaveToFolderLabel": "Save to Folder",
+  "invoiceMgmtSaveAsZipLabel": "Save as ZIP",
+  "invoiceMgmtChooseFolderDialogTitle": "Choose folder to save PDFs",
+  "invoiceMgmtSaveZipDialogTitle": "Save ZIP file",
+  "invoiceMgmtCreatingZipLabel": "Creating ZIP",
+  "invoiceMgmtGeneratingPdfsLabel": "Generating PDFs",
+  "invoiceMgmtProcessingPdfsMessage": "{count, plural, =1{Processing 1 PDF...} other{Processing {count} PDFs...}}",
+  "@invoiceMgmtProcessingPdfsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtSavedToMessage": "Saved to: {path}",
+  "@invoiceMgmtSavedToMessage": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtPdfExportFailedMessage": "PDF export failed: {error}",
+  "@invoiceMgmtPdfExportFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDownloadByFilterTitle": "Download PDFs by Filter",
+  "invoiceMgmtByDateLabel": "By Date",
+  "invoiceMgmtByInvoiceNumberLabel": "By Invoice Number",
+  "invoiceMgmtFromInvoiceNumberLabel": "From invoice #",
+  "invoiceMgmtToInvoiceNumberLabel": "To invoice #",
+  "invoiceMgmtCheckCountLabel": "Check count",
+  "invoiceMgmtInvoicesExceedLimitMessage": "{count} invoices — exceeds limit of {limit}",
+  "@invoiceMgmtInvoicesExceedLimitMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtInvoicesMatchMessage": "{count, plural, =1{1 invoice match} other{{count} invoices match}}",
+  "@invoiceMgmtInvoicesMatchMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtMaxPdfsPerDownloadMessage": "Max {limit} PDFs per download. Narrow your filter.",
+  "@invoiceMgmtMaxPdfsPerDownloadMessage": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtNoInvoicesForFilterMessage": "No invoices found for the selected filter.",
+  "invoiceMgmtFilterExceedsLimitMessage": "Filter returned {count} invoices — max is {limit}.",
+  "@invoiceMgmtFilterExceedsLimitMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtFilterInvoicesTitle": "Filter Invoices",
+  "invoiceMgmtHideFullyPaidLabel": "Hide fully paid invoices",
+  "invoiceMgmtHideDeclinedLabel": "Hide declined invoices",
+  "invoiceMgmtPaymentStatusLabel": "Payment status",
+  "invoiceMgmtDueDateLabel": "Due date",
+  "invoiceMgmtInvoiceDateRangeLabel": "Invoice date range",
+  "invoiceMgmtInvoiceNumberRangeLabel": "Invoice # range",
+  "invoiceMgmtFromHashLabel": "From #",
+  "invoiceMgmtToHashLabel": "To #",
+  "actionReset": "Reset",
+  "actionApply": "Apply",
+  "invoiceMgmtSortByTitle": "Sort By",
+  "invoiceMgmtSearchHintMessage": "Search by Invoice ID or Customer Name…",
+  "invoiceMgmtFilterLabel": "Filter",
+  "invoiceMgmtSortLabel": "Sort",
+  "invoiceMgmtTotalPageStatusLabel": "Total: {total}   ·   Page {page}/{totalPages}",
+  "@invoiceMgmtTotalPageStatusLabel": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "page": {
+        "type": "int"
+      },
+      "totalPages": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtSelectedCountLabel": "{count} selected",
+  "@invoiceMgmtSelectedCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtDeselectLabel": "Deselect",
+  "invoiceMgmtSelectPageLabel": "Select Page",
+  "invoiceMgmtMarkPaidLabel": "Mark Paid",
+  "invoiceMgmtCsvLabel": "CSV",
+  "invoiceMgmtPdfsLabel": "PDFs",
+  "invoiceMgmtTrashLabel": "Trash",
+  "actionApplyPayment": "Apply Payment",
+  "invoiceMgmtMoreActionsTooltip": "More actions",
+  "invoiceMgmtColSlNo": "Sl No",
+  "invoiceMgmtColInvoiceCustomer": "Invoice / Customer",
+  "invoiceMgmtColTitle": "Title",
+  "invoiceMgmtColDate": "Date",
+  "invoiceMgmtColItems": "Items",
+  "invoiceMgmtColStatus": "Status",
+  "invoiceMgmtColOutstanding": "Outstanding",
+  "invoiceMgmtColActions": "Actions",
+  "invoiceMgmtRowsPerPageLabel": "Rows per page:",
+  "actionPrevious": "Previous",
+  "invoiceMgmtPageOfLabel": "Page {page} of {totalPages}",
+  "@invoiceMgmtPageOfLabel": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "totalPages": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtNoResultsForQueryMessage": "No results for \"{query}\"",
+  "@invoiceMgmtNoResultsForQueryMessage": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtNoFilteredTypeFoundMessage": "No {type} found",
+  "@invoiceMgmtNoFilteredTypeFoundMessage": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtCreateFirstTypeMessage": "Create your first {type} to see it here",
+  "@invoiceMgmtCreateFirstTypeMessage": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtTryAdjustingFiltersMessage": "Try adjusting your search or filters",
+  "invoiceMgmtDownloadByRangeTooltip": "Download PDFs by date or invoice range",
+  "invoiceMgmtExportAllCsvTooltip": "Export all to CSV",
+  "invoiceMgmtDownloadByRangeMenuLabel": "Download PDFs by range",
+  "invoiceMgmtManagementTitle": "{type} Management",
+  "@invoiceMgmtManagementTitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtNewDocumentButton": "New {type}",
+  "@invoiceMgmtNewDocumentButton": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtConvertToInvoiceAction": "Convert to Invoice",
+  "invoiceMgmtConvertAgainTitle": "Convert again?",
+  "invoiceMgmtConvertAgainBody": "Quotation {number} was already converted to an invoice. Create another invoice from it?",
+  "@invoiceMgmtConvertAgainBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtMarkAsSent": "Mark as sent",
+  "invoiceMgmtMarkAsAccepted": "Mark as accepted",
+  "invoiceMgmtMarkAsDeclined": "Mark as declined",
+  "quotationStatusDraft": "Draft",
+  "quotationStatusSent": "Sent",
+  "quotationStatusAccepted": "Accepted",
+  "quotationStatusDeclined": "Declined",
+  "quotationStatusConverted": "Converted",
+  "invoiceMgmtDeclineInvoiceTitle": "Decline invoice?",
+  "invoiceMgmtDeclineInvoiceBody": "This will mark invoice #{number} as declined and return its items to stock. This can't be undone.",
+  "@invoiceMgmtDeclineInvoiceBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclineHasPaymentsMessage": "Invoice #{number} has payments recorded. Delete them in Apply Payment before declining.",
+  "@invoiceMgmtDeclineHasPaymentsMessage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtDeclinedSuccessMessage": "Invoice declined, stock restored.",
+  "invoiceStatusDeclinedBadge": "Declined",
+  "createInvoiceConvertTitle": "Convert to Invoice",
+  "createInvoiceConvertedSuccessMessage": "Converted to Invoice #{invoiceNumber}",
+  "@createInvoiceConvertedSuccessMessage": {
+    "placeholders": {
+      "invoiceNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceTrashQuotationAction": "Trash quote",
+  "createInvoiceQuotationTrashedMessage": "Quotation moved to trash",
+  "invoiceMgmtOverdueBadge": "Overdue",
+  "invoiceMgmtTodayBadge": "Today",
+  "invoiceMgmtTrashIsEmptyLabel": "Trash is empty",
+  "actionRestore": "Restore",
+  "invoiceMgmtPermanentlyDeleteTitle": "Permanently Delete",
+  "invoiceMgmtPermanentlyDeleteBody": "Permanently delete Invoice #{number}? This cannot be undone.",
+  "@invoiceMgmtPermanentlyDeleteBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "invoiceMgmtInvoiceRestoredMessage": "Invoice restored.",
+  "invoiceMgmtAnyDateLabel": "Any",
+  "invoiceMgmtStatusAllLabel": "All",
+  "invoiceMgmtDueAllLabel": "All Dues",
+  "invoiceMgmtDueTodayLabel": "Due Today",
+  "invoiceMgmtDueWeekLabel": "Due This Week",
+  "invoiceMgmtDueMonthLabel": "Due This Month",
+  "invoiceMgmtSortRecentlyAdded": "Recently Added",
+  "invoiceMgmtSortOldestAdded": "Oldest Added",
+  "invoiceMgmtSortDateNewest": "Invoice Date (Newest First)",
+  "invoiceMgmtSortDateOldest": "Invoice Date (Oldest First)",
+  "invoiceMgmtSortCustomerAZ": "Customer Name (A–Z)",
+  "invoiceMgmtSortCustomerZA": "Customer Name (Z–A)",
+  "invoiceMgmtMarkAsPaidTitle": "Mark as Paid",
+  "invoiceMgmtMarkAsPaidBody": "{count, plural, =1{Mark 1 invoice as fully paid?} other{Mark {count} invoices as fully paid?}}",
+  "@invoiceMgmtMarkAsPaidBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtAlreadyPaidNoteMessage": "\n({count} already paid — will be skipped)",
+  "@invoiceMgmtAlreadyPaidNoteMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtAllAlreadyPaidMessage": "All selected invoices are already fully paid.",
+  "invoiceMgmtMarkedAsPaidMessage": "{count, plural, =1{1 invoice marked as paid.} other{{count} invoices marked as paid.}}",
+  "@invoiceMgmtMarkedAsPaidMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceMgmtMarkAsPaidFailedMessage": "Failed to mark as paid: {error}",
+  "@invoiceMgmtMarkAsPaidFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldNameLabel": "Name",
+  "customerMgmtEditCustomerTitle": "Edit Customer",
+  "customerMgmtViewCustomerTitle": "View Customer",
+  "fieldTaxVatNumberLabel": "{taxWord} / VAT Number",
+  "@fieldTaxVatNumberLabel": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtUpdatedMessage": "Customer updated successfully!",
+  "fieldRequiredMessage": "Please enter {field}",
+  "@fieldRequiredMessage": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtConfirmDeleteTitle": "Confirm Delete",
+  "customerMgmtDeleteConfirmBody": "Are you sure you want to delete \"{name}\"?",
+  "@customerMgmtDeleteConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtDeletedMessage": "Customer deleted successfully!",
+  "customerMgmtSaveSampleCsvDialogTitle": "Save Sample CSV",
+  "customerMgmtSampleSavedMessage": "Sample CSV saved successfully!",
+  "customerMgmtErrorSavingSampleMessage": "Error saving sample: {error}",
+  "@customerMgmtErrorSavingSampleMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtImportCsvDialogTitle": "Import Customers from CSV",
+  "customerMgmtCsvFormatInstructionMessage": "Your CSV file must use the following column headers (exact spelling, any order):",
+  "customerMgmtCsvColColumnHeader": "Column",
+  "customerMgmtCsvColRequiredHeader": "Required",
+  "customerMgmtCsvColDescriptionHeader": "Description",
+  "commonYesLabel": "Yes",
+  "commonNoLabel": "No",
+  "customerMgmtCsvDescName": "Customer full name",
+  "customerMgmtCsvDescEmail": "Email address",
+  "customerMgmtCsvDescPhone": "Phone number",
+  "customerMgmtCsvDescAddress": "Full address",
+  "customerMgmtCsvDescBusinessName": "Company / business name",
+  "customerMgmtCsvDescTaxNumber": "Tax / VAT / GSTIN number",
+  "customerMgmtCsvMaxRowsNote": "Maximum {max} rows per import.",
+  "@customerMgmtCsvMaxRowsNote": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtCsvDuplicatesNote": "Duplicates are detected by email or phone. You will be asked to overwrite or skip each one.",
+  "customerMgmtCsvMissingNameNote": "Rows missing a name are skipped and reported at the end.",
+  "customerMgmtCsvEncodingNote": "UTF-8 encoding recommended. Excel BOM is handled automatically.",
+  "customerMgmtDownloadSampleCsvButton": "Download Sample CSV",
+  "customerMgmtChooseFileButton": "Choose File",
+  "customerMgmtSelectCsvDialogTitle": "Select Customer CSV",
+  "customerMgmtCsvEmptyMessage": "CSV file is empty.",
+  "customerMgmtCsvMissingNameColumnMessage": "CSV missing required column: \"name\"",
+  "customerMgmtUnknownColumnMessage": "Unknown column \"{col}\". Expected: {expected}",
+  "@customerMgmtUnknownColumnMessage": {
+    "placeholders": {
+      "col": {
+        "type": "String"
+      },
+      "expected": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtCsvTooManyRowsMessage": "CSV has {count} rows. Maximum is {max}. Please split the file.",
+  "@customerMgmtCsvTooManyRowsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtImportingTitle": "Importing Customers",
+  "customerMgmtValidatingRowsMessage": "{count, plural, =1{Checking for duplicates and validating 1 row...} other{Checking for duplicates and validating {count} rows...}}",
+  "@customerMgmtValidatingRowsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtRowMissingNameMessage": "Row {n}: missing name — skipped",
+  "@customerMgmtRowMissingNameMessage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtCsvReadErrorMessage": "Error reading CSV: {error}",
+  "@customerMgmtCsvReadErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtImportPreviewTitle": "Import Preview",
+  "customerMgmtNewCountChip": "{count, plural, =1{1 new} other{{count} new}}",
+  "@customerMgmtNewCountChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtDuplicatesCountChip": "{count, plural, =1{1 duplicate} other{{count} duplicates}}",
+  "@customerMgmtDuplicatesCountChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtErrorsCountChip": "{count, plural, =1{1 error} other{{count} errors}}",
+  "@customerMgmtErrorsCountChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtDuplicatesMatchedLabel": "Duplicates (matched by email or phone):",
+  "customerMgmtOverwriteAllButton": "Overwrite All",
+  "customerMgmtSkipAllButton": "Skip All",
+  "customerMgmtOverwriteLabel": "Overwrite",
+  "customerMgmtSkippedRowsLabel": "Skipped rows (errors):",
+  "customerMgmtErrorBulletLabel": "• {error}",
+  "@customerMgmtErrorBulletLabel": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtWillImportMessage": "{total, plural, =1{Will import 1 customer.} other{Will import {total} customers.}}",
+  "@customerMgmtWillImportMessage": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtImportCountButton": "Import {total}",
+  "@customerMgmtImportCountButton": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtDeleteAllTitle": "Delete All Customers",
+  "customerMgmtNoCustomersToDeleteMessage": "No customers to delete.",
+  "customerMgmtDeleteAllBody": "{count, plural, =1{This will permanently delete all 1 customer. Existing invoices are not affected. This cannot be undone.} other{This will permanently delete all {count} customers. Existing invoices are not affected. This cannot be undone.}}",
+  "@customerMgmtDeleteAllBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtDeleteAllButton": "Delete All",
+  "customerMgmtAllDeletedMessage": "All customers deleted.",
+  "customerMgmtDeleteAllErrorMessage": "Error deleting customers: {error}",
+  "@customerMgmtDeleteAllErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtSaveCsvDialogTitle": "Save Customer CSV",
+  "customerMgmtCsvExportedMessage": "CSV exported successfully!",
+  "customerMgmtCsvExportErrorMessage": "Error exporting CSV: {error}",
+  "@customerMgmtCsvExportErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtSavePdfDialogTitle": "Save Customer PDF",
+  "customerMgmtPdfExportedMessage": "PDF exported successfully!",
+  "customerMgmtPdfExportErrorMessage": "Error exporting PDF: {error}",
+  "@customerMgmtPdfExportErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtTotalCustomersLabel": "Total Customers",
+  "customerMgmtAllCustomersSubtitle": "All customers",
+  "customerMgmtBusinessesLabel": "Businesses",
+  "customerMgmtRegisteredBusinessesSubtitle": "Registered businesses",
+  "customerMgmtIndividualsLabel": "Individuals",
+  "customerMgmtIndividualCustomersSubtitle": "Individual customers",
+  "customerMgmtTaxRegisteredLabel": "{taxWord} Registered",
+  "@customerMgmtTaxRegisteredLabel": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtWithTaxNumberSubtitle": "With {taxWord} number",
+  "@customerMgmtWithTaxNumberSubtitle": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtWithoutTaxLabel": "Without {taxWord}",
+  "@customerMgmtWithoutTaxLabel": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtTitle": "Customer Management",
+  "customerMgmtSubtitle": "Manage your customers and contact details",
+  "actionImport": "Import",
+  "customerMgmtExportPdfMenuLabel": "Export PDF",
+  "customerMgmtNewCustomerButton": "New Customer",
+  "customerMgmtSortNameAZ": "Name A-Z",
+  "customerMgmtSortNameZA": "Name Z-A",
+  "customerMgmtSortIdOldest": "ID (oldest first)",
+  "customerMgmtSortIdNewest": "ID (newest first)",
+  "customerMgmtSortOutstandingHighLow": "Outstanding (high-low)",
+  "customerMgmtSortOutstandingLowHigh": "Outstanding (low-high)",
+  "customerMgmtWithOutstandingLabel": "With Outstanding",
+  "customerMgmtSearchHint": "Search customers by name, business, phone, {taxWord}, email…",
+  "@customerMgmtSearchHint": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtAllTaxStatusesLabel": "All {taxWord} statuses",
+  "@customerMgmtAllTaxStatusesLabel": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtTaxRegisteredLowerLabel": "{taxWord} registered",
+  "@customerMgmtTaxRegisteredLowerLabel": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtSortWithLabel": "Sort: {label}",
+  "@customerMgmtSortWithLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtColumnsLabel": "Columns",
+  "customerMgmtTaxVatNoColumnLabel": "{taxWord} / VAT No",
+  "@customerMgmtTaxVatNoColumnLabel": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtHideStatCardsTooltip": "Hide stat cards",
+  "customerMgmtShowStatCardsTooltip": "Show stat cards",
+  "customerMgmtTabChipLabel": "{label} ({count})",
+  "@customerMgmtTabChipLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtColSlNo": "SL. NO.",
+  "customerMgmtColNameBusiness": "NAME / BUSINESS",
+  "customerMgmtColPhone": "PHONE",
+  "customerMgmtColEmail": "EMAIL",
+  "customerMgmtColTaxVatNo": "{taxWord} / VAT NO",
+  "@customerMgmtColTaxVatNo": {
+    "placeholders": {
+      "taxWord": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtColAddress": "ADDRESS",
+  "customerMgmtColActions": "ACTIONS",
+  "customerMgmtViewStatementTooltip": "View Statement (in Reports)",
+  "customerMgmtShowingRangeLabel": "Showing {from} to {to} of {total} customers",
+  "@customerMgmtShowingRangeLabel": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtRowsPerPageLabel": "Rows per page",
+  "customerMgmtOfTotalPagesLabel": "of {totalPages}",
+  "@customerMgmtOfTotalPagesLabel": {
+    "placeholders": {
+      "totalPages": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtAddAnotherLabel": "Add another after saving",
+  "customerMgmtSaveCustomerButton": "Save Customer",
+  "customerMgmtAddFirstCustomerSubtitle": "Add your first customer to get started",
+  "customerMgmtTryAdjustingSearchSubtitle": "Try adjusting your search",
+  "customerMgmtLoadErrorMessage": "Error loading customers: {error}",
+  "@customerMgmtLoadErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtAddedMessage": "Customer added successfully!",
+  "customerMgmtSaveErrorMessage": "Error saving customer: {error}",
+  "@customerMgmtSaveErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "customerMgmtImportedMessage": "{count, plural, =1{Imported 1 customer successfully!} other{Imported {count} customers successfully!}}",
+  "@customerMgmtImportedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "customerMgmtImportErrorMessage": "Import error: {error}",
+  "@customerMgmtImportErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "taxWordGst": "GST",
+  "taxWordTax": "Tax",
+  "commonMoreLabel": "More",
+  "productMgmtSellingAtLossTitle": "Selling at a loss",
+  "productMgmtSellingAtLossMessage": "Purchase price ({purchase}) is higher than sale price ({sale}). Save anyway?",
+  "@productMgmtSellingAtLossMessage": {
+    "placeholders": {
+      "purchase": {
+        "type": "String"
+      },
+      "sale": {
+        "type": "String"
+      }
+    }
+  },
+  "actionSaveAnyway": "Save Anyway",
+  "productMgmtAdvancedInformationLabel": "Advanced Information",
+  "productMgmtStorageLocationLabel": "Storage Location",
+  "productMgmtContainerNumberLabel": "Container Number",
+  "productMgmtBatchNumberLabel": "Batch Number",
+  "productMgmtExpiryDateLabel": "Expiry Date",
+  "productMgmtManufactureDateLabel": "Manufacture Date",
+  "productMgmtManufactureNameLabel": "Manufacturer Name",
+  "productMgmtSupplierNameLabel": "Supplier Name",
+  "productMgmtSkuCodeLabel": "SKU Code",
+  "productMgmtNotesLabel": "Notes",
+  "fieldEnterValidPriceMessage": "Enter valid price",
+  "fieldEnterValidStockMessage": "Enter valid stock",
+  "fieldTaxRangeMessage": "Tax must be between 0-100",
+  "productMgmtImportProductsCsvTitle": "Import Products from CSV",
+  "productMgmtCsvDescName": "Product name",
+  "productMgmtCsvDescPrice": "Unit price (numeric)",
+  "productMgmtCsvDescHsnCode": "HSN / SAC code",
+  "productMgmtCsvDescDescription": "Short description",
+  "productMgmtCsvDescTaxRate": "Tax % (0–100), default 0",
+  "productMgmtCsvDescStock": "Stock quantity, default 0",
+  "productMgmtCsvDescType": "\"product\" or \"service\", default product",
+  "productMgmtCsvDescDefaultDiscount": "Flat discount amount (currency), default 0",
+  "productMgmtCsvDescPurchasePrice": "Cost price (numeric), default 0",
+  "productMgmtCsvDescAliasName": "Local-language display name for PDFs",
+  "productMgmtCsvDescUnit": "Unit of measure (e.g. kg, bag, pcs), default pcs",
+  "productMgmtCsvDescUnlimitedStock": "1/true for unlimited stock, default 0",
+  "productMgmtCsvDescPriceIncludesTax": "1/true if price already includes tax, default 0",
+  "productMgmtCsvDescStorageLocation": "Warehouse/shelf location",
+  "productMgmtCsvDescContainerNumber": "Container/box number",
+  "productMgmtCsvDescBatchNumber": "Batch/lot number",
+  "productMgmtCsvDescExpiryDate": "Expiry date",
+  "productMgmtCsvDescManufactureDate": "Manufacture date",
+  "productMgmtCsvDescManufactureName": "Manufacturer name",
+  "productMgmtCsvDescSupplierName": "Supplier name",
+  "productMgmtCsvDescSkuCode": "SKU code",
+  "productMgmtCsvDescNotes": "Free-text notes",
+  "productMgmtCsvDuplicateNote": "Duplicates are detected by product name (case-insensitive). You will be asked to overwrite or skip each one.",
+  "productMgmtCsvMissingRequiredNote": "Rows missing name or price are skipped and reported.",
+  "productMgmtSelectCsvDialogTitle": "Select Product CSV",
+  "productMgmtCsvMissingPriceColumnMessage": "CSV missing required column: \"price\"",
+  "productMgmtRowInvalidPriceMessage": "Row {n}: invalid price \"{price}\" — skipped",
+  "@productMgmtRowInvalidPriceMessage": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtImportingTitle": "Importing Products",
+  "productMgmtDuplicatesMatchedByNameLabel": "Duplicates (matched by name):",
+  "productMgmtWillImportMessage": "{total, plural, =1{Will import 1 product.} other{Will import {total} products.}}",
+  "@productMgmtWillImportMessage": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "productMgmtNoProductsToDeleteMessage": "No products to delete.",
+  "productMgmtDeleteAllTitle": "Delete All Products",
+  "productMgmtDeleteAllBody": "{count, plural, =1{This will permanently delete all 1 product. Existing invoices are not affected. This cannot be undone.} other{This will permanently delete all {count} products. Existing invoices are not affected. This cannot be undone.}}",
+  "@productMgmtDeleteAllBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "productMgmtAllDeletedMessage": "All products deleted.",
+  "productMgmtDeleteAllErrorMessage": "Error deleting products: {error}",
+  "@productMgmtDeleteAllErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtSaveProductsCsvDialogTitle": "Save Products CSV",
+  "productMgmtExportToPdfTitle": "Export to PDF",
+  "productMgmtExportPdfChoiceMessage": "Export the current page ({pageSize} products) or all {allCount} products?",
+  "@productMgmtExportPdfChoiceMessage": {
+    "placeholders": {
+      "pageSize": {
+        "type": "int"
+      },
+      "allCount": {
+        "type": "int"
+      }
+    }
+  },
+  "productMgmtCurrentPageLabel": "Current Page",
+  "productMgmtAllProductsLabel": "All Products",
+  "productMgmtSaveProductsPdfDialogTitle": "Save Products PDF",
+  "productMgmtTitle": "Product Management",
+  "productMgmtSubtitle": "Manage your products and services",
+  "productMgmtNewProductButton": "New Product",
+  "productMgmtSearchHint": "Search products by name, alias, HSN/SAC, SKU…",
+  "productMgmtFilterByStockStatusTooltip": "Filter by stock status",
+  "productMgmtAllStockLevelsLabel": "All stock levels",
+  "productMgmtLowStockLabel": "Low stock",
+  "productMgmtLowStockTabLabel": "Low Stock",
+  "productMgmtOutOfStockLabel": "Out of stock",
+  "productMgmtOutOfStockTabLabel": "Out of Stock",
+  "productMgmtExpiredLabel": "Expired",
+  "productMgmtSortPriceLowHigh": "Price Low-High",
+  "productMgmtSortPriceHighLow": "Price High-Low",
+  "productMgmtSortStockLowHigh": "Stock Low-High",
+  "productMgmtSortStockHighLow": "Stock High-Low",
+  "productMgmtServicesTabLabel": "Services",
+  "productMgmtColSlNo": "SL. NO.",
+  "productMgmtColNameAlias": "NAME / ALIAS",
+  "productMgmtColHsnSac": "HSN / SAC",
+  "productMgmtColPrice": "PRICE",
+  "productMgmtColPurchase": "PURCHASE",
+  "productMgmtColStock": "STOCK",
+  "productMgmtColTaxPercent": "TAX %",
+  "productMgmtColExpiryDate": "EXPIRY DATE",
+  "productMgmtCustomizeColumnsLabel": "Customize Product Columns",
+  "productMgmtShowColumnsLabel": "Show Columns",
+  "productMgmtShowColumnsMaxHint": "Show up to {max} columns",
+  "@productMgmtShowColumnsMaxHint": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "productMgmtShowingRangeLabel": "Showing {from} to {to} of {total} products",
+  "@productMgmtShowingRangeLabel": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "productMgmtAddFirstProductSubtitle": "Add your first product to get started",
+  "productMgmtColumnsBannerTitle": "New: Customize product fields",
+  "productMgmtColumnsBannerSubtitle": "Choose which fields show for a simpler catalog. Settings > Customize Product Details.",
+  "productMgmtConfigureAction": "Configure",
+  "productMgmtAddNewItemTitle": "Add New {type}",
+  "@productMgmtAddNewItemTitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtEnterProductDetailsSubtitle": "Enter product details",
+  "productMgmtSaveProductButton": "Save Product",
+  "productMgmtAliasNameLabel": "Alias Name (for invoice PDF)",
+  "productMgmtAliasHelperText": "Optional local-language display name used only on PDF invoices.",
+  "productMgmtDescriptionLabel": "Description",
+  "productMgmtHsnSacLabel": "HSN/SAC",
+  "productMgmtSalePriceLabel": "Sale Price",
+  "productMgmtPurchasePriceLabel": "Purchase Price",
+  "productMgmtDefaultDiscountLabel": "Default Discount",
+  "productMgmtTaxPercentLabel": "Tax (%)",
+  "productMgmtPerItemTaxModeOnlyLabel": "Per-item tax mode only",
+  "productMgmtSectionGeneral": "General",
+  "productMgmtSectionPricing": "Pricing",
+  "productMgmtSectionInventory": "Inventory",
+  "productMgmtUnlimitedStockLabel": "Unlimited stock",
+  "productMgmtTrackInfiniteStockSubtitle": "Track infinite stock for this product",
+  "productMgmtTipEnableCustomFieldsMessage": "Tip: Enable custom fields from Columns to add more details.",
+  "productMgmtEditProductTitle": "Edit Product",
+  "productMgmtViewProductTitle": "View Product",
+  "productMgmtUpdateProductDetailsSubtitle": "Update product details",
+  "productMgmtProductDetailsSubtitle": "Product details",
+  "productMgmtUpdatedMessage": "Product/Service updated successfully!",
+  "productMgmtDeleteProductButton": "Delete Product",
+  "productMgmtSaveChangesButton": "Save Changes",
+  "fieldUnitLabel": "Unit",
+  "productMgmtAddedMessage": "Product added successfully!",
+  "productMgmtAddErrorMessage": "Error adding product: {error}",
+  "@productMgmtAddErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtLoadErrorMessage": "Error loading products: {error}",
+  "@productMgmtLoadErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "productMgmtDeletedMessage": "Product deleted successfully!",
+  "productMgmtImportedMessage": "{count, plural, =1{Imported 1 product successfully!} other{Imported {count} products successfully!}}",
+  "@productMgmtImportedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "productMgmtTotalItemsSubtitle": "Total items",
+  "productMgmtTangibleProductsSubtitle": "Tangible products",
+  "productMgmtNonTangibleServicesSubtitle": "Non-tangible services",
+  "productMgmtNeedAttentionSubtitle": "Need attention",
+  "productMgmtProductNameLabel": "Product Name",
+  "productMgmtPriceLabel": "Price",
+  "actionClear": "Clear",
+  "reportsAboutConversionRateTitle": "About Conversion Rate",
+  "reportsAgedReceivablesTitle": "Aged Receivables ({count})",
+  "@reportsAgedReceivablesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsAllCurrenciesLabel": "All currencies",
+  "reportsArAgingSummaryTitle": "A/R Aging Summary",
+  "reportsAvgInvoiceValueLabel": "Avg Invoice Value",
+  "reportsBalanceColumnLabel": "Balance",
+  "reportsBilledLabel": "Billed",
+  "reportsBucket0to30Label": "0–30 days",
+  "reportsBucket31to60Label": "31–60 days",
+  "reportsBucket61to90Label": "61–90 days",
+  "reportsBucket90PlusLabel": "90+ days",
+  "reportsBucketLabel": "Bucket",
+  "reportsClosingLabel": "Closing",
+  "reportsCogsColumnLabel": "COGS",
+  "reportsConversionRateExplanationBody": "Conversion rate = Invoices created ÷ Quotations issued × 100.\nA rate above 100% means more invoices were raised than quotations in the selected period (common when invoices are created directly without a prior quotation).\n\nNote: this is a period-level ratio, not individual quote-to-invoice tracking.",
+  "reportsConversionRateLabel": "Conversion Rate",
+  "reportsCreditColumnLabel": "Credit",
+  "reportsCurrencySectionLabel": "CURRENCY",
+  "reportsCurrentBucketLabel": "Current",
+  "reportsCurrentSelectedCurrencyLabel": "Current selected currency ({currency})",
+  "@reportsCurrentSelectedCurrencyLabel": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsCustomRangeLabel": "Custom Range",
+  "reportsDailySalesProfitTitle": "Daily Sales & Profit",
+  "reportsDaysCountLabel": "{d} days",
+  "@reportsDaysCountLabel": {
+    "placeholders": {
+      "d": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsDaysOverdueLabel": "Days Overdue",
+  "reportsDebitColumnLabel": "Debit",
+  "reportsDiscountGivenColumnLabel": "Discount Given",
+  "reportsExportCsvLabel": "Export CSV",
+  "reportsFilteredToDateLabel": "Filtered to {date}",
+  "@reportsFilteredToDateLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsInvoiceCountInPeriodLabel": "{count, plural, =1{1 invoice in period · {scope}} other{{count} invoices in period · {scope}}}",
+  "@reportsInvoiceCountInPeriodLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "scope": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsInvoiceIdLabel": "Invoice ID",
+  "reportsInvoicedLabel": "Invoiced",
+  "reportsInvoicesColumnLabel": "Invoices",
+  "reportsInvoicesInPeriodLabel": "Invoices in Period",
+  "reportsLabelWithCountLabel": "{label} ({count})",
+  "@reportsLabelWithCountLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsMarginColumnLabel": "Margin",
+  "reportsMaxRangeOneYearMessage": "Maximum range is 1 year. End date clamped.",
+  "reportsMaxRangeThirtyOneDaysMessage": "Maximum range is 31 days. End date clamped.",
+  "reportsMissingCostBannerMessage": "{count, plural, =1{1 item sold in this period has no purchase price set — profit/margin is understated for that item until a purchase price is added to the product.} other{{count} items sold in this period have no purchase price set — profit/margin is understated for those items until a purchase price is added to the product.}}",
+  "@reportsMissingCostBannerMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsMonthYearLabel": "Month & Year",
+  "reportsMonthlyRevenueTrendTitle": "Monthly Revenue Trend",
+  "reportsMonthlyBreakdownTitle": "Monthly Breakdown",
+  "reportsMonthColumnLabel": "Month",
+  "reportsTotalRowLabel": "Total",
+  "reportsNavDailyReportLabel": "Daily Report",
+  "reportsNavInventoryLabel": "Inventory",
+  "reportsNavInvoiceStatusLabel": "Invoice Status",
+  "reportsNavReceivablesLabel": "Receivables",
+  "reportsNavRevenueLabel": "Revenue",
+  "reportsNavTaxLabel": "Tax",
+  "reportsInventoryBlockedValueLabel": "Inventory Value Blocked",
+  "reportsInventoryPotentialSaleValueLabel": "Potential Sale Value",
+  "reportsInventoryLockedProfitLabel": "Profit Locked in Stock",
+  "reportsInventoryTotalUnitsLabel": "Total Units",
+  "reportsInventoryProductCountLabel": "Products Tracked",
+  "reportsInventoryBreakdownTitle": "Product Breakdown",
+  "reportsNoInventoryDataMessage": "No inventory data",
+  "reportsInventoryProductColumnLabel": "Product",
+  "reportsInventoryStockColumnLabel": "Stock",
+  "reportsInventoryPurchasePriceColumnLabel": "Purchase Price",
+  "reportsInventoryStockValueColumnLabel": "Stock Value",
+  "reportsInventorySaleValueColumnLabel": "Sale Value",
+  "reportsInventoryExcludedBannerMessage": "{count, plural, =1{1 item is excluded from inventory value — it's a service or has unlimited stock tracking on.} other{{count} items are excluded from inventory value — they're services or have unlimited stock tracking on.}}",
+  "@reportsInventoryExcludedBannerMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsNoCustomerDataMessage": "No customer data in this period",
+  "reportsNoCustomersMatchSearchMessage": "No customers match this search",
+  "reportsNoCustomersWithInvoicesMessage": "No customers with invoices",
+  "reportsNoDueDateLabel": "No Due Date",
+  "reportsNoInvoiceDataMessage": "No invoice data in this period",
+  "reportsNoInvoicesInPeriodMessage": "No invoices in this period",
+  "reportsNoInvoicesMatchFilterMessage": "No invoices match this filter",
+  "reportsNoOutstandingInvoicesMessage": "No outstanding invoices",
+  "reportsNoProductDataMessage": "No product data in this period",
+  "reportsNoSalesInPeriodMessage": "No sales in this period",
+  "reportsNoStatementActivityMessage": "No statement activity for this customer",
+  "reportsNoTaxableItemsMessage": "No taxable items in this period",
+  "reportsNoTransactionsMessage": "No transactions in this period",
+  "reportsOpeningLabel": "Opening",
+  "reportsOverviewLabel": "Overview",
+  "reportsPaymentStatusBreakdownTitle": "Payment Status Breakdown",
+  "reportsPeriodSectionLabel": "PERIOD",
+  "reportsPresetLast30DaysLabel": "Last 30 days",
+  "reportsPresetLast3MonthsLabel": "Last 3 months",
+  "reportsPresetLast6MonthsLabel": "Last 6 months",
+  "reportsPresetLastFYLabel": "Last FY",
+  "reportsPresetThisFYLabel": "This FY",
+  "reportsPresetThisYearLabel": "This year",
+  "reportsProductServiceColumnLabel": "Product / Service",
+  "reportsProfitLabel": "Profit",
+  "reportsQuotationsIssuedLabel": "Quotations Issued",
+  "reportsRankByProfitLabel": "Rank: Profit",
+  "reportsRankByRevenueLabel": "Rank: Revenue",
+  "reportsReferenceColumnLabel": "Reference",
+  "reportsSalesColumnLabel": "Sales",
+  "reportsSaveCsvReportTitle": "Save CSV Report",
+  "reportsSavePdfReportTitle": "Save PDF Report",
+  "reportsSavedAtMessage": "Saved: {path}",
+  "@reportsSavedAtMessage": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsSelectCustomerTitle": "Select customer",
+  "reportsSelectDailyRangeMaxDaysHelpText": "Select date or date range (max 31 days)",
+  "reportsSelectDateRangeMaxYearHelpText": "Select date range (max 1 year)",
+  "reportsShareLabel": "Share",
+  "reportsShowingInvoicesDatedLabel": "Showing invoices dated {range}",
+  "@reportsShowingInvoicesDatedLabel": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsShowingRangeLabel": "{start} – {end} of {total}",
+  "@reportsShowingRangeLabel": {
+    "placeholders": {
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsSlColumnLabel": "SL",
+  "reportsStatementsLabel": "Statements",
+  "reportsTaxCollectedByRateTitle": "Tax by Rate",
+  "reportsTaxCollectedLabel": "Tax",
+  "reportsTaxableAmountLabel": "Taxable Amount",
+  "reportsGrossAmountLabel": "Gross",
+  "reportsTaxAccrualNote": "Tax charged on invoices dated in this period — accrual basis, before payment.",
+  "reportsTaxRateBucketsLabel": "Tax Rate Buckets",
+  "reportsTodayLabel": "Today",
+  "reportsTopCustomersByRevenueTitle": "Top {count} Customers by Revenue",
+  "@reportsTopCustomersByRevenueTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsTopProductsByMetricTitle": "Top {count} Products / Services by {metric}",
+  "@reportsTopProductsByMetricTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsTotalBilledLabel": "Total Billed",
+  "reportsTotalCollectedLabel": "Total Collected",
+  "reportsTotalInvoicesCountLabel": "{count, plural, =1{1 total invoice} other{{count} total invoices}}",
+  "@reportsTotalInvoicesCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "reportsTotalInvoicesLabel": "Total Invoices",
+  "reportsRealizedProfitLabel": "Realized Profit",
+  "reportsTotalProfitLabel": "Total Profit",
+  "reportsTotalTaxCollectedLabel": "Total Tax Charged",
+  "reportsTypeColumnLabel": "Type",
+  "reportsUnitsSoldColumnLabel": "Units Sold",
+  "userMgmtLoadErrorMessage": "Error loading users: {error}",
+  "@userMgmtLoadErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "userMgmtAddedMessage": "User added successfully",
+  "userMgmtUpdatedMessage": "User updated successfully",
+  "userMgmtSaveErrorMessage": "Error saving user: {error}",
+  "@userMgmtSaveErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "userMgmtChangePasswordTitle": "Change Password",
+  "userMgmtUserColonLabel": "User: {username}",
+  "@userMgmtUserColonLabel": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "userMgmtCurrentPasswordLabel": "Current Password",
+  "userMgmtCurrentPasswordRequiredMessage": "Current password is required",
+  "userMgmtNewPasswordLabel": "New Password",
+  "userMgmtNewPasswordRequiredMessage": "New password is required",
+  "userMgmtPasswordMinLengthMessage": "Password must be at least 6 characters",
+  "userMgmtConfirmNewPasswordLabel": "Confirm New Password",
+  "userMgmtConfirmPasswordRequiredMessage": "Please confirm your password",
+  "userMgmtPasswordsDoNotMatchMessage": "Passwords do not match",
+  "userMgmtPasswordChangedMessage": "Password changed successfully",
+  "userMgmtCurrentPasswordIncorrectMessage": "Current password is incorrect",
+  "userMgmtDeleteUserTitle": "Delete User",
+  "userMgmtDeleteUserConfirmLabel": "Are you sure you want to delete user:",
+  "userMgmtActionCannotBeUndoneMessage": "This action cannot be undone.",
+  "userMgmtDeletedMessage": "User deleted successfully",
+  "userMgmtCantDeleteOwnAccountMessage": "You can't delete your own account",
+  "userMgmtCantDemoteLastAdminMessage": "You can't change the role of the only admin",
+  "userMgmtCantChangeOwnRoleMessage": "You can't change your own role",
+  "userMgmtUsernameTakenMessage": "That username is already taken",
+  "userMgmtDeleteSelectedTitle": "Delete selected users?",
+  "userMgmtBulkDeleteBody": "{count, plural, =1{This will permanently delete 1 user. This action cannot be undone.} other{This will permanently delete {count} users. This action cannot be undone.}}",
+  "@userMgmtBulkDeleteBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userMgmtOwnAccountSkippedMessage": "Your own account was in the selection but will be skipped.",
+  "userMgmtBulkDeletedMessage": "{count, plural, =1{1 user deleted} other{{count} users deleted}}",
+  "@userMgmtBulkDeletedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "userMgmtBulkDeleteErrorMessage": "Error deleting users: {error}",
+  "@userMgmtBulkDeleteErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "userMgmtTitle": "User Management",
+  "userMgmtSubtitle": "Manage application users and access permissions",
+  "userMgmtAddUserButton": "Add User",
+  "userMgmtSearchHint": "Search users by name or role…",
+  "userMgmtFilterByRoleTooltip": "Filter by role",
+  "userMgmtAllRolesLabel": "All roles",
+  "userMgmtAllLabel": "All",
+  "userMgmtRoleColonLabel": "Role: {role}",
+  "@userMgmtRoleColonLabel": {
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "userMgmtColUser": "USER",
+  "userMgmtColRole": "ROLE",
+  "userMgmtYouBadgeLabel": "You",
+  "userMgmtDeleteSelectedMenuLabel": "Delete selected",
+  "userMgmtBulkActionsTooltip": "Bulk actions",
+  "userMgmtBulkActionsLabel": "Bulk Actions",
+  "userMgmtShowingRangeLabel": "Showing {from} to {to} of {total} users",
+  "@userMgmtShowingRangeLabel": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "userMgmtNoUsersFoundMessage": "No users found",
+  "userMgmtAddNewUserTitle": "Add New User",
+  "userMgmtEditUserTitle": "Edit User",
+  "userMgmtUsernameRequiredLabel": "Username *",
+  "userMgmtEnterUsernameHint": "Enter username",
+  "userMgmtUsernameRequiredMessage": "Username is required",
+  "userMgmtUsernameMinLengthMessage": "Username must be at least 3 characters",
+  "userMgmtPasswordRequiredLabel": "Password *",
+  "userMgmtEnterPasswordHint": "Enter password",
+  "userMgmtPasswordRequiredMessage": "Password is required",
+  "userMgmtMinimum6CharsMessage": "Minimum 6 characters",
+  "userMgmtRoleRequiredLabel": "Role *",
+  "userMgmtRoleRequiredMessage": "Role is required",
+  "userMgmtSaveUserButton": "Save User",
+  "userMgmtThisIsYourAccountMessage": "This is your account",
+  "invoiceSettingsAppBarTitle": "Invoice Settings",
+  "invoiceSettingsSavedMessage": "Invoice settings saved successfully!",
+  "invoiceSettingsSignatureTooLargeMessage": "Signature image must be less than 2 MB.",
+  "invoiceSettingsWatermarkTooLargeMessage": "Watermark image must be less than 2 MB.",
+  "invoiceSettingsSectionGeneral": "General",
+  "invoiceSettingsSectionBranding": "Branding",
+  "invoiceSettingsSectionTax": "Tax & GST",
+  "invoiceSettingsSectionItems": "Invoice Items",
+  "invoiceSettingsSectionCustomer": "Customer Details",
+  "invoiceSettingsSectionColumns": "Invoice Columns",
+  "invoiceSettingsColumnsSectionHint": "Choose which columns appear in the invoice PDF items table. Item Name, Price and Total are always shown.",
+  "invoiceSettingsShowSlNoLabel": "Sl No column",
+  "invoiceSettingsShowSlNoSubtitle": "Print the serial-number column on A4/Letter invoices",
+  "invoiceSettingsColumnHsnLabel": "HSN/SAC column",
+  "invoiceSettingsColumnHsnSubtitle": "Print the HSN/SAC code column (tied to Show GST Fields)",
+  "invoiceSettingsColumnTaxLabel": "Show tax column",
+  "invoiceSettingsColumnTaxSubtitle": "Show the tax % and amount for each item, for global and per-item tax",
+  "invoiceSettingsSplitCgstSgstLabel": "Split CGST / SGST",
+  "invoiceSettingsSplitCgstSgstSubtitle": "Split the tax into CGST/SGST, or IGST for interstate (India GST)",
+  "invoiceSettingsColumnRequiredSubtitle": "Always shown",
+  "invoiceSettingsColumnItemNameLabel": "Item Name column",
+  "invoiceSettingsColumnPriceLabel": "Price / Rate column",
+  "invoiceSettingsColumnTotalLabel": "Total column",
+  "invoiceSettingsCustomerSectionHint": "Choose which customer details print on invoice PDFs and thermal receipts. A field only shows when it's enabled and the customer has a value for it. Customer name is always shown.",
+  "invoiceSettingsShowCustomerBusinessNameLabel": "Show Business Name",
+  "invoiceSettingsShowCustomerBusinessNameSubtitle": "Print the customer's business name under their name",
+  "invoiceSettingsShowCustomerAddressLabel": "Show Address",
+  "invoiceSettingsShowCustomerAddressSubtitle": "Print the customer's address in the Bill To block",
+  "invoiceSettingsShowCustomerPhoneLabel": "Show Phone",
+  "invoiceSettingsShowCustomerPhoneSubtitle": "Print the customer's phone number",
+  "invoiceSettingsShowCustomerEmailLabel": "Show Email",
+  "invoiceSettingsShowCustomerEmailSubtitle": "Print the customer's email address (not shown on thermal receipts)",
+  "invoiceSettingsShowCustomerGstinLabel": "Show GSTIN / Tax ID",
+  "invoiceSettingsShowCustomerGstinSubtitle": "Print the customer's GSTIN / tax id (requires GST fields on)",
+  "invoiceSettingsShowTimeInPdfLabel": "Show Time on PDF",
+  "invoiceSettingsShowTimeInPdfSubtitle": "Append the invoice creation time next to the date on PDFs and thermal receipts",
+  "invoiceSettingsTimeFormatLabel": "Time Format",
+  "invoiceSettingsTimeFormat24": "24-hour (14:30)",
+  "invoiceSettingsTimeFormat12": "12-hour (2:30 PM)",
+  "invoiceSettingsPrefixLabel": "Invoice Prefix",
+  "invoiceSettingsStartingNumberHelper": "First invoice will start from this number",
+  "invoiceSettingsStartingNumberLockedMessage": "Invoice starting number cannot be changed while invoices exist. Please permanently delete all invoices/quotations (including trash) and try again.",
+  "invoiceSettingsQuantityColumnLabel": "Quantity Column Label",
+  "invoiceSettingsQuantityColumnHint": "e.g. Words, Hours, Units",
+  "invoiceSettingsQuantityColumnHelper": "Leave blank to use default \"Qty\"",
+  "invoiceSettingsAdditionalInfoLabel": "Additional Information",
+  "invoiceSettingsThankYouNoteLabel": "Thank You Note",
+  "invoiceSettingsHideInvoiceNumberLabel": "Hide Invoice Number by Default",
+  "invoiceSettingsHideInvoiceNumberSubtitle": "Enable \"Hide invoice number in PDF\" by default when creating new invoices.",
+  "invoiceSettingsTaxRateHint": "e.g. 18",
+  "invoiceSettingsTaxRateHelper": "Applied to new invoices",
+  "invoiceSettingsTaxEnabledLabel": "Tax Enabled by Default",
+  "invoiceSettingsTaxEnabledSubtitle": "Enable the Tax toggle by default when creating new invoices.",
+  "invoiceSettingsTaxModeLabel": "Default Tax Rate Mode",
+  "invoiceSettingsAppliesNewInvoicesOnly": "Applies to new invoices only",
+  "invoiceSettingsTaxModeGlobal": "Global",
+  "invoiceSettingsTaxModePerItem": "Per Item",
+  "invoiceSettingsShowGstFieldsLabel": "Show GST Fields",
+  "invoiceSettingsShowGstFieldsSubtitle": "Display GSTIN fields (HSN/SAC) on invoices, PDFs, and CSV exports",
+  "invoiceSettingsShowCgstSgstLabel": "Show CGST/SGST/IGST",
+  "invoiceSettingsShowCgstSgstSubtitle": "Split tax into CGST + SGST, or IGST for interstate invoices (India only).",
+  "invoiceSettingsDefaultGstTitleLabel": "Default GST Invoice Title",
+  "invoiceSettingsDefaultTaxTitleLabel": "Default TAX Invoice Title",
+  "invoiceSettingsGstTitleHelperGst": "Preselected on new invoices — e.g. \"Bill of Supply\" for GST Composition Scheme dealers",
+  "invoiceSettingsGstTitleHelperGeneric": "Preselected on new invoices",
+  "invoiceSettingsShowRoundOffLabel": "Show Round Off",
+  "invoiceSettingsShowRoundOffSubtitle": "Show a Round Off row + Net Amount (rounded to nearest) and amount in words on invoice PDFs.",
+  "invoiceSettingsShowAliasNameLabel": "Show Alias Name in PDF",
+  "invoiceSettingsShowAliasNameSubtitle": "Print a product's local-language alias (if set) instead of its actual name on PDFs",
+  "invoiceSettingsShowDescriptionLabel": "Show Product Description",
+  "invoiceSettingsShowDescriptionSubtitle": "Print each item's description as a row under it on A4 PDFs (not on thermal receipts)",
+  "invoiceSettingsDescriptionNewLineLabel": "Description on a New Line",
+  "invoiceSettingsDescriptionNewLineSubtitle": "Print the description as a full-width row below the item instead of a line under its name",
+  "invoiceSettingsAllowFractionalQtyLabel": "Allow Fractional Quantities",
+  "invoiceSettingsAllowFractionalQtySubtitle": "Enable decimal quantities (e.g. 1.5 hrs, 0.5 kg)",
+  "invoiceSettingsShowQuantityLabel": "Show Quantity Field",
+  "invoiceSettingsShowQuantitySubtitle": "Hide quantity for service-based billing; price column becomes \"Rate\"",
+  "invoiceSettingsShowDiscountLabel": "Show Discount Column",
+  "invoiceSettingsShowDiscountSubtitle": "Hide discount column for clients who don't use item-level discounts",
+  "invoiceSettingsShowTypeTagLabel": "Show Product/Service Tag",
+  "invoiceSettingsShowTypeTagSubtitle": "Show or hide the Product/Service label on each invoice item",
+  "invoiceSettingsAllowDuplicateItemsLabel": "Allow Duplicate Invoice Items",
+  "invoiceSettingsAllowDuplicateItemsSubtitle": "Allow adding the same product more than once to an invoice",
+  "invoiceSettingsShowPrevBalanceLabel": "Show Previous Balance Due",
+  "invoiceSettingsShowPrevBalanceSubtitle": "Show calculated prior outstanding balance on invoice PDFs",
+  "invoiceSettingsLogoPositionLabel": "Company Logo Position",
+  "invoiceSettingsLogoSizeLabel": "Company Logo Size",
+  "commonLeftLabel": "Left",
+  "commonRightLabel": "Right",
+  "invoiceSettingsSignatureImageLabel": "Signature Image",
+  "invoiceSettingsSignatureImageSubtitle": "Printed on invoices as Authorised Signature",
+  "invoiceSettingsImageFormatHint": "PNG, JPG or JPEG — max 2 MB",
+  "invoiceSettingsChangeSignatureButton": "Change Signature",
+  "invoiceSettingsUploadSignatureButton": "Upload Signature",
+  "invoiceSettingsSignatureSizeLabel": "Signature Size",
+  "invoiceSettingsSignaturePositionLabel": "Signature Position",
+  "invoiceSettingsWatermarkImageLabel": "Watermark Image",
+  "invoiceSettingsWatermarkImageSubtitle": "Shown on invoice PDFs (not printed on thermal receipts)",
+  "invoiceSettingsChangeWatermarkButton": "Change Watermark",
+  "invoiceSettingsUploadWatermarkButton": "Upload Watermark",
+  "invoiceSettingsWatermarkPlacementLabel": "Watermark placement",
+  "invoiceSettingsWatermarkPlacementItemsTable": "Items table",
+  "invoiceSettingsWatermarkPlacementFullPage": "Full page",
+  "invoiceSettingsOpacityLabel": "Opacity: {value}%",
+  "@invoiceSettingsOpacityLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceSettingsPercentValueLabel": "{value}%",
+  "@invoiceSettingsPercentValueLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "invoiceSettingsPromoTitle": "Need more fields on your invoices?",
+  "invoiceSettingsPromoBody": "Add PO number, project code, department, or any custom field.",
+  "invoiceSettingsPromoButton": "See Options",
+  "pdfSettingsTitle": "PDF Settings",
+  "pdfSettingsSubtitle": "Customize invoice, quotation and receipt PDF templates",
+  "pdfSettingsResetToDefaultButton": "Reset to Default",
+  "pdfSettingsSaveSettingsButton": "Save Settings",
+  "pdfSettingsTemplatesLabel": "Templates",
+  "pdfSettingsNoTemplatesForPageSizeMessage": "No templates for {pageSize}",
+  "@pdfSettingsNoTemplatesForPageSizeMessage": {
+    "placeholders": {
+      "pageSize": {
+        "type": "String"
+      }
+    }
+  },
+  "pdfSettingsSavedSnackbar": "PDF settings saved",
+  "commonActiveLabel": "Active",
+  "commonUnavailableLabel": "Unavailable",
+  "pdfSettingsDisplayOptionsLabel": "Display Options",
+  "pdfSettingsShowTotalQtyRowLabel": "Show total quantity row",
+  "pdfSettingsOrientationLabel": "Orientation",
+  "pdfSettingsOrientationPortrait": "Portrait",
+  "pdfSettingsOrientationLandscape": "Landscape",
+  "pdfSettingsMetadataColumnsLabel": "Product metadata columns",
+  "pdfSettingsMetadataColumnsHint": "Print product metadata as extra columns in the items table.",
+  "pdfSettingsMetadataColumnsWarning": "Metadata columns print on any A4 template (not A5/A6 or thermal receipts). Each one narrows the others — if the table looks cramped, turn a few off, or switch Grid Classic to Landscape above. Values are captured when an item is added; editing the product later won't change past invoices.",
+  "pdfSettingsItemLayoutLabel": "Item layout",
+  "pdfSettingsItemLayoutTableLabel": "Table",
+  "pdfSettingsItemLayoutDetailedLabel": "Detailed",
+  "pdfSettingsItemLayoutHelpText": "Table: one line per item (Sl/Name/Qty/Rate/Total). Detailed: name on its own line, then Qty/Rate/Total below it.",
+  "pdfSettingsCompanyNameSizeLabel": "Company name size",
+  "pdfSettingsFontSizeLabel": "PDF text size",
+  "pdfSettingsSectionSizesLabel": "Section sizes",
+  "pdfSettingsDocTitleSizeLabel": "Document title size",
+  "pdfSettingsTableHeaderSizeLabel": "Table header size",
+  "pdfSettingsTableItemsSizeLabel": "Table items size",
+  "pdfSettingsTotalsSizeLabel": "Totals size",
+  "pdfFontSizeSameAsOverallLabel": "Same as overall",
+  "pdfSettingsThemeColorLabel": "Theme Color",
+  "pdfSettingsHexErrorText": "Use #RRGGBB",
+  "pdfSettingsPickColorTooltip": "Open color picker",
+  "pdfSettingsPickThemeColorDialogTitle": "Pick theme color",
+  "pdfSettingsPreviewDisclaimer": "Preview may slightly differ in the final PDF.",
+  "pdfSettingsCustomTemplatePromoTitle": "Want a custom template?",
+  "pdfSettingsCustomTemplatePromoBody": "Get a design that matches your brand — colors, fonts, and layout.",
+  "pdfSettingsCustomizationOptionsButton": "Customization Options",
+  "pdfTemplateClassicName": "Classic",
+  "pdfTemplateClassicDescription": "Traditional layout with clean structure",
+  "pdfTemplateModernName": "Modern",
+  "pdfTemplateModernDescription": "Bold header with contemporary styling",
+  "pdfTemplateMinimalName": "Minimal",
+  "pdfTemplateMinimalDescription": "Simple and distraction-free",
+  "pdfTemplateExecutiveName": "Executive",
+  "pdfTemplateExecutiveDescription": "Premium business layout with structured billing blocks",
+  "pdfTemplateCompactName": "Compact",
+  "pdfTemplateCompactDescription": "Space-efficient receipt layout, ideal for A6 printing",
+  "pdfTemplateThermalName": "Thermal",
+  "pdfTemplateThermalDescription": "Narrow receipt layout for 80mm and 58mm thermal printers",
+  "pdfTemplateGridClassicName": "Grid Classic",
+  "pdfTemplateGridClassicDescription": "Old-style bordered tabular bill, for A4, A5 and A6",
+  "companyInfoAppBarTitle": "Company Information",
+  "companyInfoUploadLogoLabel": "Upload Logo",
+  "companyInfoClickToBrowseLabel": "Click to browse",
+  "companyInfoRemoveLogoButton": "Remove Logo",
+  "companyInfoShowOnPdfLabel": "Show on PDF",
+  "companyInfoLogoRequirementsHint": "Max 1080×1080 px · 2 MB\nPNG or JPG only",
+  "companyInfoLogoSectionLabel": "COMPANY LOGO",
+  "companyInfoDetailsSectionLabel": "COMPANY DETAILS",
+  "companyInfoBusinessTypeSectionLabel": "BUSINESS TYPE",
+  "companyInfoPaymentSettingsSectionLabel": "PAYMENT SETTINGS",
+  "companyInfoUpiAccountsSectionLabel": "UPI ACCOUNTS",
+  "companyInfoBankAccountsSectionLabel": "BANK ACCOUNTS",
+  "fieldGstinLabel": "GSTIN",
+  "fieldTaxVatNoLabel": "Tax/VAT No",
+  "fieldPanLabel": "PAN",
+  "fieldTinLabel": "TIN",
+  "fieldVatRegNoLabel": "VAT Registration Number",
+  "companyInfoFssaiCodeLabel": "FSSAI Code",
+  "companyInfoPhoneHelperText": "Multiple numbers: separate with comma",
+  "fieldWebsiteLabel": "Website",
+  "companyInfoBusinessTypeTitle": "Business Type",
+  "companyInfoBusinessTypeSubtitle": "Controls item type options in the product list and invoices",
+  "labelBoth": "Both",
+  "companyInfoSetAsDefaultTooltip": "Set as Default",
+  "companyInfoUpiIdLabel": "UPI ID",
+  "companyInfoAddUpiAccountButton": "Add UPI Account",
+  "companyInfoShowQrToggleTitle": "Show QR Code on Invoices",
+  "companyInfoShowQrToggleSubtitle": "Adds scannable UPI payment QR codes to generated PDFs",
+  "companyInfoShowBankDetailsToggleTitle": "Show Bank Details on Invoices",
+  "companyInfoShowBankDetailsToggleSubtitle": "Prints bank account details on generated PDFs",
+  "fieldBankNameLabel": "Bank Name",
+  "fieldAccountNumberLabel": "Account Number",
+  "fieldIfscCodeLabel": "IFSC Code",
+  "fieldIbanLabel": "IBAN",
+  "companyInfoAddBankAccountButton": "Add Bank Account",
+  "companyInfoEditBankAccountTitle": "Edit Bank Account",
+  "fieldBankAccountNameLabel": "Account Name",
+  "tooltipShowOnInvoicePdf": "Show on invoice PDF",
+  "companyInfoSavedSuccessMessage": "Company info saved successfully",
+  "companyInfoImageTooLargeMessage": "Image file must be less than 2 MB.",
+  "companyInfoInvalidImageMessage": "Invalid image file.",
+  "companyInfoImageDimensionsMessage": "Image must be max 1080x1080 pixels.",
+  "companyInfoHintExampleBankName": "e.g. HDFC Bank",
+  "companyInfoHintExampleAccountLabel": "e.g. Main Account",
+  "actionConfirm": "Confirm",
+  "actionShare": "Share",
+  "appInfoTitle": "Software Information",
+  "appInfoAppDetailsTitle": "APP DETAILS",
+  "appInfoAppNameLabel": "App Name",
+  "appInfoVersionLabel": "Version",
+  "appInfoLicenseLabel": "License",
+  "appInfoDeveloperTitle": "DEVELOPER",
+  "appInfoDeveloperLabel": "Developer",
+  "appInfoSupportEmailLabel": "Support Email",
+  "appInfoFooterCopyright": "© {year} {developer}  |  Released under the {license} License",
+  "@appInfoFooterCopyright": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "developer": {
+        "type": "String"
+      },
+      "license": {
+        "type": "String"
+      }
+    }
+  },
+  "appInfoCheckingLabel": "Checking...",
+  "appInfoUpdateAvailableLabel": "Update Available",
+  "appInfoUpToDateLabel": "Up to date",
+  "appInfoCheckFailedLabel": "Check failed",
+  "appInfoUpdatesTitle": "UPDATES",
+  "appInfoCurrentVersionLabel": "Current Version",
+  "appInfoLatestVersionLabel": "Latest Version",
+  "appInfoCheckNowButton": "Check Now",
+  "backupManagementTitle": "Backup Management",
+  "backupCreateDbButton": "Create DB Backup",
+  "backupExportJsonButton": "Export JSON",
+  "backupImportButton": "Import Backup",
+  "backupNoBackupsFoundMessage": "No backups found",
+  "backupSizeLabel": "Size: {size}",
+  "@backupSizeLabel": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "backupCreatedLabel": "Created: {date}",
+  "@backupCreatedLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "backupLoadErrorMessage": "Failed to load backups: {error}",
+  "@backupLoadErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupCreatedSuccessMessage": "Backup created successfully!",
+  "backupCreateErrorMessage": "Failed to create backup: {error}",
+  "@backupCreateErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreConfirmTitle": "Restore Backup",
+  "backupRestoreConfirmBody": "This will replace all current data with the backup. Are you sure?",
+  "backupRestoreErrorMessage": "Failed to restore backup: {error}",
+  "@backupRestoreErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDeleteConfirmTitle": "Delete Backup",
+  "backupDeleteConfirmBody": "Are you sure you want to delete this backup?",
+  "backupDeletedSuccessMessage": "Backup deleted successfully!",
+  "backupDeleteFailedMessage": "Failed to delete backup",
+  "backupDeleteErrorMessage": "Failed to delete backup: {error}",
+  "@backupDeleteErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupSavedToDownloadsMessage": "Backup saved to Downloads folder.",
+  "backupDownloadErrorMessage": "Failed to download backup: {error}",
+  "@backupDownloadErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupShareErrorMessage": "Failed to share backup: {error}",
+  "@backupShareErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupImportErrorMessage": "Failed to import backup: {error}",
+  "@backupImportErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreSuccessTitle": "Restore Successful",
+  "backupRestoreSuccessBody": "The database has been restored successfully.\n\nThe app needs to restart to apply the changes. Please close and reopen the application.",
+  "backupCloseLaterButton": "Close Later",
+  "backupCloseAppNowButton": "Close App Now",
+  "commonSuccessTitle": "Success",
+  "commonErrorTitle": "Error",
+  "productColumnsScreenTitle": "Customize Product Details",
+  "productColumnsSavedMessage": "Product columns saved.",
+  "productColumnsIntroText": "Choose which fields appear on the product add/edit forms, the product list, and invoice line items. Name and Price are always required.",
+  "productColumnsNameLabel": "Name",
+  "productColumnsPriceLabel": "Price",
+  "productColumnsAlwaysRequiredSubtitle": "Always shown — required.",
+  "productColumnsStockLabel": "Stock",
+  "productColumnsStockSubtitle": "Turn off if you never track stock — products default to unlimited stock instead.",
+  "productColumnsProductFieldsSectionTitle": "Product fields",
+  "productColumnsAliasNameLabel": "Alias Name",
+  "productColumnsAliasNameSubtitle": "Local-language display name for PDFs/printing.",
+  "productColumnsTaxRateLabel": "Tax Rate",
+  "productColumnsTaxRateSubtitle": "Per-product tax percentage.",
+  "productColumnsHsnSacLabel": "HSN/SAC",
+  "productColumnsHsnSacSubtitle": "HSN or SAC code field.",
+  "productColumnsDescriptionLabel": "Description",
+  "productColumnsDescriptionSubtitle": "Free-text product description.",
+  "productColumnsPurchasePriceLabel": "Purchase Price",
+  "productColumnsPurchasePriceSubtitle": "Cost price, for margin tracking.",
+  "productColumnsDefaultDiscountLabel": "Default Discount",
+  "productColumnsDefaultDiscountSubtitle": "Pre-filled discount when adding this product to an invoice.",
+  "productColumnsUnitLabel": "Unit",
+  "productColumnsUnitSubtitle": "Unit of measure (pcs, kg, hrs...).",
+  "productColumnsProductServiceTypeLabel": "Product/Service Type",
+  "productColumnsProductServiceTypeSubtitle": "Segmented Product vs Service selector.",
+  "productColumnsMetadataLabel": "Product Metadata",
+  "productColumnsMetadataSubtitle": "Storage location, container/batch number, expiry, manufacture date, manufacturer, supplier, SKU, notes.",
+  "productColumnsMetaStorageLocationLabel": "Storage Location",
+  "productColumnsMetaContainerNumberLabel": "Container Number",
+  "productColumnsMetaBatchNumberLabel": "Batch Number",
+  "productColumnsMetaExpiryDateLabel": "Expiry Date",
+  "productColumnsMetaManufactureDateLabel": "Manufacture Date",
+  "productColumnsMetaManufactureNameLabel": "Manufacturer Name",
+  "productColumnsMetaSupplierNameLabel": "Supplier Name",
+  "productColumnsMetaSkuCodeLabel": "SKU Code",
+  "productColumnsMetaNotesLabel": "Notes",
+  "productColumnsExtraCostLabel": "Extra Cost",
+  "productColumnsExtraCostSubtitle": "Optional flat extra charge on an invoice line item.",
+  "settingsOptionsComingSoonMessage": "Options coming soon...",
+  "settingsNavCompanyInfoLabel": "Company Info",
+  "settingsNavCompaniesLabel": "Companies",
+  "settingsNavTeamLabel": "Team",
+  "settingsNavBackupLabel": "Backup",
+  "settingsNavUsersLabel": "Users",
+  "settingsNavProductDetailsLabel": "Product Details",
+  "settingsNavCustomizeLabel": "Customize",
+  "settingsNavAccessibilityLabel": "Accessibility",
+  "settingsNavSoftwareInfoLabel": "Software Info",
+  "companyMgmtTitle": "Manage Companies",
+  "companyMgmtActiveBadge": "Active",
+  "companyMgmtSwitchButton": "Switch",
+  "companyMgmtSwitchConfirmTitle": "Switch Company?",
+  "companyMgmtSwitchConfirmBody": "Invoiceo will restart to switch to \"{name}\".",
+  "@companyMgmtSwitchConfirmBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "companyMgmtNewCompanyButton": "+ New Company",
+  "companyMgmtNewCompanyTitle": "New Company",
+  "companyMgmtAdminAccountSectionLabel": "Admin Account",
+  "companyMgmtCreateButton": "Create",
+  "companyMgmtDeleteButton": "Delete This Company",
+  "companyMgmtDeleteConfirmTitle": "Delete \"{name}\"?",
+  "@companyMgmtDeleteConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "companyMgmtDeleteConfirmBody": "This permanently deletes all of this company's data and cannot be undone. Type the company name to confirm.",
+  "companyMgmtRenameTooltip": "Rename",
+  "companyMgmtRenameTitle": "Rename Company",
+  "companyMgmtNameTakenMessage": "A company with this name already exists",
+  "companyMgmtSwitchErrorMessage": "Failed to switch company: {error}",
+  "@companyMgmtSwitchErrorMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "companyMgmtSwitchRestartTitle": "Company Switched",
+  "companyMgmtSwitchRestartBody": "Invoiceo needs to restart to finish switching companies. Please close and reopen the application.",
+  "companyMgmtCreateRestartTitle": "Company Created",
+  "companyMgmtCreateRestartBody": "Your new company is ready. Please close and reopen the application to continue.",
+  "companyMgmtDeletedMessage": "Company deleted",
+  "companyMgmtDeleteRestartTitle": "Company Deleted",
+  "companyMgmtDeleteRestartBody": "The company was deleted and Invoiceo switched to another one. Please close and reopen the application to continue.",
+  "companyMgmtOnlyCompanyTooltip": "You need at least one other company before you can delete this one",
+  "loginCompanyGearTooltip": "Manage companies",
+  "loginCompanySelectorLabel": "Company",
+  "customizationEyebrowLabel": "CUSTOMIZATION",
+  "customizationHeadline": "Tailored just for your business",
+  "customizationSubtitle": "Pick what you need and send a request. We'll reply with a quote before any work starts.",
+  "customizationRecommendedBadge": "Recommended",
+  "customizationQuotedBadge": "Quoted per request",
+  "customizationRequestButton": "Request",
+  "customizationFormOpenErrorMessage": "Could not open the form. Please visit invoiceo.in/customization.html in your browser.",
+  "customizationDisclaimerMessage": "Every request is quoted on its own. You see the price and timeline first, and payment is asked for only after you accept the quote.",
+  "customizationPdfTemplateTitle": "Custom PDF Template",
+  "customizationPdfTemplateDescription": "Get an invoice template designed to match your brand — your colors, fonts, logo placement, and layout.",
+  "customizationCustomFieldsTitle": "Custom Fields",
+  "customizationCustomFieldsDescription": "Need extra fields on your invoices? (PO number, project code, department, etc.) We'll add them for you.",
+  "customizationWhiteLabelTitle": "White-label / Remove Branding",
+  "customizationWhiteLabelDescription": "Remove all Invoiceo branding from the app and PDF outputs, and replace it with your own company identity.",
+  "customizationIndustryBuildTitle": "Industry-specific Build",
+  "customizationIndustryBuildDescription": "Need a version tailored to your industry? (construction, consulting, retail, etc.) We'll customise the workflow to fit your needs.",
+  "accessibilityCreateInvoiceLayoutSectionTitle": "New Create Invoice Page Layout",
+  "accessibilityNewLayoutLabel": "New layout",
+  "accessibilityLayoutDescription": "Choose which \"New Invoice\" screen design to use.",
+  "accessibilityShortcutsSubtitle": "Speed up invoice creation without touching the mouse.",
+  "paymentDialogInvoiceRefLabel": "#{number} — {customer}",
+  "@paymentDialogInvoiceRefLabel": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "customer": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentDialogInvoiceTotalLabel": "Invoice Total",
+  "paymentDialogAmountPaidLabel": "Amount Paid",
+  "paymentDialogHistoryTitle": "Payment History",
+  "paymentDialogNoPaymentsMessage": "No payments recorded yet",
+  "paymentDialogFullyPaidExclaimMessage": "Invoice fully paid!",
+  "paymentDialogFullyPaidBannerLabel": "Invoice fully paid",
+  "paymentDialogRecordedMessage": "Payment recorded. Outstanding: {symbol} {amount}",
+  "@paymentDialogRecordedMessage": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentDialogRecordFailedMessage": "Failed to record payment: {error}",
+  "@paymentDialogRecordFailedMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentDialogDeleteTitle": "Delete Payment",
+  "paymentDialogDeleteConfirmBody": "Delete receipt {receiptNumber}?\n\nThis cannot be undone.",
+  "@paymentDialogDeleteConfirmBody": {
+    "placeholders": {
+      "receiptNumber": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentDialogNewPaymentTitle": "New Payment",
+  "paymentDialogAmountFieldLabel": "Amount ({symbol})",
+  "@paymentDialogAmountFieldLabel": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentDialogMaxHelperText": "Max: {symbol} {amount}",
+  "@paymentDialogMaxHelperText": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "paymentDialogInvalidAmountError": "Enter a valid amount",
+  "paymentDialogExceedsOutstandingError": "Exceeds outstanding balance",
+  "paymentDialogMethodFieldLabel": "Payment Method",
+  "paymentDialogSelectMethodHint": "Select method",
+  "paymentDialogTaxCoveredLabel": "Tax Covered",
+  "paymentDialogAutoCalculatedHelper": "Auto-calculated",
+  "paymentDialogNotesFieldLabel": "Reference / Notes (optional)",
+  "paymentDialogNotesHint": "e.g. cheque no., transaction ID...",
+  "paymentDialogReceiptColLabel": "Receipt #",
+  "paymentDialogMethodColLabel": "Method",
+  "paymentDialogDownloadReceiptTooltip": "Download receipt",
+  "paymentDialogDeletePaymentTooltip": "Delete payment",
+  "paymentMethodCash": "Cash",
+  "paymentMethodBankTransfer": "Bank Transfer",
+  "paymentMethodCheck": "Cheque",
+  "paymentMethodOnline": "Online",
+  "paymentMethodOther": "Other",
+  "customerInfoButtonTooltip": "View contact details",
+  "customerInfoButtonNoContactMessage": "No contact details available.",
+  "updateDialogTitle": "Update Available",
+  "updateDialogBodyMessage": "A new version of Invoiceo is available. Visit the download page to get the latest release.",
+  "pageSizeA4Label": "Standard A4",
+  "pageSizeA5Label": "Standard A5",
+  "pageSizeA6Label": "Standard A6",
+  "pageSizeThermal80Label": "Thermal Paper 80mm",
+  "pageSizeThermal58Label": "Thermal Paper 58mm",
+  "dateFormatDdmmyyyyLabel": "DD/MM/YYYY  (e.g. 15/04/2026)",
+  "dateFormatMmddyyyyLabel": "MM/DD/YYYY  (e.g. 04/15/2026)",
+  "dateFormatDdMmmyyyyLabel": "DD MMM YYYY  (e.g. 15 Apr 2026)",
+  "dateFormatYyyymmddLabel": "YYYY-MM-DD  (e.g. 2026-04-15)",
+  "sizeXSmallLabel": "X-Small",
+  "sizeSmallLabel": "Small",
+  "sizeMediumLabel": "Medium",
+  "sizeLargeLabel": "Large",
+  "sizeXLargeLabel": "Extra Large",
+  "shortcutNewInvoiceDescription": "New Invoice (from Dashboard) / Reset form (in Create Invoice)",
+  "shortcutSaveInvoiceDescription": "Save / create the invoice",
+  "shortcutAddProductDescription": "Add product to invoice",
+  "shortcutAddCustomItemDescription": "Add custom (ad-hoc) item",
+  "shortcutPreviewPdfDescription": "Preview invoice PDF",
+  "shortcutPrintPdfDescription": "Generate / print invoice PDF",
+  "invoiceSettingsMetadataColumnsGridClassicNote": "Note: Metadata columns print on A4 PDF templates only (not A5/A6 or thermal receipts).",
+  "invoiceSettingsCustomFieldsPageSupportNote": "Custom fields print on every PDF template except thermal receipts.",
+  "mItemsColQty": "Qty",
+  "@mItemsColQty": {
+    "description": "Create screen items table: the quantity column heading when no custom label is set"
+  },
+  "createInvoiceQuantityLabel": "Quantity",
+  "@createInvoiceQuantityLabel": {
+    "description": "Create invoice: quantity field label in the add-item, edit-item and custom-item dialogs (used when no custom quantity label is set)."
+  },
+  "createInvoiceDefaultPriceHelper": "Default: {price}",
+  "@createInvoiceDefaultPriceHelper": {
+    "description": "Create invoice: helper text under the unit price box in the add-item and edit-item dialogs; {price} is the product's normal price with the currency symbol, e.g. ₹120.0.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceExtraCostHelper": "Flat fee added on top of the line total",
+  "@createInvoiceExtraCostHelper": {
+    "description": "Create invoice: helper text under the Extra Cost box in the add-item, edit-item and custom-item dialogs. 'Line' means one item row of the invoice."
+  },
+  "createInvoiceMustBeAboveZeroError": "Must be greater than 0",
+  "@createInvoiceMustBeAboveZeroError": {
+    "description": "Create invoice: error under the price box of the custom-item dialog when the price is 0 or less."
+  },
+  "createInvoiceNoCustomFieldsFilledMessage": "No custom fields filled yet.",
+  "@createInvoiceNoCustomFieldsFilledMessage": {
+    "description": "Create invoice: Custom Fields card (Advanced Options in the right panel) when none of the custom fields has a value."
+  },
+  "createInvoiceChargesMinusHint": "Use a minus sign for deductions (e.g. freight paid by buyer).",
+  "@createInvoiceChargesMinusHint": {
+    "description": "Create invoice: hint at the top of the Charges & Adjustments rows (extra charges such as freight; a negative amount is a deduction)."
+  },
+  "createInvoiceItemDescriptionLabel": "Description (optional)",
+  "@createInvoiceItemDescriptionLabel": {
+    "description": "Create invoice: label of the per-line description box in the add-item, edit-item and custom-item dialogs."
+  },
+  "createInvoiceItemDescriptionHint": "Extra detail printed under the item name",
+  "@createInvoiceItemDescriptionHint": {
+    "description": "Create invoice: hint inside the per-line description box (the text prints on the PDF under the item name)."
+  },
+  "createInvoicePaidInFullBadge": "PAID IN FULL",
+  "@createInvoicePaidInFullBadge": {
+    "description": "Create invoice, editing a saved invoice that has payments: green badge under the totals when the payments cover the total. Upper case where the script has it."
+  },
+  "createInvoiceAmountDueLabel": "Amount Due",
+  "@createInvoiceAmountDueLabel": {
+    "description": "Create invoice, editing a saved invoice that has payments: label under the totals for what is still unpaid (shown next to the amount)."
+  },
+  "createInvoiceSaveWalkInPrompt": "Save \"{name}\" to your customer list for future use?",
+  "@createInvoiceSaveWalkInPrompt": {
+    "description": "Create invoice, 'created' screen: prompt shown when the document was made for a walk-in customer who is not saved yet; {name} is the customer name typed on the form. Followed by Save / Dismiss buttons.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceExpiredOnLabel": "Expired {date}",
+  "@createInvoiceExpiredOnLabel": {
+    "description": "Create invoice: short red chip on a product (search list, add-item and edit-item dialogs) whose expiry date has passed; {date} is the formatted expiry date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceExpiresOnLabel": "Exp {date}",
+  "@createInvoiceExpiresOnLabel": {
+    "description": "Create invoice: short chip on a product (search list, add-item and edit-item dialogs) showing its expiry date; keep it short. {date} is the formatted expiry date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "createInvoiceHideDetailsPanelTooltip": "Hide details panel",
+  "@createInvoiceHideDetailsPanelTooltip": {
+    "description": "Create invoice: tooltip of the close (X) button on the right-hand details panel, which folds the panel to a slim strip."
+  },
+  "createInvoiceShowDetailsPanelTooltip": "Show details panel",
+  "@createInvoiceShowDetailsPanelTooltip": {
+    "description": "Create invoice: tooltip of the button on the folded right-hand strip that opens the details panel again."
+  },
+  "createInvoiceItemNotFoundMessage": "Item not found",
+  "@createInvoiceItemNotFoundMessage": {
+    "description": "Create invoice: product search dropdown when nothing matches what was typed."
+  },
+  "createInvoiceSearchAboveHintMessage": "Search above or press Ctrl+F",
+  "@createInvoiceSearchAboveHintMessage": {
+    "description": "Create invoice: empty items table, small line under 'No items added yet' (the product search box is above the table). Keep 'Ctrl+F' unchanged."
+  },
+  "createInvoiceTaxSettingsLabel": "Tax settings",
+  "@createInvoiceTaxSettingsLabel": {
+    "description": "Create invoice: section heading in Advanced Options of the right panel (enable tax, global or per-item rate, UPI and bank account). Shown in upper case."
+  },
+  "createInvoiceCreateShortcutsTip": "Ctrl+S: create    Ctrl+P or F11: create and print",
+  "@createInvoiceCreateShortcutsTip": {
+    "description": "Create invoice: tooltip of the Create button listing its keyboard shortcuts for a new document. Keep the key names unchanged."
+  },
+  "createInvoiceUpdateShortcutsTip": "Ctrl+S: update    Ctrl+P or F11: update and print",
+  "@createInvoiceUpdateShortcutsTip": {
+    "description": "Create invoice: tooltip of the Update button (editing a saved document) listing its keyboard shortcuts. Keep the key names unchanged."
+  },
+  "createInvoiceProcessingLabel": "Processing...",
+  "@createInvoiceProcessingLabel": {
+    "description": "Create invoice: label of the Create / Update button while the document is being saved."
+  },
+  "invoiceMgmtFilterByCustomerTitle": "Filter by Customer",
+  "@invoiceMgmtFilterByCustomerTitle": {
+    "description": "Title of the customer picker dialog opened from the Customer filter button on the invoice, quotation and receipt lists"
+  },
+  "invoiceMgmtSearchCustomersHint": "Search customers…",
+  "@invoiceMgmtSearchCustomersHint": {
+    "description": "Hint of the search box in the Filter by Customer dialog on the document lists"
+  },
+  "invoiceMgmtCustomerNotSavedLabel": "Not saved as a customer",
+  "@invoiceMgmtCustomerNotSavedLabel": {
+    "description": "Subtitle in the Filter by Customer dialog for a name typed on a document but not saved to the Customers list"
+  },
+  "invoiceMgmtUnknownCustomerName": "Unknown",
+  "@invoiceMgmtUnknownCustomerName": {
+    "description": "Fallback customer name in the Filter by Customer dialog (and the filter chip) when a document has no customer name"
+  },
+  "appInfoBasedOnInvoiso": "Based on Invoiso © 2025 ANOOP P · MIT License",
+  "@appInfoBasedOnInvoiso": {
+    "description": "Software Information (About) screen, line under the footer copyright. Legal notice of the original MIT-licensed project; keep 'Invoiso', '2025', 'ANOOP P' and 'MIT' unchanged in every language."
+  },
+  "appInfoViewLicensesButton": "View licenses",
+  "@appInfoViewLicensesButton": {
+    "description": "Software Information (About) screen, text button under the footer that opens the list of software licenses (showLicensePage)."
+  },
+  "loginUsernameLabel": "Username",
+  "@loginUsernameLabel": {
+    "description": "Username field label on the Login and Forgot Password screens"
+  },
+  "loginPasswordLabel": "Password",
+  "@loginPasswordLabel": {
+    "description": "Password field label on the Login screen"
+  },
+  "loginButton": "Login",
+  "@loginButton": {
+    "description": "Login button on the Login screen; also the 'Login' category chip in the help search dialog"
+  },
+  "loginForgotPasswordButton": "Forgot password?",
+  "@loginForgotPasswordButton": {
+    "description": "Link on the Login screen that opens the password reset screen"
+  },
+  "loginInvalidCredentialsMessage": "Incorrect username or password.",
+  "@loginInvalidCredentialsMessage": {
+    "description": "Snackbar on the Login screen when the username or password is wrong"
+  },
+  "loginEnterCredentialsMessage": "Please enter {field} and password",
+  "@loginEnterCredentialsMessage": {
+    "description": "Snackbar on the Login screen when a field is empty. {field} is the first field's label (Username, or Email in the cloud edition)",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "loginFirstTimeHint": "First time here? Log in with username {username} and password {password}, then set your own password when prompted.",
+  "@loginFirstTimeHint": {
+    "description": "First-run hint on the Login screen. Both placeholders receive the default value 'admin', shown in bold",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      },
+      "password": {
+        "type": "String"
+      }
+    }
+  },
+  "loginNeedHelpLink": "Need help? Contact Support",
+  "@loginNeedHelpLink": {
+    "description": "Link at the bottom of the Login screen that opens the help search"
+  },
+  "resetPasswordTitle": "Reset Password",
+  "@resetPasswordTitle": {
+    "description": "Title of the Forgot Password screen"
+  },
+  "resetPasswordInstructions": "Send support the Installation ID below and your username to get a response code. The code works only for that username.",
+  "@resetPasswordInstructions": {
+    "description": "Instructions on the Forgot Password screen, above the Installation ID box"
+  },
+  "resetPasswordLoadingLabel": "Loading...",
+  "@resetPasswordLoadingLabel": {
+    "description": "Shown in the Installation ID box while the ID loads"
+  },
+  "resetPasswordCopyIdTooltip": "Copy Installation ID",
+  "@resetPasswordCopyIdTooltip": {
+    "description": "Tooltip of the copy button next to the Installation ID"
+  },
+  "resetPasswordIdCopiedMessage": "Installation ID copied to clipboard.",
+  "@resetPasswordIdCopiedMessage": {
+    "description": "Snackbar after copying the Installation ID"
+  },
+  "resetPasswordEnterFieldsMessage": "Please enter username and response code.",
+  "@resetPasswordEnterFieldsMessage": {
+    "description": "Error on the Forgot Password screen when a field is empty"
+  },
+  "resetPasswordStillLoadingMessage": "Please wait, still loading installation info.",
+  "@resetPasswordStillLoadingMessage": {
+    "description": "Error on the Forgot Password screen when Verify is pressed before the Installation ID has loaded"
+  },
+  "resetPasswordInvalidCodeMessage": "Invalid or expired code. Check that the username is the one you sent to support.",
+  "@resetPasswordInvalidCodeMessage": {
+    "description": "Error on the Forgot Password screen when the response code does not match the username or has expired"
+  },
+  "resetPasswordVerifiedMessage": "Successfully verified. Enter your new password.",
+  "@resetPasswordVerifiedMessage": {
+    "description": "Success box on the Forgot Password screen after the code is accepted"
+  },
+  "resetPasswordCompanyLabel": "Resetting a login for: {company}",
+  "@resetPasswordCompanyLabel": {
+    "description": "Shows which company's login is being reset on the Forgot Password screen",
+    "placeholders": {
+      "company": {
+        "type": "String"
+      }
+    }
+  },
+  "resetPasswordResponseCodeLabel": "Response Code",
+  "@resetPasswordResponseCodeLabel": {
+    "description": "Field label for the code support sends back"
+  },
+  "resetPasswordVerifyButton": "Verify",
+  "@resetPasswordVerifyButton": {
+    "description": "Button that checks the response code"
+  },
+  "resetPasswordSetButton": "Set New Password",
+  "@resetPasswordSetButton": {
+    "description": "Button that saves the new password on the Forgot Password screen"
+  },
+  "resetPasswordBackToLoginButton": "Back to Login",
+  "@resetPasswordBackToLoginButton": {
+    "description": "Button that closes the Forgot Password screen"
+  },
+  "resetPasswordSuccessMessage": "Password reset successfully. Please log in.",
+  "@resetPasswordSuccessMessage": {
+    "description": "Snackbar after a password reset"
+  },
+  "resetPasswordFailedMessage": "Failed to reset password. Please try again.",
+  "@resetPasswordFailedMessage": {
+    "description": "Error when saving the new password fails on the Forgot Password screen"
+  },
+  "changePasswordMinLengthMessage": "New password must be at least 8 characters.",
+  "@changePasswordMinLengthMessage": {
+    "description": "Error on the Change Password and Forgot Password screens"
+  },
+  "changePasswordSameAsUsernameMessage": "Password cannot be the same as your username.",
+  "@changePasswordSameAsUsernameMessage": {
+    "description": "Error on the Change Password and Forgot Password screens"
+  },
+  "changePasswordFailedMessage": "Failed to change password. Please try again.",
+  "@changePasswordFailedMessage": {
+    "description": "Error when saving fails on the Change Password screen"
+  },
+  "changePasswordRequiredTitle": "Change Password Required",
+  "@changePasswordRequiredTitle": {
+    "description": "Title of the Change Password screen on first login"
+  },
+  "changePasswordRequiredSubtitle": "You must set a new password before continuing.",
+  "@changePasswordRequiredSubtitle": {
+    "description": "Subtitle of the Change Password screen on first login"
+  },
+  "changePasswordRememberWarning": "Remember this password.",
+  "@changePasswordRememberWarning": {
+    "description": "Warning box on the Change Password screen"
+  },
+  "changePasswordNewPasswordLabel": "New Password (min 8 characters)",
+  "@changePasswordNewPasswordLabel": {
+    "description": "New password field label on the Change Password and Forgot Password screens"
+  },
+  "accessibilityScreenLayoutTitle": "Screen layout",
+  "@accessibilityScreenLayoutTitle": {
+    "description": "Section title in Settings > Accessibility"
+  },
+  "accessibilityStandardLayoutLabel": "Standard layout",
+  "@accessibilityStandardLayoutLabel": {
+    "description": "Name of the current layout in Settings > Accessibility when Standard is chosen"
+  },
+  "accessibilityModernLayoutLabel": "Modern layout",
+  "@accessibilityModernLayoutLabel": {
+    "description": "Name of the current layout in Settings > Accessibility when Modern is chosen"
+  },
+  "accessibilityScreenLayoutDescription": "Modern: the new, simpler screens (recommended). Standard: the classic screens.",
+  "@accessibilityScreenLayoutDescription": {
+    "description": "Explains the two screen layouts in Settings > Accessibility. Use the same words as the Modern/Standard buttons"
+  },
+  "accessibilityStandardLabel": "Standard",
+  "@accessibilityStandardLabel": {
+    "description": "Standard button of the screen layout switch in Settings > Accessibility (the Modern button uses pdfTemplateModernName)"
+  },
+  "helpContactSupportButton": "Contact Support",
+  "@helpContactSupportButton": {
+    "description": "Button in the help search dialog that opens the support form"
+  },
+  "helpArticlesEnglishNote": "Help articles are in English. Search with English words.",
+  "@helpArticlesEnglishNote": {
+    "description": "Note in the help search dialog, shown only when the app language is not English"
+  },
+  "helpNoResultsLabel": "No matching results",
+  "@helpNoResultsLabel": {
+    "description": "Result count line in the help search dialog when nothing matches"
+  },
+  "helpResultCount": "{count, plural, =1{1 result} other{{count} results}}",
+  "@helpResultCount": {
+    "description": "Number of results in the help search dialog",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "helpEmptyPrompt": "Type to search, or pick a category to browse",
+  "@helpEmptyPrompt": {
+    "description": "Empty state of the help search dialog before anything is typed"
+  },
+  "helpNoMatchPrompt": "Can't find what you're looking for?",
+  "@helpNoMatchPrompt": {
+    "description": "Empty state of the help search dialog when nothing matches, above the Contact Support button"
+  },
+  "helpSelectQuestionPrompt": "Select a question to see the answer",
+  "@helpSelectQuestionPrompt": {
+    "description": "Answer pane of the help search dialog when no question is selected"
+  },
+  "helpSearchHint": "Ask a question, e.g. \"forgot password\"",
+  "@helpSearchHint": {
+    "description": "Hint of the help search field. Keep the example \"forgot password\" in English because the help articles are in English"
+  },
+  "helpCategoryFaq": "FAQ",
+  "@helpCategoryFaq": {
+    "description": "Category chip for frequently asked questions in the help search dialog"
+  },
+  "custPaymentAmountExceedsMessage": "Amount for {number} exceeds its outstanding balance.",
+  "@custPaymentAmountExceedsMessage": {
+    "description": "Error in the customer Receive Payment dialog. {number} is the invoice number",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "custPaymentEnterAmountMessage": "Enter an amount for at least one invoice.",
+  "@custPaymentEnterAmountMessage": {
+    "description": "Error in the customer Receive Payment dialog when no amount is entered"
+  },
+  "custPaymentAppliedMessage": "{count, plural, =1{Applied {symbol} {amount} across 1 invoice.} other{Applied {symbol} {amount} across {count} invoices.}}",
+  "@custPaymentAppliedMessage": {
+    "description": "Snackbar after a customer payment is applied. {symbol} is the currency symbol, {amount} the total, {count} the number of invoices. Keep the placeholder order count, symbol, amount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "symbol": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "custPaymentFailedMessage": "Failed to apply payment: {error}",
+  "@custPaymentFailedMessage": {
+    "description": "Error snackbar in the customer Receive Payment dialog",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "custPaymentNoOpenInvoicesMessage": "No open invoices for this customer.",
+  "@custPaymentNoOpenInvoicesMessage": {
+    "description": "Customer Receive Payment dialog when the customer owes nothing"
+  },
+  "custPaymentTotalOutstandingLabel": "Total Outstanding",
+  "@custPaymentTotalOutstandingLabel": {
+    "description": "Summary card in the customer Receive Payment dialog"
+  },
+  "custPaymentTotalAllocatedLabel": "Total Allocated",
+  "@custPaymentTotalAllocatedLabel": {
+    "description": "Summary card in the customer Receive Payment dialog"
+  },
+  "custPaymentAmountReceivedLabel": "Amount Received ({symbol})",
+  "@custPaymentAmountReceivedLabel": {
+    "description": "Amount field in the customer Receive Payment dialog. {symbol} is the currency symbol",
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
+  "custPaymentAutoAllocateHelper": "Auto-allocates smallest invoice first",
+  "@custPaymentAutoAllocateHelper": {
+    "description": "Helper text under the amount field in the customer Receive Payment dialog"
+  },
+  "custPaymentAutoAllocateButton": "Auto-allocate",
+  "@custPaymentAutoAllocateButton": {
+    "description": "Button that spreads the amount over the open invoices"
+  },
+  "custPaymentOpenInvoicesLabel": "Open Invoices (oldest first) — {count}",
+  "@custPaymentOpenInvoicesLabel": {
+    "description": "Heading of the invoice list in the customer Receive Payment dialog",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "custPaymentApplyingLabel": "Applying...",
+  "@custPaymentApplyingLabel": {
+    "description": "Apply button text while the customer payment is being saved"
+  },
+  "invoiceSettingsCustomFieldSampleValue": "Sample value",
+  "@invoiceSettingsCustomFieldSampleValue": {
+    "description": "Placeholder value in the custom fields preview in Invoice Settings"
+  },
+  "invoiceSettingsCustomFieldsPreviewEmpty": "Add a field to see the preview.",
+  "@invoiceSettingsCustomFieldsPreviewEmpty": {
+    "description": "Custom fields preview in Invoice Settings when there are no fields"
+  },
+  "invoiceSettingsCustomFieldsIntro": "Define fields once here (e.g. Vehicle No, Delivery Note), then fill their values on each invoice. Not tied to the customer.",
+  "@invoiceSettingsCustomFieldsIntro": {
+    "description": "Intro text of the Custom Fields section in Invoice Settings"
+  },
+  "invoiceSettingsTapToViewFullSize": "Tap to view full size",
+  "@invoiceSettingsTapToViewFullSize": {
+    "description": "Caption under the custom fields sample image in Invoice Settings"
+  },
+  "invoiceSettingsEnableCustomFieldsLabel": "Enable Custom Fields",
+  "@invoiceSettingsEnableCustomFieldsLabel": {
+    "description": "Switch title in Invoice Settings > Custom Fields"
+  },
+  "invoiceSettingsEnableCustomFieldsSubtitle": "Show a Custom Fields section on the create-invoice screen",
+  "@invoiceSettingsEnableCustomFieldsSubtitle": {
+    "description": "Switch subtitle in Invoice Settings > Custom Fields"
+  },
+  "invoiceSettingsMoveUpTooltip": "Move up",
+  "@invoiceSettingsMoveUpTooltip": {
+    "description": "Tooltip of the button that moves a custom field up"
+  },
+  "invoiceSettingsMoveDownTooltip": "Move down",
+  "@invoiceSettingsMoveDownTooltip": {
+    "description": "Tooltip of the button that moves a custom field down"
+  },
+  "invoiceSettingsCustomFieldLabel": "Field label",
+  "@invoiceSettingsCustomFieldLabel": {
+    "description": "Label of the text box that renames a custom field"
+  },
+  "invoiceSettingsDeleteFieldTooltip": "Delete field",
+  "@invoiceSettingsDeleteFieldTooltip": {
+    "description": "Tooltip of the button that deletes a custom field"
+  },
+  "invoiceSettingsNewCustomFieldLabel": "New field label",
+  "@invoiceSettingsNewCustomFieldLabel": {
+    "description": "Label of the text box for adding a custom field"
+  },
+  "invoiceSettingsNewCustomFieldHint": "e.g. Vehicle No",
+  "@invoiceSettingsNewCustomFieldHint": {
+    "description": "Hint of the text box for adding a custom field"
+  },
+  "thermalPrinterTitle": "Thermal printer",
+  "@thermalPrinterTitle": {
+    "description": "Title of the thermal printer box in PDF Settings"
+  },
+  "thermalPrinterNoneSavedMessage": "No printer saved. You will be asked to choose one the next time you print a thermal receipt.",
+  "@thermalPrinterNoneSavedMessage": {
+    "description": "Thermal printer box when no printer is saved"
+  },
+  "thermalPrinterSavedLabel": "Saved printer: {name}",
+  "@thermalPrinterSavedLabel": {
+    "description": "Thermal printer box showing the saved printer's name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "thermalPrinterForgetButton": "Forget",
+  "@thermalPrinterForgetButton": {
+    "description": "Button that removes the saved thermal printer"
+  },
+  "thermalPrinterAutoPrintTitle": "Print straight to the saved printer",
+  "@thermalPrinterAutoPrintTitle": {
+    "description": "Switch title in the thermal printer box"
+  },
+  "thermalPrinterAutoPrintSubtitle": "Turn off to be asked every time",
+  "@thermalPrinterAutoPrintSubtitle": {
+    "description": "Switch subtitle in the thermal printer box"
+  },
+  "thermalPrinterImageModeNote": "Receipts with Tamil or other non-English text are printed as a picture:",
+  "@thermalPrinterImageModeNote": {
+    "description": "Note above the receipt text size and print width settings"
+  },
+  "thermalPrinterTextSizeLabel": "Receipt text size",
+  "@thermalPrinterTextSizeLabel": {
+    "description": "Dropdown label in the thermal printer box"
+  },
+  "thermalPrinterTextSizeNormal": "Normal",
+  "@thermalPrinterTextSizeNormal": {
+    "description": "Receipt text size option"
+  },
+  "thermalPrinterTextSizeLargeDefault": "Large (default)",
+  "@thermalPrinterTextSizeLargeDefault": {
+    "description": "Receipt text size option"
+  },
+  "thermalPrinterTextSizeXLarge": "Extra large",
+  "@thermalPrinterTextSizeXLarge": {
+    "description": "Receipt text size option"
+  },
+  "thermalPrinterWidthLabel": "Print width",
+  "@thermalPrinterWidthLabel": {
+    "description": "Dropdown label in the thermal printer box"
+  },
+  "thermalPrinterWidthHelper": "If the right edge is cut off, choose a narrower width",
+  "@thermalPrinterWidthHelper": {
+    "description": "Helper text under the print width dropdown"
+  },
+  "thermalPrinterWidthAuto": "Automatic (80 mm: 576 dots, 58 mm: 384 dots)",
+  "@thermalPrinterWidthAuto": {
+    "description": "Print width option"
+  },
+  "thermalPrinterWidthDots": "{dots} dots",
+  "@thermalPrinterWidthDots": {
+    "description": "Print width option. {dots} is a number such as 576",
+    "placeholders": {
+      "dots": {
+        "type": "String"
+      }
+    }
+  },
+  "thermalPrinterAppliesNowNote": "Applies immediately; no need to save the PDF settings.",
+  "@thermalPrinterAppliesNowNote": {
+    "description": "Note at the bottom of the thermal printer box"
+  },
+  "userMgmtStatTotalUsers": "Total Users",
+  "@userMgmtStatTotalUsers": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "userMgmtStatAllUsers": "All users",
+  "@userMgmtStatAllUsers": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "userMgmtStatAdminUsers": "Admin Users",
+  "@userMgmtStatAdminUsers": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "userMgmtStatFullAccess": "Full access",
+  "@userMgmtStatFullAccess": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "userMgmtStatRegularUsers": "Regular Users",
+  "@userMgmtStatRegularUsers": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "userMgmtStatStandardAccess": "Standard access",
+  "@userMgmtStatStandardAccess": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "autoPrintAfterCreateTitle": "Print automatically after creating",
+  "@autoPrintAfterCreateTitle": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "autoPrintAfterCreateSubtitle": "Creating an invoice (button or Ctrl+S) also prints it. Ctrl+P or F11 always creates and prints. A thermal receipt goes straight to the saved printer; other templates open the print dialog. Modern layout only (choose it in Settings > Accessibility).",
+  "@autoPrintAfterCreateSubtitle": {
+    "description": "Settings: user management stat cards / auto-print tile"
+  }
+}

@@ -1,0 +1,517 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:invoiceo/common/app_config.dart';
+import 'package:invoiceo/database/company_registry_service.dart';
+import 'package:invoiceo/database/database_helper.dart';
+import 'package:invoiceo/utils/fs_utils.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
+
+import 'package:invoiceo/common/common.dart';
+import 'package:invoiceo/models/backup_info.dart';
+import 'package:invoiceo/models/backup_results.dart';
+
+class BackupManager {
+  static const String _backupExtension = '.invoicedb';
+  static const String _jsonExtension = '.json';
+
+  // Tables excluded from JSON exports (contain sensitive data).
+  static const Set<String> _excludedFromJsonExport = {'users'};
+
+  // Restore order ensures parent tables are inserted before child tables,
+  // preventing foreign-key constraint violations. Every table listed here
+  // is cleared before a JSON restore, so drafts and product metadata from
+  // the current data don't survive a "replace all" restore.
+  static const List<String> _restoreTableOrder = [
+    'customers',
+    'products',
+    'product_metadata',
+    'company_info',
+    'settings',
+    'invoices',
+    'invoice_items',
+    'invoice_payments',
+    'invoice_drafts',
+  ];
+
+  // Create backup of the entire database
+  Future<BackupResult> createBackup({
+    required String companyId,
+    required String companyName,
+    String? customPath,
+    BackupType type = BackupType.database,
+  }) async {
+    try {
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
+      final backupName =
+          'invoice_backup_${_sanitizeForFilename(companyName)}_$timestamp';
+
+      String backupPath;
+
+      if (type == BackupType.database) {
+        backupPath =
+            await _createDatabaseBackup(backupName, customPath, companyId);
+      } else {
+        backupPath =
+            await _createJsonBackup(backupName, customPath, companyId);
+      }
+
+      return BackupResult(
+        success: true,
+        message: 'Backup created successfully',
+        filePath: backupPath,
+        timestamp: DateTime.now(),
+      );
+    } catch (e) {
+      return BackupResult(
+        success: false,
+        message: 'Backup failed: ${e.toString()}',
+      );
+    }
+  }
+
+  // Create database file backup — copies the live DB file while it is open.
+  // SQLite WAL mode on desktop keeps the file consistent during a copy.
+  Future<String> _createDatabaseBackup(
+      String backupName,
+      String? customPath,
+      String companyId,
+      ) async {
+    final dbPath = DatabaseHelper.path!;
+    final backupDir = customPath != null
+        ? (await ensureDirectory(customPath)).path
+        : await _getBackupDirectory(companyId);
+    final backupPath = join(backupDir, '$backupName$_backupExtension');
+
+    await File(dbPath).copy(backupPath);
+
+    return backupPath;
+  }
+
+  // Create JSON export backup (excludes sensitive tables such as 'users')
+  Future<String> _createJsonBackup(
+      String backupName,
+      String? customPath,
+      String companyId,
+      ) async {
+    final backupDir = customPath != null
+        ? (await ensureDirectory(customPath)).path
+        : await _getBackupDirectory(companyId);
+    final backupPath = join(backupDir, '$backupName$_jsonExtension');
+
+    final backupData = await _exportDataToJson(await DatabaseHelper().database);
+
+    await File(backupPath).writeAsString(jsonEncode(backupData));
+
+    return backupPath;
+  }
+
+  // Export database data to JSON format (sensitive tables excluded)
+  Future<Map<String, dynamic>> _exportDataToJson(Database database) async {
+    final backupData = <String, dynamic>{};
+
+    final tables = await database.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+    );
+
+    for (final table in tables) {
+      final tableName = table['name'] as String;
+      if (_excludedFromJsonExport.contains(tableName)) continue;
+      final tableData = await database.query(tableName);
+      backupData[tableName] = tableData;
+    }
+
+    backupData['_metadata'] = {
+      'created_at': DateTime.now().toIso8601String(),
+      'version': '1.0',
+      'app_name': AppConfig.name,
+      'backup_type': 'json_export',
+      'record_count': backupData.length - 1,
+    };
+
+    return backupData;
+  }
+
+  // Restore from backup
+  Future<BackupResult> restoreBackup({
+    required String backupPath,
+  }) async {
+    try {
+      final backupFile = File(backupPath);
+      if (!await backupFile.exists()) {
+        return BackupResult(
+          success: false,
+          message: 'Backup file not found',
+        );
+      }
+
+      // Verify integrity before touching the live database
+      if (!await verifyBackup(backupPath)) {
+        return BackupResult(
+          success: false,
+          message: 'Backup file is corrupted or invalid',
+        );
+      }
+
+      final extension = backupPath.split('.').last;
+      final isDatabase = extension == _backupExtension.replaceAll('.', '');
+      final isJson = extension == _jsonExtension.replaceAll('.', '');
+      if (!isDatabase && !isJson) {
+        return BackupResult(
+          success: false,
+          message: 'Unsupported backup format',
+        );
+      }
+
+      // Back up the current data first, as a normal listed backup, so a
+      // wrong restore can be undone from the backup list. Nothing is
+      // replaced if this copy can't be made.
+      final String preRestorePath;
+      try {
+        preRestorePath = await _createPreRestoreBackup();
+      } catch (e) {
+        return BackupResult(
+          success: false,
+          message: 'Could not back up the current data, so nothing was '
+              'restored: ${e.toString()}',
+        );
+      }
+
+      if (isDatabase) {
+        await _restoreFromDatabaseBackup(backupPath, preRestorePath);
+      } else {
+        await _restoreFromJsonBackup(backupPath);
+      }
+
+      return BackupResult(
+        success: true,
+        message: 'Backup restored successfully',
+        filePath: backupPath,
+        timestamp: DateTime.now(),
+      );
+    } catch (e) {
+      return BackupResult(
+        success: false,
+        message: 'Restore failed: ${e.toString()}',
+      );
+    }
+  }
+
+  // Copies the live database into the active company's backup folder as
+  // `invoice_backup_<name>_pre_restore_<timestamp>.invoicedb`. It shows in
+  // the backup list like any other backup and is never deleted by a restore.
+  Future<String> _createPreRestoreBackup() async {
+    final companyId =
+        await CompanyRegistryService.getActiveCompanyId() ?? defaultCompanyId;
+    // The name only labels the file. It is read from the live company_info,
+    // so a damaged database (the usual reason to restore) must not block
+    // the copy — or the restore — just because the label can't be read.
+    String companyName;
+    try {
+      companyName = await CompanyRegistryService.getActiveCompanyName();
+    } catch (_) {
+      companyName = '';
+    }
+    final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
+    final backupName = 'invoice_backup_${_sanitizeForFilename(companyName)}'
+        '_pre_restore_$timestamp';
+    return _createDatabaseBackup(backupName, null, companyId);
+  }
+
+  // Restore from database backup.
+  // [safetyPath] is the pre-restore copy of the current data. Replaces the
+  // file and re-initializes the singleton so all subsequent DB calls get a
+  // live connection. On failure the safety copy is put back. The copy is
+  // kept either way, so a wrong restore can be undone later.
+  Future<void> _restoreFromDatabaseBackup(
+      String backupPath, String safetyPath) async {
+    final dbPath = DatabaseHelper.path!;
+
+    try {
+      // Close singleton and null its reference
+      await DatabaseHelper().close();
+
+      // Replace the database file on disk
+      await File(backupPath).copy(dbPath);
+
+      // Re-initialize through the singleton — runs migrations if needed
+      await DatabaseHelper().reinitialize();
+    } catch (e) {
+      // Restore safety copy on failure
+      try {
+        await DatabaseHelper().close();
+        await File(safetyPath).copy(dbPath);
+        await DatabaseHelper().reinitialize();
+      } catch (rollbackError) {
+        // Rollback failed — the safety copy is now the only good copy of the
+        // user's data, so tell the user where it is.
+        throw Exception(
+          'Restore failed ($e) and rollback failed ($rollbackError). '
+          'Your previous data is saved at: $safetyPath',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  // Restore from JSON backup
+  Future<void> _restoreFromJsonBackup(String backupPath) async {
+    final jsonContent = await File(backupPath).readAsString();
+    final backupData = jsonDecode(jsonContent) as Map<String, dynamic>;
+
+    // Validate metadata version
+    const supportedVersion = '1.0';
+    final metadata = backupData['_metadata'] as Map<String, dynamic>?;
+    if (metadata != null) {
+      final backupVersion = metadata['version'] as String?;
+      if (backupVersion != null && backupVersion != supportedVersion) {
+        throw Exception(
+          'Incompatible backup version: $backupVersion. '
+          'This backup was created with a newer version of the app.',
+        );
+      }
+    }
+
+    final database = await DatabaseHelper().database;
+
+    await database.transaction((txn) async {
+      // Clear existing data in reverse FK order
+      for (final tableName in _restoreTableOrder.reversed) {
+        await txn.delete(tableName);
+      }
+
+      // Restore in FK-safe order (parents before children)
+      for (final tableName in _restoreTableOrder) {
+        if (!backupData.containsKey(tableName)) continue;
+        final tableData = backupData[tableName] as List<dynamic>;
+        for (final row in tableData) {
+          await txn.insert(
+            tableName,
+            row as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+
+      // Restore any tables not in the ordered list (excluding metadata keys)
+      for (final entry in backupData.entries) {
+        if (entry.key.startsWith('_')) continue;
+        if (_restoreTableOrder.contains(entry.key)) continue;
+        final tableData = entry.value as List<dynamic>;
+        for (final row in tableData) {
+          await txn.insert(
+            entry.key,
+            row as Map<String, dynamic>,
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    });
+  }
+
+  // Get list of a company's available backups (its own store, plus — for the
+  // default company only — the pre-multi-company flat store and the legacy
+  // Documents store, so users upgrading from an earlier build still see the
+  // backups they made before companies existed).
+  Future<List<BackupInfo>> getBackupList(String companyId) async {
+    final backups = <String, BackupInfo>{};
+
+    for (final dirPath in {
+      await _getBackupDirectory(companyId),
+      if (companyId == defaultCompanyId) ...[
+        await _legacyFlatBackupDirectory(),
+        await _legacyBackupDirectory(),
+      ],
+    }) {
+      final directory = Directory(dirPath);
+      if (!await directory.exists()) continue;
+
+      for (final file in await directory.list().toList()) {
+        if (file is! File) continue;
+        final fileName = basename(file.path);
+        if (!fileName.endsWith(_backupExtension) &&
+            !fileName.endsWith(_jsonExtension)) {
+          continue;
+        }
+        if (backups.containsKey(fileName)) continue;
+        final stat = await file.stat();
+        backups[fileName] = BackupInfo(
+          fileName: fileName,
+          filePath: file.path,
+          size: stat.size,
+          createdAt: stat.modified,
+          type: fileName.endsWith(_backupExtension)
+              ? BackupType.database
+              : BackupType.json,
+        );
+      }
+    }
+
+    final list = backups.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
+
+  // Delete backup file
+  Future<bool> deleteBackup(String backupPath) async {
+    try {
+      final file = File(backupPath);
+      if (await file.exists()) {
+        await file.delete();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Share backup file
+  Future<void> shareBackup(String backupPath) async {
+    final file = File(backupPath);
+    if (await file.exists()) {
+      await SharePlus.instance.share(ShareParams(files: [XFile(backupPath)]));
+    }
+  }
+
+  // Auto backup (scheduled)
+  Future<void> performAutoBackup(
+      Database database, String companyId, String companyName) async {
+    final backups = await getBackupList(companyId);
+
+    if (backups.isEmpty ||
+        DateTime.now().difference(backups.first.createdAt).inDays >= 7) {
+      await createBackup(companyId: companyId, companyName: companyName);
+      await _cleanupOldBackups(companyId);
+    }
+  }
+
+  // Filesystem-safe fragment for a backup filename — strips characters
+  // invalid on Windows/Android and collapses whitespace so a business name
+  // like "Acme / Sons: Ltd." doesn't break path handling on any platform.
+  String _sanitizeForFilename(String name) {
+    final cleaned = name
+        .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1F]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_');
+    return cleaned.isEmpty ? 'company' : cleaned;
+  }
+
+  // Clean up old backups
+  Future<void> _cleanupOldBackups(String companyId) async {
+    final backups = await getBackupList(companyId);
+
+    if (backups.length > 5) {
+      final oldBackups = backups.skip(5);
+      for (final backup in oldBackups) {
+        await deleteBackup(backup.filePath);
+      }
+    }
+  }
+
+  // Lets the user pick a backup file from an external source. Returns its
+  // path, or null when nothing was picked. Does not restore anything — the
+  // caller asks for confirmation first, then calls [restoreBackup].
+  Future<String?> pickBackupFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['invoicedb', 'json'],
+    );
+    if (result == null || result.files.isEmpty) return null;
+    return result.files.first.path;
+  }
+
+  // Download backup file to Downloads folder
+  Future<BackupResult> downloadBackup(String backupPath) async {
+    try {
+      final file = File(backupPath);
+      if (!await file.exists()) {
+        return BackupResult(success: false, message: 'Backup file not found');
+      }
+
+      final downloadsDir = await _getDownloadsDirectory();
+      final fileName = basename(backupPath);
+      final newPath = join(downloadsDir.path, fileName);
+
+      await file.copy(newPath);
+
+      return BackupResult(
+        success: true,
+        message: 'Backup downloaded to Downloads folder',
+        filePath: newPath,
+        timestamp: DateTime.now(),
+      );
+    } catch (e) {
+      return BackupResult(success: false, message: 'Download failed: ${e.toString()}');
+    }
+  }
+
+  // Verify backup integrity
+  Future<bool> verifyBackup(String backupPath) async {
+    try {
+      final file = File(backupPath);
+      if (!await file.exists()) return false;
+
+      final extension = backupPath.split('.').last;
+
+      if (extension == _backupExtension.replaceAll('.', '')) {
+        final tempDb = await openDatabase(backupPath, readOnly: true);
+        await tempDb.close();
+        return true;
+      } else if (extension == _jsonExtension.replaceAll('.', '')) {
+        final content = await file.readAsString();
+        jsonDecode(content);
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // App-managed store for a company's rolling automatic backups. Lives
+  // beside the database (getApplicationSupportDirectory) — a directory the
+  // app already created and can always write to — so it never fails even
+  // when the user's Documents folder is missing or redirected (Windows +
+  // OneDrive). Grouped under the company's id so switching companies can't
+  // mix one company's backups into another's list. Users get a copy
+  // elsewhere via the Download / Share actions on each backup.
+  Future<String> _getBackupDirectory(String companyId) async {
+    final supportDir = await getApplicationSupportDirectory();
+    return (await ensureDirectory(join(supportDir.path, 'backups', companyId)))
+        .path;
+  }
+
+  // Where backups landed before per-company grouping existed; kept only for
+  // [getBackupList] on the default company, so upgrading users still see
+  // backups they made before companies existed.
+  Future<String> _legacyFlatBackupDirectory() async {
+    final supportDir = await getApplicationSupportDirectory();
+    return join(supportDir.path, 'backups');
+  }
+
+  // Where even older builds saved backups; kept only for [getBackupList].
+  Future<String> _legacyBackupDirectory() async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    return join(docsDir.path, 'backups');
+  }
+
+  Future<Directory> _getDownloadsDirectory() async {
+    if (Platform.isAndroid) {
+      final dir = Directory('/storage/emulated/0/Download');
+      if (await dir.exists()) return dir;
+    }
+
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final path = (await getDownloadsDirectory())?.path ?? '';
+      if (path.isNotEmpty) return ensureDirectory(path);
+    }
+
+    final docs = await getApplicationDocumentsDirectory();
+    return ensureDirectory(docs.path);
+  }
+}

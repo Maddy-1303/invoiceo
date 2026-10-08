@@ -1,0 +1,5052 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/widgets/discovery_banner.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiceo/common/constants.dart';
+import 'package:invoiceo/providers/app_config_provider.dart';
+import 'package:invoiceo/providers/repositories.dart';
+import 'package:invoiceo/services/update_service.dart';
+import 'package:invoiceo/widgets/update_dialog.dart';
+import 'package:invoiceo/domain/invoice_calculator.dart';
+import 'package:invoiceo/domain/customer_identity.dart';
+import 'package:invoiceo/common/invoiceo_colors.dart';
+import 'package:invoiceo/models/invoice.dart';
+import 'package:invoiceo/models/invoice_draft.dart';
+import 'package:invoiceo/models/product.dart';
+import 'package:invoiceo/common/common.dart';
+import 'package:invoiceo/database/company_registry_service.dart';
+import 'package:invoiceo/models/company_profile.dart';
+import 'package:invoiceo/screens/settings/company_management_screen.dart';
+import 'package:invoiceo/utils/company_switch_navigation.dart';
+import 'package:invoiceo/screens/help/help_search_screen.dart';
+import 'package:invoiceo/screens/settings/settings_screen.dart';
+import 'package:invoiceo/services/invoice_pdf_services.dart';
+import 'package:invoiceo/services/pdf_service.dart';
+import 'package:invoiceo/utils/formatters.dart';
+import 'package:invoiceo/widgets/apply_payment_dialog.dart';
+import 'package:invoiceo/widgets/customer_info_button.dart';
+import 'package:invoiceo/utils/session_manager.dart';
+
+import 'package:invoiceo/models/user.dart';
+// import 'package:invoiceo/screens/customer_management_screen.dart';
+import 'package:invoiceo/screens/customer_management_screen_v2.dart';
+import 'package:invoiceo/database/database_helper.dart';
+import 'package:invoiceo/layouts/layout_page.dart';
+import 'package:invoiceo/layouts/modern/modern_dashboard.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
+import 'package:invoiceo/layouts/modern/modern_shell.dart';
+import 'package:invoiceo/layouts/ui_layout.dart';
+import 'package:invoiceo/screens/create_invoice_screen_modern.dart';
+import 'package:invoiceo/screens/create_invoice_screen_v2.dart';
+// import 'package:invoiceo/screens/product_management_screen.dart';
+import 'package:invoiceo/screens/product_management_screen_v2.dart';
+// import 'package:invoiceo/screens/invoice_management_screen.dart';
+import 'package:invoiceo/screens/invoice_management_screen_v2.dart';
+import 'package:invoiceo/screens/auth/login_screen.dart';
+import 'package:invoiceo/screens/reports_screen.dart';
+
+import 'package:url_launcher/url_launcher.dart';
+import 'package:invoiceo/common/app_config.dart';
+import 'package:invoiceo/theme/brand_colors.dart';
+// invoice.type is a raw internal value ('Invoice'/'Quotation'/'Receipt') used
+// for comparisons throughout this file — only the displayed label is localized.
+String _invoiceTypeLabel(BuildContext context, String type) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (type) {
+    case 'Quotation':
+      return l10n.labelQuotation;
+    case 'Receipt':
+      return l10n.labelReceipt;
+    default:
+      return l10n.labelInvoice;
+  }
+}
+
+// Dashboard Screen
+class DashboardScreen extends ConsumerStatefulWidget {
+  final User loggedInUser;
+
+  const DashboardScreen(this.loggedInUser, {super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int _selectedIndex = 0;
+  bool _sidebarExpanded = true;
+  // Modern dashboard's Add Customer / Add Product: the page (5, 6 or 9) whose
+  // "new" form should open as it shows. Used once, then cleared.
+  int? _pendingAddPanel;
+  // Settings > Company: products, services or both. The Modern sidebar shows
+  // Products (6) and Services (9) to match.
+  BusinessType _businessType = BusinessType.both;
+  // The saved draft open in the create form (null = none).
+  String? _draftId;
+  // Part of the create form's key: bumped by "New Invoice" (sidebar, + menu,
+  // Ctrl+Q) so a fresh form is built even when page 1 is already open.
+  int _formSeq = 0;
+  // Keeps Settings on the same tab when the screen layout is switched (the
+  // page moves to the other frame instead of starting again).
+  final GlobalKey _settingsKey = GlobalKey();
+  // Modern layout: the sidebar reduced to icons (remembered between runs).
+  bool _modernSidebarCollapsed = false;
+  // The open page's title and buttons for the Modern top bar.
+  final ValueNotifier<ModernPageHeader?> _modernHeader = ValueNotifier(null);
+
+  late User _currentUser;
+  String? _pendingReportsStatementCustomerKey;
+  String? _companyName;
+  List<CompanyProfile> _companies = [];
+  String? _activeCompanyId;
+
+  Invoice? invoiceToEdit;
+  Invoice? _invoiceToClone;
+  String _cloneType = 'Invoice';
+  // Document type preselected on the create form for a brand-new doc, set by
+  // the "New {type}" button on each management screen. Reset to 'Invoice' by
+  // the nav-rail New Invoice action.
+  String _newInvoiceType = 'Invoice';
+  // Id of the quotation being converted to an invoice (drives the create
+  // form's convert mode). Null unless a conversion is in flight.
+  String? _convertSourceQuotationId;
+  bool _hasUpdate = false;
+  int? _accessibilityJumpToken;
+  final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
+  final FocusNode _shortcutsFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = widget.loggedInUser;
+    _loadUiLayout();
+    _loadModernSidebarPref();
+    _loadBusinessType();
+    _loadCompanies();
+    SessionManager.initialize(_onSessionTimeout);
+    if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
+    }
+    // Tab 1 (Create Invoice) owns its own autofocus/shortcuts — only claim
+    // focus here for the other tabs, so it doesn't get stolen away and
+    // block the Create Invoice screen's own Ctrl shortcuts from working.
+    if (_selectedIndex != 1) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _shortcutsFocusNode.requestFocus());
+    }
+  }
+
+  Future<void> _loadCompanies() async {
+    final companies = await CompanyRegistryService.listCompanies();
+    final activeId = await CompanyRegistryService.getActiveCompanyId();
+    if (!mounted) return;
+    setState(() {
+      _companies = companies;
+      _activeCompanyId = activeId;
+      _companyName = companies.where((c) => c.id == activeId).firstOrNull?.name;
+    });
+  }
+
+  Future<void> _switchCompany(CompanyProfile company) async {
+    // First the unsaved invoice, so a draft is saved to this company.
+    if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.companyMgmtSwitchConfirmTitle),
+        content: Text(l10n.companyMgmtSwitchConfirmBody(company.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.companyMgmtSwitchButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await CompanyRegistryService.switchToCompany(company.id);
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
+      return;
+    }
+    if (!mounted) return;
+    await returnToLoginAfterCompanyChange(context, ref);
+  }
+
+  /// Manage Companies from the company switcher. An unsaved invoice asks
+  /// first (a company can be switched there), and the switcher is read
+  /// again on return (a company may have been renamed, added or deleted).
+  Future<void> _openManageCompanies() async {
+    if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CompanyManagementScreen(currentUser: _currentUser)));
+    await _loadCompanies();
+  }
+
+  void _showErrorDialog(String message) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.commonErrorTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.actionOk),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Reads the business type; if the open page's sidebar item is hidden by
+  /// it (e.g. Services for a products-only shop), opens the other one.
+  Future<void> _loadBusinessType() async {
+    final bt = await ref.read(settingsRepositoryProvider).getBusinessType();
+    if (!mounted) return;
+    setState(() {
+      _businessType = bt;
+      _selectedIndex = _catalogPageFor(_selectedIndex);
+    });
+  }
+
+  /// Modern layout: Products (6) and Services (9) swap when the business type
+  /// hides one of them from the sidebar.
+  int _catalogPageFor(int index) {
+    if (ref.read(uiLayoutProvider) != UiLayout.modern) return index;
+    if (index == 9 && _businessType == BusinessType.product) return 6;
+    if (index == 6 && _businessType == BusinessType.service) return 9;
+    return index;
+  }
+
+  Future<void> _loadModernSidebarPref() async {
+    final v = await ref
+        .read(settingsRepositoryProvider)
+        .getSetting(SettingKey.modernSidebarCollapsed);
+    if (!mounted || v != 'true') return;
+    setState(() => _modernSidebarCollapsed = true);
+  }
+
+  void _toggleModernSidebar() {
+    if (!mounted) return;
+    setState(() => _modernSidebarCollapsed = !_modernSidebarCollapsed);
+    ref.read(settingsRepositoryProvider).setSetting(
+        SettingKey.modernSidebarCollapsed, _modernSidebarCollapsed.toString());
+  }
+
+  /// The saved screen layout (Standard or Modern) for the active company.
+  Future<void> _loadUiLayout() async {
+    final layout = await loadUiLayout(ref.read(settingsRepositoryProvider));
+    if (!mounted) return;
+    ref.read(uiLayoutProvider.notifier).state = layout;
+  }
+
+  Future<void> _checkForUpdates() async {
+    final info = await UpdateService.checkForUpdate();
+    if (info == null) return;
+    if (info.hasUpdate && mounted) setState(() => _hasUpdate = true);
+    if (!await UpdateService.shouldNotify(info)) return;
+    if (!mounted) return;
+    await UpdateDialog.show(context, info);
+  }
+
+  @override
+  void dispose() {
+    SessionManager.dispose();
+    _shortcutsFocusNode.dispose();
+    _modernHeader.dispose();
+    super.dispose();
+  }
+
+  void _logoutAndResetSession() async {
+    // An unsaved invoice asks first (save, draft, discard or stay).
+    if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
+    if (!mounted) return;
+    await ref.read(authRepositoryProvider).logoutAndSessionReset();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+  }
+
+  void _onSessionTimeout() async {
+    if (!mounted) return;
+    // Nobody is there to answer the unsaved-changes prompt: keep a new
+    // invoice being built as a draft. A failure never stops the logout.
+    if (_selectedIndex == 1) {
+      try {
+        await _invoiceFormGuard.saveDraftOnTimeout
+            ?.call()
+            .timeout(const Duration(seconds: 10));
+      } catch (_) {}
+      if (!mounted) return;
+    }
+    // Clear the whole stack — a dialog or pushed screen may be on top, and
+    // pushReplacement would leave the dashboard reachable behind Login.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (_) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:
+            Text(AppLocalizations.of(context)!.dashboardSessionExpiredMessage),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  Future<void> _refreshUser() async {
+    if (!mounted) return;
+    final cfg = ref.read(appEditionConfigProvider);
+    if (cfg.isCloud) return;
+    final fresh =
+        await ref.read(authRepositoryProvider).getUserById(_currentUser.id);
+    if (fresh != null && mounted) {
+      setState(() => _currentUser = fresh);
+    }
+  }
+
+  /// One page, in the screen layout in use (see docs/LAYOUTS.md). Every page
+  /// is listed here with its Standard design; when a page's Modern design is
+  /// built it is passed as [modern]. Until then Modern shows the Standard one.
+  Widget _page(Widget Function() standard, {Widget Function()? modern}) =>
+      LayoutPage(standard: standard, modern: modern)
+          .build(ref.watch(uiLayoutProvider));
+
+  /// Products (6) or Services (9): [kind] 'product' | 'service'. Modern: one
+  /// page per kind; Standard: the combined page (on its Services tab for 9).
+  Widget _catalogScreen(String kind, {bool modern = false}) {
+    final page = kind == 'service' ? 9 : 6;
+    return ProductManagementScreenV2(
+      key: ValueKey('${kind}s${modern ? '_modern' : ''}'),
+      user: _currentUser,
+      modern: modern,
+      kind: kind,
+      initialTab: !modern && kind == 'service' ? 2 : 0,
+      startWithAddPanel: _takePendingAddPanel(page),
+    );
+  }
+
+  /// The Customers page. [modern] = the Modern layout's page design.
+  Widget _customersScreen({bool modern = false}) => CustomerManagementScreenV2(
+        key: ValueKey(modern ? 'customers_modern' : 'customers'),
+        user: _currentUser,
+        modern: modern,
+        startWithAddPanel: _takePendingAddPanel(5),
+        onViewCustomerStatement: (c) {
+          setState(() {
+            _pendingReportsStatementCustomerKey =
+                CustomerIdentity.key(id: c.id, name: c.name);
+            _selectedIndex = 7;
+          });
+        },
+      );
+
+  /// The Invoices / Quotations / Receipts list. [modern] = the Modern
+  /// layout's page design; the Standard page is unchanged.
+  Widget _listScreen(String type, {bool modern = false}) {
+    final key = switch (type) {
+      'Quotation' => 'quotation_list',
+      'Receipt' => 'receipt_list',
+      _ => 'invoice_list',
+    };
+    return InvoiceManagementScreenV2(
+      key: ValueKey(modern ? '${key}_modern' : key),
+      onEditInvoice: editInvoice,
+      onCloneInvoice: cloneInvoice,
+      onOpenDraft: _openDraft,
+      onCreateNew: _createDocumentOfType,
+      onConvertToInvoice:
+          type == 'Quotation' ? _convertQuotationToInvoice : null,
+      user: _currentUser,
+      filterType: type,
+      modern: modern,
+    );
+  }
+
+  Widget buildScreen() {
+    switch (_selectedIndex) {
+      case 0:
+        return _page(
+          () => DashboardHome(
+              onEditInvoice: editInvoice,
+              onCloneInvoice: cloneInvoice,
+              user: _currentUser),
+          modern: () => ModernDashboard(
+            user: _currentUser,
+            onEditInvoice: editInvoice,
+            onCloneInvoice: cloneInvoice,
+            onCreateDocument: _createDocumentOfType,
+            onOpenPage: _selectTab,
+            onAddCustomer: () => _openWithAddPanel(5),
+            onAddProduct: () =>
+                _openWithAddPanel(_businessType == BusinessType.service ? 9 : 6),
+          ),
+        );
+      case 1:
+        final isNewDoc = invoiceToEdit == null && _invoiceToClone == null;
+        final createInvoiceKey = ValueKey(
+            'create_invoice_${invoiceToEdit?.id ?? 'new'}_${_invoiceToClone?.id ?? ''}_${isNewDoc ? _newInvoiceType : ''}_${_convertSourceQuotationId ?? ''}_${_draftId ?? ''}_$_formSeq');
+        void onCreateNewInvoice() {
+          if (!mounted) return;
+          setState(() {
+            invoiceToEdit = null;
+            _invoiceToClone = null;
+            _draftId = null;
+            _newInvoiceType = 'Invoice';
+            _convertSourceQuotationId = null;
+          });
+        }
+        // Standard: the previous developer's New screen. Modern: the new one.
+        // Only one create-invoice screen exists at a time, so both share the
+        // same form guard.
+        return _page(
+          () => CreateInvoiceScreenV2(
+            key: createInvoiceKey,
+            invoiceToEdit: invoiceToEdit,
+            cloneFrom: _invoiceToClone,
+            cloneType: _invoiceToClone != null ? _cloneType : null,
+            initialType: isNewDoc ? _newInvoiceType : null,
+            convertFromQuotationId: _convertSourceQuotationId,
+            guard: _invoiceFormGuard,
+            onCreateNewInvoice: onCreateNewInvoice,
+          ),
+          modern: () => CreateInvoiceScreenModern(
+            key: createInvoiceKey,
+            draftId: _draftId,
+            onGoToList: (type) => _selectTab(_listPageFor(type)),
+            onBack: () => _selectTab(_listPageFor(invoiceToEdit?.type ??
+                (_invoiceToClone != null
+                    ? _cloneType
+                    : _newInvoiceType))),
+            invoiceToEdit: invoiceToEdit,
+            cloneFrom: _invoiceToClone,
+            cloneType: _invoiceToClone != null ? _cloneType : null,
+            initialType: isNewDoc ? _newInvoiceType : null,
+            convertFromQuotationId: _convertSourceQuotationId,
+            guard: _invoiceFormGuard,
+            onCreateNewInvoice: onCreateNewInvoice,
+          ),
+        );
+      case 2:
+        return _page(() => _listScreen('Invoice'),
+            modern: () => _listScreen('Invoice', modern: true));
+      case 3:
+        return _page(() => _listScreen('Quotation'),
+            modern: () => _listScreen('Quotation', modern: true));
+      case 4:
+        return _page(() => _listScreen('Receipt'),
+            modern: () => _listScreen('Receipt', modern: true));
+      case 5:
+        return _page(() => _customersScreen(),
+            modern: () => _customersScreen(modern: true));
+      case 6:
+        return _page(() => _catalogScreen('product'),
+            modern: () => _catalogScreen('product', modern: true));
+      case 9:
+        // Services: its own Modern page; Standard shows the combined page on
+        // its Services tab.
+        return _page(() => _catalogScreen('service'),
+            modern: () => _catalogScreen('service', modern: true));
+      case 7:
+        final statementCustomerKey = _pendingReportsStatementCustomerKey;
+        _pendingReportsStatementCustomerKey = null;
+        return _page(() =>
+            ReportsScreen(initialStatementCustomerKey: statementCustomerKey));
+      case 8:
+        return _page(() => SettingsScreen(
+              key: _settingsKey,
+              currentUser: _currentUser,
+              openAccessibilityToken: _accessibilityJumpToken,
+            ));
+      default:
+        return Center(
+            child:
+                Text(AppLocalizations.of(context)!.dashboardUnknownTabLabel));
+    }
+  }
+
+  void editInvoice(Invoice invoice) {
+    _openEditInvoice(invoice);
+  }
+
+  Future<void> _openEditInvoice(Invoice invoice) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = invoice;
+      _invoiceToClone = null;
+      _draftId = null;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  void cloneInvoice(Invoice invoice, String type) {
+    _openCloneInvoice(invoice, type);
+  }
+
+  Future<void> _openCloneInvoice(Invoice invoice, String type) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = invoice;
+      _draftId = null;
+      _cloneType = type;
+      _convertSourceQuotationId = null;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "New {type}" button on the Invoice / Quotation / Receipt management screens
+  // — opens the create form with that document type preselected.
+  Future<void> _createDocumentOfType(String type) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    // Company Info (in Settings) may have changed the business type; it or
+    // Users may also have renamed the company or the signed-in user.
+    if (_selectedIndex == 8) {
+      await _refreshUser();
+      await _loadBusinessType();
+      await _loadCompanies();
+    }
+    await _loadUiLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = null;
+      _draftId = null;
+      _newInvoiceType = type;
+      _convertSourceQuotationId = null;
+      // Always a fresh form, also from the Created screen or after Discard.
+      _formSeq++;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  // "Convert to Invoice" action on a quotation row — opens the create form
+  // pre-filled from the quotation, locked to Invoice type; on save the
+  // quotation is stamped 'converted' and the two are linked.
+  Future<void> _convertQuotationToInvoice(Invoice quotation) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    await _loadUiLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = quotation;
+      _draftId = null;
+      _cloneType = 'Invoice';
+      _convertSourceQuotationId = quotation.id;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  Future<bool> _canLeaveInvoiceForm() async {
+    return await _invoiceFormGuard.canLeave?.call() ?? true;
+  }
+
+  Future<void> _selectTab(int index) async {
+    index = _catalogPageFor(index);
+    // "New Invoice" while page 1 is open (the Created screen, a quotation,
+    // an edit): after the unsaved-changes check, start a fresh blank invoice.
+    if (index == 1 && _selectedIndex == 1) {
+      if (!await _canLeaveInvoiceForm()) return;
+      await _loadUiLayout();
+      if (!mounted) return;
+      setState(() {
+        invoiceToEdit = null;
+        _invoiceToClone = null;
+        _draftId = null;
+        _newInvoiceType = 'Invoice';
+        _convertSourceQuotationId = null;
+        _formSeq++;
+      });
+      _shortcutsFocusNode.unfocus();
+      return;
+    }
+    if (_selectedIndex == index) return;
+    if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
+    // Users lives in Settings: a renamed own user shows in the top bar.
+    if ((_selectedIndex == 7 || _selectedIndex == 8) &&
+        index != _selectedIndex) {
+      await _refreshUser();
+    }
+    // Company Info (in Settings) may have changed the business type; the
+    // page to open follows it. It may also have renamed the company.
+    if (_selectedIndex == 8 && index != 8) {
+      await _loadBusinessType();
+      await _loadCompanies();
+      index = _catalogPageFor(index);
+      if (_selectedIndex == index) return;
+    }
+    if (index == 1) await _loadUiLayout();
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = index;
+      if (index != 1) {
+        invoiceToEdit = null;
+        _invoiceToClone = null;
+        _draftId = null;
+        _convertSourceQuotationId = null;
+      } else {
+        // Nav-rail "New Invoice" always means a plain, blank invoice.
+        _newInvoiceType = 'Invoice';
+        _invoiceToClone = null;
+        _draftId = null;
+        _convertSourceQuotationId = null;
+      }
+    });
+    // See initState: only hold shortcuts focus for non-create-invoice tabs.
+    // Autofocus is a no-op while this scope already has a focused node, so
+    // on the way IN to tab 1 we must explicitly unfocus — otherwise Create
+    // Invoice's own `Focus(autofocus: true)` never actually takes focus and
+    // its Ctrl+S/N/M/O/P shortcuts silently stop firing.
+    if (index == 1) {
+      _shortcutsFocusNode.unfocus();
+    } else {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _shortcutsFocusNode.requestFocus());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final modern = ref.watch(uiLayoutProvider) == UiLayout.modern;
+    return GestureDetector(
+      onTap: SessionManager.onUserActivity,
+      onPanDown: (_) => SessionManager.onUserActivity(),
+      behavior: HitTestBehavior.translucent,
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true): () =>
+              _selectTab(1),
+          // Modern: the top bar's "Search anything" opens with Ctrl+K (and
+          // Cmd+K on a Mac).
+          if (modern) ...{
+            const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+                showHelpSearchDialog(context),
+            const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+                showHelpSearchDialog(context),
+          },
+        },
+        child: Focus(
+          focusNode: _shortcutsFocusNode,
+          child: Scaffold(
+            body: modern
+                ? _buildModernBody()
+                : Row(
+                    children: [
+                      _buildSidebar(),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            buildScreen(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The Modern layout's frame (sidebar + top bar) around the current page.
+  /// See lib/layouts/modern/modern_shell.dart.
+  Widget _buildModernBody() {
+    return LayoutBuilder(builder: (context, constraints) {
+      // Reduced by the user, or forced by a window too narrow for the full
+      // sidebar (then the reduce button is hidden: there is no room to open it).
+      final narrow = constraints.maxWidth < 900;
+      final compact = narrow || _modernSidebarCollapsed;
+      return Row(
+        children: [
+          ModernSidebar(
+            selectedIndex: _selectedIndex,
+            onSelect: _selectTab,
+            companyName: _companyName,
+            companies: _companies,
+            activeCompanyId: _activeCompanyId,
+            onCompanySelected: (id) {
+              final company = _companies.where((c) => c.id == id).firstOrNull;
+              if (company != null) _switchCompany(company);
+            },
+            onManageCompanies: _openManageCompanies,
+            onHelp: () => showHelpSearchDialog(context),
+            onToggleCompact: narrow ? null : _toggleModernSidebar,
+            compact: compact,
+            showUpdateDot: _hasUpdate,
+            showProducts: _businessType != BusinessType.service,
+            showServices: _businessType != BusinessType.product,
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                ModernTopBar(
+                  username: _currentUser.username,
+                  isAdmin: _currentUser.isAdmin(),
+                  onSearch: () => showHelpSearchDialog(context),
+                  onCreate: (kind) => _createDocumentOfType(kind.type),
+                  onUserAction: _onModernUserAction,
+                  page: _selectedIndex,
+                  pageTitle: _modernPageTitle(),
+                  header: _modernHeader,
+                ),
+                Expanded(
+                  child: ModernHeaderScope(
+                    page: _selectedIndex,
+                    notifier: _modernHeader,
+                    child: buildScreen(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  /// Top bar title of a page that does not send its own header.
+  String _modernPageTitle() {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (_selectedIndex) {
+      1 => l10n.navNewInvoice,
+      2 => l10n.navInvoices,
+      3 => l10n.navQuotations,
+      4 => l10n.navReceipts,
+      5 => l10n.navCustomers,
+      6 => l10n.navProducts,
+      9 => l10n.navServices,
+      7 => l10n.navReports,
+      8 => l10n.navSettings,
+      _ => l10n.navDashboard,
+    };
+  }
+
+  /// The list page of a document type: Invoices 2, Quotations 3, Receipts 4.
+  int _listPageFor(String type) => switch (type) {
+        'Quotation' => 3,
+        'Receipt' => 4,
+        _ => 2,
+      };
+
+  /// Opens a saved draft in the create form (Modern layout's Save Draft).
+  Future<void> _openDraft(InvoiceDraft draft) async {
+    if (!await _canLeaveInvoiceForm()) return;
+    if (!mounted) return;
+    setState(() {
+      _selectedIndex = 1;
+      invoiceToEdit = null;
+      _invoiceToClone = draft.invoice;
+      _cloneType = draft.type;
+      _draftId = draft.id;
+      // A saved conversion keeps its quotation, so Create still links (and
+      // stamps) it and the quotation cannot be converted twice.
+      _convertSourceQuotationId = draft.invoice.convertedFromInvoiceId;
+    });
+    _shortcutsFocusNode.unfocus();
+  }
+
+  /// Opens Customers (5) or Products (6) with its "new" form already open.
+  void _openWithAddPanel(int page) {
+    page = _catalogPageFor(page);
+    _pendingAddPanel = page;
+    _selectTab(page);
+  }
+
+  /// True once for [page] after [_openWithAddPanel]; then cleared.
+  bool _takePendingAddPanel(int page) {
+    if (_pendingAddPanel != page) return false;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _pendingAddPanel = null);
+    return true;
+  }
+
+  void _onModernUserAction(ModernUserAction action) {
+    switch (action) {
+      case ModernUserAction.settings:
+        _selectTab(8);
+      case ModernUserAction.coffee:
+        launchUrl(Uri.parse(AppConfig.buyMeCoffee),
+            mode: LaunchMode.externalApplication);
+      case ModernUserAction.help:
+        showHelpSearchDialog(context);
+      case ModernUserAction.logout:
+        _logoutAndResetSession();
+    }
+  }
+
+  Widget _buildSidebar() {
+    final expanded = _sidebarExpanded;
+    final primary = Theme.of(context).primaryColor;
+    final cfg = ref.watch(appEditionConfigProvider);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeInOut,
+      width: expanded ? 210 : 64,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        border: Border(
+            right: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant, width: 1)),
+      ),
+      child: ClipRect(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Logo + toggle ──────────────────────────
+            if (expanded)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: 76,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          left: 16,
+                          right: 36,
+                          child: Image.asset(
+                            Theme.of(context).brightness == Brightness.dark
+                                ? 'assets/images/logo_compact_dark.png'
+                                : 'assets/images/logo_compact.png',
+                            height: 36,
+                            fit: BoxFit.fitHeight,
+                          ),
+                        ),
+                        Positioned(
+                          right: 6,
+                          child: Tooltip(
+                            message: AppLocalizations.of(context)!
+                                .dashboardCollapseSidebarTooltip,
+                            child: InkWell(
+                              onTap: () {
+                                if (!mounted) return;
+                                setState(() => _sidebarExpanded = false);
+                              },
+                              borderRadius: BorderRadius.circular(6),
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(Icons.chevron_left_rounded,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    size: 20),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_companyName?.isNotEmpty == true)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                      child: PopupMenuButton<String>(
+                        tooltip: '',
+                        padding: EdgeInsets.zero,
+                        offset: const Offset(0, 40),
+                        itemBuilder: (context) => [
+                          for (final company in _companies)
+                            PopupMenuItem<String>(
+                              value: company.id,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    company.id == _activeCompanyId
+                                        ? Icons.check_circle
+                                        : Icons.circle_outlined,
+                                    size: 18,
+                                    color: company.id == _activeCompanyId
+                                        ? Colors.green
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Flexible(
+                                      child: Text(company.name,
+                                          overflow: TextOverflow.ellipsis)),
+                                ],
+                              ),
+                            ),
+                          const PopupMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: '__manage__',
+                            child: Row(
+                              children: [
+                                Icon(Icons.settings_outlined,
+                                    size: 18,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant),
+                                const SizedBox(width: 10),
+                                Text(AppLocalizations.of(context)!
+                                    .companyMgmtTitle),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onSelected: (value) {
+                          if (value == '__manage__') {
+                            _openManageCompanies();
+                          } else if (value != _activeCompanyId) {
+                            final company = _companies
+                                .where((c) => c.id == value)
+                                .firstOrNull;
+                            if (company != null) _switchCompany(company);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          // `expanded` flips true while the sidebar is still ~64px
+                          // wide mid-animation; give the row a minimum width and
+                          // clip the excess instead of overflowing.
+                          child: LayoutBuilder(
+                            builder: (context, constraints) => UnconstrainedBox(
+                              constrainedAxis: Axis.vertical,
+                              alignment: Alignment.centerLeft,
+                              clipBehavior: Clip.hardEdge,
+                              child: SizedBox(
+                                width: constraints.maxWidth < 60
+                                    ? 60
+                                    : constraints.maxWidth,
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 11,
+                                      backgroundColor: primary,
+                                      child: Text(
+                                        _companyName!.trim()[0].toUpperCase(),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _companyName!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: primary,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(Icons.expand_more,
+                                        size: 16, color: primary),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              )
+            else
+              SizedBox(
+                height: 76,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Tooltip(
+                      message: _companyName ?? '',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.asset(
+                          Theme.of(context).brightness == Brightness.dark
+                              ? 'assets/images/logo_v_dark.png'
+                              : 'assets/images/logo_v.png',
+                          width: 38,
+                          height: 38,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Tooltip(
+                      message: AppLocalizations.of(context)!
+                          .dashboardExpandSidebarTooltip,
+                      child: InkWell(
+                        onTap: () {
+                          if (!mounted) return;
+                          setState(() => _sidebarExpanded = true);
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(Icons.chevron_right_rounded,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              size: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            Divider(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                height: 1,
+                thickness: 1),
+            const SizedBox(height: 8),
+
+            // ── Nav Items ──────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildNavItem(0, Icons.dashboard_outlined, Icons.dashboard,
+                        AppLocalizations.of(context)!.navDashboard),
+                    _buildNavItem(1, Icons.receipt_outlined, Icons.receipt,
+                        AppLocalizations.of(context)!.navNewInvoice),
+                    _buildNavItem(
+                        2,
+                        Icons.receipt_long_outlined,
+                        Icons.receipt_long,
+                        AppLocalizations.of(context)!.navInvoices),
+                    _buildNavItem(
+                        3,
+                        Icons.request_quote_outlined,
+                        Icons.request_quote,
+                        AppLocalizations.of(context)!.navQuotations),
+                    _buildNavItem(
+                        4,
+                        Icons.point_of_sale_outlined,
+                        Icons.point_of_sale,
+                        AppLocalizations.of(context)!.navReceipts),
+                    _buildNavItem(5, Icons.people_outline, Icons.people,
+                        AppLocalizations.of(context)!.navCustomers),
+                    _buildNavItem(
+                        6,
+                        Icons.inventory_2_outlined,
+                        Icons.inventory_2,
+                        AppLocalizations.of(context)!.navProducts),
+                    _buildNavItem(7, Icons.bar_chart_outlined, Icons.bar_chart,
+                        AppLocalizations.of(context)!.navReports),
+                    _buildNavItem(8, Icons.settings_outlined, Icons.settings,
+                        AppLocalizations.of(context)!.navSettings,
+                        showDot: _hasUpdate),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Search Help & Settings ──────────────────
+            _buildSearchNavItem(),
+            const SizedBox(height: 4),
+
+            // ── User Info ──────────────────────────────
+            Divider(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                height: 1,
+                thickness: 1),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Row below needs ~178px of fixed content (padding + avatar +
+                // 3 icon buttons) — switch only once it fits, not at 110.
+                final useExpanded = constraints.maxWidth > 180;
+                if (useExpanded) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 15,
+                              backgroundColor: primary.withValues(alpha: 0.12),
+                              child: Text(
+                                _currentUser.username.isNotEmpty
+                                    ? _currentUser.username[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                    color: primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _currentUser.username,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    _currentUser.isAdmin()
+                                        ? AppLocalizations.of(context)!
+                                            .dashboardRoleAdmin
+                                        : AppLocalizations.of(context)!
+                                            .dashboardRoleUser,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                        fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .buyMeCoffeeLabel,
+                              child: InkWell(
+                                onTap: () => launchUrl(
+                                    Uri.parse(AppConfig.buyMeCoffee),
+                                    mode: LaunchMode.externalApplication),
+                                borderRadius: BorderRadius.circular(6),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.coffee_outlined,
+                                      color: Color(0xFFD97706), size: 18),
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardSupportTooltip,
+                              child: InkWell(
+                                onTap: () => showHelpSearchDialog(context),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.support_agent_outlined,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      size: 18),
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              message: AppLocalizations.of(context)!
+                                  .dashboardLogoutTooltip,
+                              child: InkWell(
+                                onTap: () => _logoutAndResetSession(),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: EdgeInsets.all(6),
+                                  child: Icon(Icons.logout_rounded,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                      size: 18),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            cfg.version,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (TestBuildConfig.isTestBuild) ...[
+                          const SizedBox(height: 4),
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                AppLocalizations.of(context)!
+                                    .dashboardTestBuildBadge,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.orange.shade800,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Center(
+                        child: Tooltip(
+                          message: _currentUser.username,
+                          child: CircleAvatar(
+                            radius: 15,
+                            backgroundColor: primary.withValues(alpha: 0.12),
+                            child: Text(
+                              _currentUser.username.isNotEmpty
+                                  ? _currentUser.username[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                  color: primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                        message: AppLocalizations.of(context)!
+                            .buyMeCoffeeLabel,
+                        child: InkWell(
+                          onTap: () => launchUrl(
+                              Uri.parse(AppConfig.buyMeCoffee),
+                              mode: LaunchMode.externalApplication),
+                          borderRadius: BorderRadius.circular(6),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(Icons.coffee_outlined,
+                                color: Color(0xFFD97706), size: 18),
+                          ),
+                        ),
+                      ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                          message: AppLocalizations.of(context)!
+                              .dashboardSupportTooltip,
+                          child: InkWell(
+                            onTap: () => showHelpSearchDialog(context),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.support_agent_outlined,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  size: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Tooltip(
+                          message: AppLocalizations.of(context)!
+                              .dashboardLogoutTooltip,
+                          child: InkWell(
+                            onTap: () => _logoutAndResetSession(),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(Icons.logout_rounded,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  size: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Center(
+                        child: Text(
+                          cfg.version,
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      if (TestBuildConfig.isTestBuild) ...[
+                        const SizedBox(height: 3),
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              AppLocalizations.of(context)!
+                                  .dashboardTestBadgeShort,
+                              style: TextStyle(
+                                fontSize: 7,
+                                color: Colors.orange.shade800,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ), // ClipRect
+    );
+  }
+
+  /*
+  Widget _buildComingSoonNavItem(IconData icon, String label) {
+    const disabledColor = Color(0xFFCBD5E1);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: '$label — Coming Soon',
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: disabledColor, size: 20),
+              ),
+            ),
+          );
+        }
+
+        return Tooltip(
+          message: 'Coming Soon',
+          preferBelow: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: disabledColor, size: 18),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: disabledColor,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                    ),
+                    child: const Text(
+                      'Soon',
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: disabledColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  */
+
+  Widget _buildNavItem(
+      int index, IconData outlinedIcon, IconData filledIcon, String label,
+      {bool showDot = false}) {
+    final selected = _selectedIndex == index;
+    final primary = Theme.of(context).primaryColor;
+
+    Future<void> onTap() => _selectTab(index);
+
+    // Use LayoutBuilder so the layout switches based on actual rendered width,
+    // not just state — prevents overflow errors during the AnimatedContainer transition.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: label,
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: primary.withValues(alpha: 0.06),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(12),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? primary.withValues(alpha: 0.1)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          selected ? filledIcon : outlinedIcon,
+                          color: selected
+                              ? primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 20,
+                        ),
+                        if (showDot)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              hoverColor: primary.withValues(alpha: 0.06),
+              splashColor: primary.withValues(alpha: 0.1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? primary.withValues(alpha: 0.1)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          selected ? filledIcon : outlinedIcon,
+                          color: selected
+                              ? primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 18,
+                        ),
+                        if (showDot)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: selected
+                              ? primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w400,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                    if (selected)
+                      Container(
+                        width: 3,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: primary,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchNavItem() {
+    final primary = Theme.of(context).primaryColor;
+    final label = AppLocalizations.of(context)!.helpSearchTooltip;
+    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useExpanded = constraints.maxWidth > 110;
+
+        if (!useExpanded) {
+          return Tooltip(
+            message: label,
+            preferBelow: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: () => showHelpSearchDialog(context),
+                  borderRadius: BorderRadius.circular(8),
+                  hoverColor: primary.withValues(alpha: 0.06),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child:
+                        Icon(Icons.search, color: onSurfaceVariant, size: 20),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () => showHelpSearchDialog(context),
+              borderRadius: BorderRadius.circular(8),
+              hoverColor: primary.withValues(alpha: 0.06),
+              splashColor: primary.withValues(alpha: 0.1),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: onSurfaceVariant, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          color: onSurfaceVariant,
+                          fontWeight: FontWeight.w400,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class DashboardHome extends ConsumerStatefulWidget {
+  final Function(Invoice) onEditInvoice;
+  final Function(Invoice, String) onCloneInvoice;
+  final User user;
+  const DashboardHome({
+    required this.onEditInvoice,
+    required this.onCloneInvoice,
+    required this.user,
+    super.key,
+  });
+
+  @override
+  ConsumerState<DashboardHome> createState() => _DashboardHomeState();
+}
+
+class _DashboardHomeState extends ConsumerState<DashboardHome> {
+  final dbHelper = DatabaseHelper();
+  int totalCustomers = 0;
+  int totalProducts = 0;
+  int totalInvoices = 0;
+  double totalRevenue = 0.0;
+  double totalOutstanding = 0.0;
+  List<Invoice> recentInvoices = [];
+  List<Invoice> dueSoonInvoices = [];
+  List<Product> outOfStockProducts = [];
+  List<Invoice> overdueInvoices = [];
+  String _currencySymbol = '₹';
+  bool isLoading = true;
+  String _dashboardLayout = 'default';
+  bool _showLayoutBanner = false;
+  bool _showThemeBanner = false;
+  bool _showShortcutsBanner = false;
+  List<Map<String, dynamic>> _monthlyRevenue = [];
+  List<Map<String, dynamic>> _topCustomers = [];
+  List<Map<String, dynamic>> _topProducts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    if (!mounted) return;
+    setState(() => isLoading = true);
+
+    final results = await Future.wait([
+      ref.read(customerRepositoryProvider).getTotalCustomerCount(), // 0
+      ref.read(productRepositoryProvider).getTotalProductCount(), // 1
+      ref.read(invoiceRepositoryProvider).getDashboardFinancials(), // 2
+      ref.read(invoiceRepositoryProvider).getRecentInvoices(limit: 5), // 3
+      ref.read(invoiceRepositoryProvider).getDueSoonInvoices(), // 4
+      ref.read(invoiceRepositoryProvider).getOverdueInvoices(limit: 10), // 5
+      ref.read(settingsRepositoryProvider).getCurrency(), // 6
+      ref.read(invoiceRepositoryProvider).getMonthlyRevenue(), // 7
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.dashboardLayout), // 8
+      ref.read(invoiceRepositoryProvider).getTopCustomers(), // 9
+      ref.read(invoiceRepositoryProvider).getTopProducts(), // 10
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.layoutBannerDismissed), // 11
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.supportBannerDismissed), // 12
+      ref.read(productRepositoryProvider).getOutOfStockProducts(), // 13
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.themeBannerDismissed), // 14
+      ref
+          .read(settingsRepositoryProvider)
+          .getSetting(SettingKey.shortcutsBannerDismissed), // 15
+    ]);
+
+    final customerCount = results[0] as int;
+    final productCount = results[1] as int;
+    final financials =
+        results[2] as ({int count, double revenue, double outstanding});
+    final recent = results[3] as List<Invoice>;
+    final dueSoon = results[4] as List<Invoice>;
+    final overdue = results[5] as List<Invoice>;
+    final currency = results[6] as CurrencyOption;
+    final monthly = results[7] as List<Map<String, dynamic>>;
+    final layout = results[8] as String?;
+    final topCust = results[9] as List<Map<String, dynamic>>;
+    final topProd = results[10] as List<Map<String, dynamic>>;
+    final bannerDismissed = results[11] as String?;
+    final outOfStock = results[13] as List<Product>;
+    final themeBannerDismissed = results[14] as String?;
+    final shortcutsBannerDismissed =
+        Platform.isAndroid ? '1' : results[15] as String?;
+    if (!mounted) return;
+    setState(() {
+      totalCustomers = customerCount;
+      totalProducts = productCount;
+      outOfStockProducts = outOfStock;
+      totalInvoices = financials.count;
+      totalRevenue = financials.revenue;
+      totalOutstanding = financials.outstanding;
+      recentInvoices = recent;
+      dueSoonInvoices = dueSoon;
+      overdueInvoices = overdue;
+      _currencySymbol = currency.symbol;
+      _monthlyRevenue = monthly;
+      _dashboardLayout = layout ?? 'default';
+      _topCustomers = topCust;
+      _topProducts = topProd;
+      _showLayoutBanner = bannerDismissed != '1';
+      _showThemeBanner = themeBannerDismissed != '1';
+      _showShortcutsBanner = shortcutsBannerDismissed != '1';
+      isLoading = false;
+    });
+  }
+
+  Future<void> _dismissLayoutBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.layoutBannerDismissed, '1');
+    if (mounted) setState(() => _showLayoutBanner = false);
+  }
+
+  Future<void> _dismissThemeBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.themeBannerDismissed, '1');
+    if (mounted) setState(() => _showThemeBanner = false);
+  }
+
+  Future<void> _dismissShortcutsBanner() async {
+    await ref
+        .read(settingsRepositoryProvider)
+        .setSetting(SettingKey.shortcutsBannerDismissed, '1');
+    if (mounted) setState(() => _showShortcutsBanner = false);
+  }
+
+  void _showShortcutsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.keyboard_outlined),
+            const SizedBox(width: 12),
+            Text(AppLocalizations.of(context)!.dashboardKeyboardShortcutsTitle),
+          ],
+        ),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: AppShortcuts.all(context)
+                .map((s) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant),
+                            ),
+                            child: Text(s.$1,
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w600)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(s.$2,
+                                style: const TextStyle(fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.actionClose),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutsDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showShortcutsBanner,
+      icon: Icons.keyboard_outlined,
+      iconColor: const Color(0xFF059669),
+      backgroundColor: const Color(0xFFECFDF5),
+      borderColor: const Color(0xFFA7F3D0),
+      title: Text(
+        AppLocalizations.of(context)!.dashboardShortcutsBannerTitle,
+        style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: Color(0xFF065F46)),
+      ),
+      subtitle: Text(
+        AppLocalizations.of(context)!.dashboardShortcutsBannerSubtitle,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF059669)),
+      ),
+      actionLabel: AppLocalizations.of(context)!.dashboardViewAllAction,
+      onAction: _showShortcutsDialog,
+      actionColor: const Color(0xFF059669),
+      onDismiss: _dismissShortcutsBanner,
+      dismissIconColor: const Color(0xFF6EE7B7),
+    );
+  }
+
+  Widget _buildLayoutDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showLayoutBanner,
+      icon: Icons.dashboard_customize_outlined,
+      iconColor: BrandColors.primary,
+      backgroundColor: BrandColors.primarySoft,
+      borderColor: BrandColors.primaryBorder,
+      title: Text(
+        AppLocalizations.of(context)!.dashboardLayoutBannerTitle,
+        style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: Color(0xFF1E40AF)),
+      ),
+      subtitle: Text(
+        AppLocalizations.of(context)!.dashboardLayoutBannerSubtitle,
+        style: const TextStyle(fontSize: 12, color: BrandColors.primary),
+      ),
+      actionLabel: AppLocalizations.of(context)!.actionGotIt,
+      onAction: _dismissLayoutBanner,
+      actionColor: BrandColors.primary,
+      onDismiss: _dismissLayoutBanner,
+      dismissIconColor: Color(0xFF93C5FD),
+    );
+  }
+
+  Widget _buildThemeDiscoveryBanner() {
+    return DiscoveryBanner(
+      visible: _showThemeBanner,
+      icon: Icons.dark_mode_outlined,
+      iconColor: const Color(0xFF7C3AED),
+      backgroundColor: const Color(0xFFF5F3FF),
+      borderColor: const Color(0xFFDDD6FE),
+      title: Row(
+        children: [
+          Text(
+            AppLocalizations.of(context)!.dashboardThemeBannerTitle,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Color(0xFF5B21B6)),
+          ),
+          const SizedBox(width: 6),
+          const _BetaTag(),
+        ],
+      ),
+      subtitle: Text(
+        AppLocalizations.of(context)!.dashboardThemeBannerSubtitle,
+        style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED)),
+      ),
+      actionLabel: AppLocalizations.of(context)!.actionGotIt,
+      onAction: _dismissThemeBanner,
+      actionColor: const Color(0xFF7C3AED),
+      onDismiss: _dismissThemeBanner,
+      dismissIconColor: const Color(0xFFC4B5FD),
+    );
+  }
+
+  Widget _buildSupportBanner() {
+    // The review / donation banner of the original product is gone.
+    return const SizedBox.shrink();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? null
+          : BrandColors.page,
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.dashboardOverviewTitle),
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          _buildLayoutToggle(),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadDashboardData,
+            tooltip: AppLocalizations.of(context)!.actionRefresh,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (_dashboardLayout) {
+      case 'classic':
+        return _buildClassicLayout();
+      case 'simple':
+        return _buildSimpleFeedLayout();
+      case 'bento':
+        return _buildBentoLayout();
+      default:
+        return _buildDefaultLayout();
+    }
+  }
+
+  Widget _buildDefaultLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(28),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
+              _buildSupportBanner(),
+              // ── Greeting Banner ──────────────────────────────
+              _buildGreetingBanner(),
+
+              const SizedBox(height: 28),
+
+              // ── Stats Row ────────────────────────────────────
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildStatCard(
+                        AppLocalizations.of(context)!.navCustomers,
+                        totalCustomers.toString(),
+                        BrandColors.primary,
+                        Icons.people_outline),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                      AppLocalizations.of(context)!.navProducts,
+                      totalProducts.toString(),
+                      const Color(0xFF2E7D32),
+                      Icons.inventory_2_outlined,
+                      subtitle: outOfStockProducts.isNotEmpty
+                          ? AppLocalizations.of(context)!
+                              .dashboardOutOfStockCountLabel(
+                                  outOfStockProducts.length)
+                          : null,
+                      subtitleColor: Colors.red[600],
+                    ),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                        AppLocalizations.of(context)!.navInvoices,
+                        totalInvoices.toString(),
+                        const Color(0xFFE65100),
+                        Icons.receipt_long_outlined),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                      AppLocalizations.of(context)!
+                          .dashboardRevenueCollectedLabel,
+                      '$_currencySymbol ${totalRevenue.toStringAsFixed(2)}',
+                      const Color(0xFF6A1B9A),
+                      Icons.account_balance_wallet_outlined,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildStatCard(
+                      AppLocalizations.of(context)!.dashboardOutstandingLabel,
+                      '$_currencySymbol ${totalOutstanding.toStringAsFixed(2)}',
+                      const Color(0xFFC62828),
+                      Icons.hourglass_top_outlined,
+                      subtitle: overdueInvoices.isNotEmpty
+                          ? AppLocalizations.of(context)!
+                              .dashboardOverdueCountLabel(
+                                  overdueInvoices.length)
+                          : null,
+                      subtitleColor: Colors.red[700],
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Due Soon ─────────────────────────────────────
+              if (dueSoonInvoices.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildDueSoonSection(),
+              ],
+
+              // ── Out of Stock ──────────────────────────────────
+              if (outOfStockProducts.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildOutOfStockSection(),
+              ],
+
+              // ── Overdue Invoices ──────────────────────────────
+              if (overdueInvoices.isNotEmpty) ...[
+                const SizedBox(height: 36),
+                _buildOverdueSection(),
+              ],
+
+              const SizedBox(height: 36),
+
+              // ── Recent Invoices Header ────────────────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 4,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context)!.dashboardRecentInvoicesTitle,
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3),
+                  ),
+                  const Spacer(),
+                  Text(
+                    AppLocalizations.of(context)!
+                        .dashboardLastFiveInvoicesLabel,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              recentInvoices.isEmpty
+                  ? Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(48),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.receipt_long_outlined,
+                                size: 80,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant),
+                            const SizedBox(height: 16),
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .dashboardNoInvoicesYetTitle,
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .dashboardNoInvoicesYetSubtitle,
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: recentInvoices.length,
+                      itemBuilder: (context, index) {
+                        final invoice = recentInvoices[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: Card(
+                            elevation: 2,
+                            shadowColor: Colors.black.withValues(alpha: 0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppBorderRadius.xsmall),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  if (invoice.dueDate == null)
+                                    Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            Theme.of(context).primaryColor,
+                                            Theme.of(context)
+                                                .primaryColor
+                                                .withValues(alpha: 0.7),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                            AppBorderRadius.xsmall),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (invoice.dueDate != null)
+                                    () {
+                                      final isOverdue =
+                                          InvoiceCalculator.isOverdue(
+                                        dueDate: invoice.dueDate,
+                                        outstanding: invoice.outstandingBalance,
+                                      );
+                                      return Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          gradient: isOverdue
+                                              ? DashboardScreenColors
+                                                  .invoiceNumberOverDueLinearGradient
+                                              : LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Theme.of(context)
+                                                        .primaryColor,
+                                                    Theme.of(context)
+                                                        .primaryColor
+                                                        .withValues(alpha: 0.7),
+                                                  ],
+                                                ),
+                                          borderRadius: BorderRadius.circular(
+                                              AppBorderRadius.xsmall),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }(),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Text(
+                                              '${invoice.type} #${invoice.invoiceNumber ?? invoice.id}',
+                                              style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: invoice.type == 'Invoice'
+                                                    ? BrandColors.accent
+                                                        .withValues(alpha: 0.1)
+                                                    : Colors.orange
+                                                        .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color:
+                                                      invoice.type == 'Invoice'
+                                                          ? BrandColors.accent
+                                                              .withValues(
+                                                                  alpha: 0.35)
+                                                          : Colors.orange
+                                                              .withValues(
+                                                                  alpha: 0.35),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                _invoiceTypeLabel(
+                                                    context, invoice.type),
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      invoice.type == 'Invoice'
+                                                          ? BrandColors.accentDark
+                                                          : Colors.orange[800],
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                            if (invoice.type == 'Invoice')
+                                              _buildPaymentStatusChip(
+                                                  invoice.paymentStatus),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.person_outline,
+                                                    size: 16,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant),
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                    child: Text(
+                                                  invoice.customer.name
+                                                      .limit(15),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurface),
+                                                )),
+                                              ],
+                                            ),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.calendar_today,
+                                                    size: 16,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant),
+                                                const SizedBox(width: 6),
+                                                Flexible(
+                                                    child: Text(
+                                                  invoice.date
+                                                      .toString()
+                                                      .split(' ')[0],
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                      fontSize: 15,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurface),
+                                                )),
+                                              ],
+                                            ),
+                                            if (invoice.dueDate != null)
+                                              () {
+                                                final isOverdue =
+                                                    InvoiceCalculator.isOverdue(
+                                                  dueDate: invoice.dueDate,
+                                                  outstanding: invoice
+                                                      .outstandingBalance,
+                                                );
+                                                final color = isOverdue
+                                                    ? Colors.red[700]!
+                                                    : Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant;
+                                                return ConstrainedBox(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                          maxWidth: 260),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.event_outlined,
+                                                          size: 16,
+                                                          color: color),
+                                                      const SizedBox(width: 6),
+                                                      Flexible(
+                                                        child: Text(
+                                                          AppLocalizations.of(
+                                                                  context)!
+                                                              .dashboardDueDateLabel(
+                                                                  AppFormatters
+                                                                      .formatShortDate(
+                                                                          invoice
+                                                                              .dueDate)),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            color: color,
+                                                            fontWeight:
+                                                                isOverdue
+                                                                    ? FontWeight
+                                                                        .w600
+                                                                    : FontWeight
+                                                                        .normal,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }(),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.purple
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          '${invoice.currencySymbol} ${invoice.total.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.purple,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        alignment: WrapAlignment.end,
+                                        children: [
+                                          _buildActionButton(
+                                              Icons.visibility_outlined,
+                                              Colors.green,
+                                              AppLocalizations.of(context)!
+                                                  .actionView,
+                                              () => InvoicePdfServices
+                                                  .showInvoiceDetails(
+                                                      context, invoice)),
+                                          _buildActionButton(
+                                              Icons.edit_outlined,
+                                              BrandColors.primary,
+                                              AppLocalizations.of(context)!
+                                                  .actionEdit,
+                                              invoice.status == 'declined'
+                                                  ? null
+                                                  : () => widget
+                                                      .onEditInvoice(invoice)),
+                                          _buildActionButton(
+                                              Icons.copy_all_outlined,
+                                              Colors.teal,
+                                              AppLocalizations.of(context)!
+                                                  .actionDuplicate,
+                                              () => _showCloneDialog(invoice)),
+                                          _buildActionButton(
+                                              Icons.picture_as_pdf_outlined,
+                                              Colors.orange,
+                                              AppLocalizations.of(context)!
+                                                  .actionPdfPreview,
+                                              () =>
+                                                  InvoicePdfServices.previewPDF(
+                                                      context, invoice)),
+                                          _buildActionButton(
+                                              Icons.download_outlined,
+                                              Colors.deepPurple,
+                                              AppLocalizations.of(context)!
+                                                  .actionDownloadPdf,
+                                              () => PDFService.downloadPDF(
+                                                  context, invoice)),
+                                          _buildActionButton(
+                                              Icons.print_outlined,
+                                              Colors.blueGrey,
+                                              AppLocalizations.of(context)!
+                                                  .actionPrint,
+                                              () => InvoicePdfServices
+                                                  .generatePDF(
+                                                      context, invoice)),
+                                          _buildActionButton(
+                                              Icons.payments_outlined,
+                                              Colors.purple,
+                                              AppLocalizations.of(context)!
+                                                  .actionPayment,
+                                              invoice.type == 'Invoice' &&
+                                                      (invoice.status !=
+                                                              'declined' ||
+                                                          invoice.payments
+                                                              .isNotEmpty)
+                                                  ? () => showDialog(
+                                                        context: context,
+                                                        barrierDismissible:
+                                                            false,
+                                                        builder: (_) =>
+                                                            ApplyPaymentDialog(
+                                                          invoice: invoice,
+                                                          onPaymentRecorded:
+                                                              () {
+                                                            if (!mounted)
+                                                              return;
+                                                            setState(() {});
+                                                          },
+                                                        ),
+                                                      )
+                                                  : null),
+                                          _buildActionButton(
+                                              Icons.delete_outline,
+                                              Colors.red,
+                                              AppLocalizations.of(context)!
+                                                  .actionDelete,
+                                              widget.user.isAdmin()
+                                                  ? () =>
+                                                      _showDeleteDialog(invoice)
+                                                  : null),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      decoration: BoxDecoration(
+        gradient: DashboardScreenColors.welcomePanelBackgroundGradientColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E293B).withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppLocalizations.of(context)!
+                    .dashboardWelcomeBackMessage(widget.user.username),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                AppLocalizations.of(context)!.dashboardBusinessGlanceSubtitle,
+                style: TextStyle(
+                    fontSize: 13, color: Colors.white.withValues(alpha: 0.72)),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DateFormat('EEEE').format(DateTime.now()),
+                style: TextStyle(
+                    fontSize: 12, color: Colors.white.withValues(alpha: 0.72)),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                DateFormat('MMM d, yyyy').format(DateTime.now()),
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDueSoonSection() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.orange[700],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Icon(Icons.notifications_active_outlined,
+                color: Colors.orange, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context)!.dashboardDueSoonTitle,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!
+                    .dashboardInvoiceCountLabel(dueSoonInvoices.length),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange[800]),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              AppLocalizations.of(context)!.dashboardTodayTomorrowLabel,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Cards
+        ...dueSoonInvoices.map((invoice) {
+          final due = DateTime(invoice.dueDate!.year, invoice.dueDate!.month,
+              invoice.dueDate!.day);
+          final isToday = due == today;
+          final badgeColor = isToday ? Colors.red : Colors.orange;
+          final badgeLabel = isToday
+              ? AppLocalizations.of(context)!.dashboardDueTodayBadge
+              : AppLocalizations.of(context)!.dashboardDueTomorrowBadge;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                side: BorderSide(
+                    color: badgeColor.withValues(alpha: 0.3), width: 1),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                child: Row(
+                  children: [
+                    // Due badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: badgeColor.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        badgeLabel,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: badgeColor),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Invoice ID
+                    Text(
+                      '#${invoice.invoiceNumber ?? invoice.id}',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 16),
+                    // Customer
+                    Icon(Icons.person_outline,
+                        size: 15,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              invoice.customer.name,
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          CustomerInfoButton(customer: invoice.customer),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Outstanding amount
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: badgeColor),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Actions
+                    _buildActionButton(
+                        Icons.visibility_outlined,
+                        Colors.green,
+                        AppLocalizations.of(context)!.actionView,
+                        () => InvoicePdfServices.showInvoiceDetails(
+                            context, invoice)),
+                    const SizedBox(width: 6),
+                    _buildActionButton(
+                        Icons.picture_as_pdf_outlined,
+                        Colors.orange,
+                        AppLocalizations.of(context)!.actionPdfPreview,
+                        () => InvoicePdfServices.previewPDF(context, invoice)),
+                    const SizedBox(width: 6),
+                    _buildActionButton(
+                        Icons.payments_outlined,
+                        Colors.purple,
+                        AppLocalizations.of(context)!.actionRecordPayment,
+                        () => showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => ApplyPaymentDialog(
+                                invoice: invoice,
+                                onPaymentRecorded: _loadDashboardData,
+                              ),
+                            )),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildOverdueSection() {
+    final today = InvoiceCalculator.dateOnly(DateTime.now());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.red[800],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 22),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context)!.dashboardOverdueSectionTitle,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!
+                    .dashboardInvoiceCountLabel(overdueInvoices.length),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red[800]),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              AppLocalizations.of(context)!.dashboardOldestFirstLabel,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...overdueInvoices.map((invoice) {
+          final daysOverdue = InvoiceCalculator.daysOverdue(
+            dueDate: invoice.dueDate,
+            asOf: today,
+          );
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                side: BorderSide(
+                    color: Colors.red.withValues(alpha: 0.3), width: 1),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                child: Row(
+                  children: [
+                    // Days overdue badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!
+                            .dashboardDaysOverdueLabel(daysOverdue),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.red[800]),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Invoice ID
+                    Text(
+                      '#${invoice.invoiceNumber ?? invoice.id}',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 16),
+                    // Customer
+                    Icon(Icons.person_outline,
+                        size: 15,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              invoice.customer.name,
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          CustomerInfoButton(customer: invoice.customer),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Outstanding amount
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$_currencySymbol ${invoice.outstandingBalance.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red[800]),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Actions
+                    _buildActionButton(
+                        Icons.visibility_outlined,
+                        Colors.green,
+                        AppLocalizations.of(context)!.actionView,
+                        () => InvoicePdfServices.showInvoiceDetails(
+                            context, invoice)),
+                    const SizedBox(width: 6),
+                    _buildActionButton(
+                        Icons.picture_as_pdf_outlined,
+                        Colors.orange,
+                        AppLocalizations.of(context)!.actionPdfPreview,
+                        () => InvoicePdfServices.previewPDF(context, invoice)),
+                    const SizedBox(width: 6),
+                    _buildActionButton(
+                      Icons.payments_outlined,
+                      Colors.purple,
+                      AppLocalizations.of(context)!.actionRecordPayment,
+                      () => showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => ApplyPaymentDialog(
+                          invoice: invoice,
+                          onPaymentRecorded: _loadDashboardData,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Future<void> _showUpdateStockDialog(Product product) async {
+    final controller = TextEditingController(text: product.stock.toString());
+    final l10n = AppLocalizations.of(context)!;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.inventory_2, color: Colors.red[600], size: 20),
+            const SizedBox(width: 8),
+            Flexible(
+                child: Text(product.name, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+        content: SizedBox(
+          width: 300,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: l10n.dashboardNewStockQuantityLabel,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              prefixIcon: const Icon(Icons.add_box_outlined),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.actionCancel)),
+          FilledButton(
+            onPressed: () async {
+              final qty = int.tryParse(controller.text.trim());
+              if (qty == null || qty < 0) return;
+              await ref
+                  .read(productRepositoryProvider)
+                  .updateProductStock(product.id, qty);
+              if (ctx.mounted) Navigator.pop(ctx);
+              _loadDashboardData();
+            },
+            child: Text(l10n.actionUpdate),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+  }
+
+  Widget _buildOutOfStockSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.red[700],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Icon(Icons.inventory_2, color: Colors.red[600], size: 22),
+            const SizedBox(width: 8),
+            Text(
+              AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                AppLocalizations.of(context)!
+                    .dashboardItemCountLabel(outOfStockProducts.length),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red[700]),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              AppLocalizations.of(context)!.dashboardTapToRestockLabel,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...outOfStockProducts.map((product) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
+                  side: BorderSide(
+                      color: Colors.red.withValues(alpha: 0.3), width: 1),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  child: Row(
+                    children: [
+                      // Icon
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.inventory_2,
+                            color: Colors.red[600], size: 20),
+                      ),
+                      const SizedBox(width: 16),
+                      // Name & type
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.name,
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              product.type == 'service'
+                                  ? AppLocalizations.of(context)!.labelService
+                                  : AppLocalizations.of(context)!.labelProduct,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Price
+                      Text(
+                        '$_currencySymbol${product.price.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface),
+                      ),
+                      const SizedBox(width: 16),
+                      // Stock badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: Colors.red.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!
+                              .dashboardStockLabel(product.stock),
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.red[700]),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Update stock button
+                      _buildActionButton(
+                        Icons.add_box_outlined,
+                        Colors.green,
+                        AppLocalizations.of(context)!.actionUpdateStock,
+                        () => _showUpdateStockDialog(product),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String title, String value, Color color, IconData icon,
+      {String? subtitle, Color? subtitleColor}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 19),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      if (subtitle?.isNotEmpty ?? false) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.warning_amber_rounded,
+                            size: 11, color: subtitleColor ?? Colors.red),
+                        const SizedBox(width: 2),
+                        Flexible(
+                          child: Text(
+                            subtitle!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: subtitleColor ?? Colors.red,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+      IconData icon, Color color, String tooltip, VoidCallback? onPressed) {
+    final effectiveColor = onPressed != null
+        ? color
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.2)),
+          ),
+          child: Icon(icon, color: effectiveColor, size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentStatusChip(PaymentStatus status) {
+    final l10n = AppLocalizations.of(context)!;
+    final Color color;
+    final String label;
+    switch (status) {
+      case PaymentStatus.paid:
+        color = Colors.green;
+        label = l10n.paymentStatusPaid;
+      case PaymentStatus.partial:
+        color = Colors.orange;
+        label = l10n.paymentStatusPartial;
+      case PaymentStatus.unpaid:
+        color = Colors.red;
+        label = l10n.paymentStatusUnpaid;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style:
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+
+  Future<void> _showCloneDialog(Invoice invoice) async {
+    final l10n = AppLocalizations.of(context)!;
+    final type = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.copy_all, color: Colors.teal),
+            const SizedBox(width: 12),
+            Text(l10n.dashboardDuplicateInvoiceTitle),
+          ],
+        ),
+        content: Text(
+          l10n.dashboardDuplicateInvoiceBody(
+              invoice.invoiceNumber ?? invoice.id, invoice.customer.name),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.actionCancel),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'Quotation'),
+            icon: const Icon(Icons.request_quote_outlined),
+            label: Text(l10n.labelQuotation),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, 'Invoice'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.receipt),
+            label: Text(l10n.labelInvoice),
+          ),
+        ],
+      ),
+    );
+    if (type != null) {
+      widget.onCloneInvoice(invoice, type);
+    }
+  }
+
+  void _showDeleteDialog(Invoice invoice) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+            ),
+            const SizedBox(width: 12),
+            Text(l10n.dashboardDeleteInvoiceTitle),
+          ],
+        ),
+        content: Text(
+          l10n.dashboardDeleteInvoiceBody(invoice.invoiceNumber ?? invoice.id),
+          style: const TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.actionCancel,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              InvoicePdfServices.deleteInvoice(context, invoice);
+              _loadDashboardData();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Layout Toggle ───────────────────────────────────────────────────────────
+
+  Widget _buildLayoutToggle() {
+    return PopupMenuButton<String>(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.dashboard_customize_outlined, size: 20),
+          if (_showLayoutBanner)
+            Positioned(
+              top: -3,
+              right: -3,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+      tooltip: AppLocalizations.of(context)!.dashboardLayoutTooltip,
+      offset: const Offset(0, 40),
+      onSelected: (value) async {
+        if (!mounted) return;
+        await ref
+            .read(settingsRepositoryProvider)
+            .setSetting(SettingKey.dashboardLayout, value);
+        setState(() => _dashboardLayout = value);
+        if (_showLayoutBanner) _dismissLayoutBanner();
+      },
+      itemBuilder: (ctx) {
+        final l10n = AppLocalizations.of(context)!;
+        return [
+          _layoutMenuItem(
+              'default',
+              Icons.view_agenda_outlined,
+              l10n.dashboardLayoutDefaultTitle,
+              l10n.dashboardLayoutDefaultSubtitle),
+          _layoutMenuItem('classic', Icons.grid_view_outlined,
+              l10n.dashboardLayoutClassic, l10n.dashboardLayoutClassicSubtitle),
+          _layoutMenuItem(
+              'bento',
+              Icons.auto_awesome_mosaic_outlined,
+              l10n.dashboardLayoutBentoTitle,
+              l10n.dashboardLayoutBentoSubtitle),
+          _layoutMenuItem(
+              'simple',
+              Icons.view_list_outlined,
+              l10n.dashboardLayoutSimpleTitle,
+              l10n.dashboardLayoutSimpleSubtitle),
+        ];
+      },
+    );
+  }
+
+  PopupMenuItem<String> _layoutMenuItem(
+      String value, IconData icon, String title, String sub) {
+    final active = _dashboardLayout == value;
+    final primary = Theme.of(context).primaryColor;
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 18,
+              color: active
+                  ? primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            active ? FontWeight.w700 : FontWeight.normal,
+                        color: active
+                            ? primary
+                            : Theme.of(context).colorScheme.onSurface)),
+                Text(sub,
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          if (active) Icon(Icons.check_rounded, size: 16, color: primary),
+        ],
+      ),
+    );
+  }
+
+  // ── Layout: Classic ─────────────────────────────────────────────────────────
+
+  Widget _buildClassicLayout() {
+    final primary = Theme.of(context).primaryColor;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
+              _buildSupportBanner(),
+              _buildGreetingBanner(),
+              const SizedBox(height: 20),
+              // KPI row
+              Row(
+                children: [
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!
+                          .dashboardRevenueCollectedLabel,
+                      '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                      Icons.account_balance_wallet_outlined,
+                      const Color(0xFF6A1B9A)),
+                  const SizedBox(width: 10),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.dashboardOutstandingLabel,
+                      '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                      Icons.hourglass_top_outlined,
+                      const Color(0xFFC62828)),
+                  const SizedBox(width: 10),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.dashboardTotalInvoicesLabel,
+                      totalInvoices.toString(),
+                      Icons.receipt_long_outlined,
+                      const Color(0xFFE65100)),
+                  const SizedBox(width: 10),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.navCustomers,
+                      totalCustomers.toString(),
+                      Icons.people_outline,
+                      BrandColors.primary),
+                  const SizedBox(width: 10),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.navProducts,
+                      totalProducts.toString(),
+                      Icons.inventory_2_outlined,
+                      const Color(0xFF2E7D32)),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Charts row
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(flex: 3, child: _buildRevenueBarChart(primary)),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 2, child: _buildRevenueDonut()),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Bottom row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                      flex: 3, child: _buildCompactRecentInvoices(limit: 7)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        if (dueSoonInvoices.isNotEmpty) ...[
+                          _buildDueSoonCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (overdueInvoices.isNotEmpty) ...[
+                          _buildOverdueCompactCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (outOfStockProducts.isNotEmpty) ...[
+                          _buildOutOfStockCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        _buildQuickActionsCard(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Layout: Simple Feed ─────────────────────────────────────────────────────
+
+  Widget _buildSimpleFeedLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
+              _buildSupportBanner(),
+              _buildGreetingBanner(),
+              const SizedBox(height: 20),
+              // Mini KPI strip
+              Row(
+                children: [
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!
+                          .dashboardRevenueCollectedLabel,
+                      '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                      Icons.account_balance_wallet_outlined,
+                      const Color(0xFF6A1B9A)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.dashboardOutstandingLabel,
+                      '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                      Icons.hourglass_top_outlined,
+                      const Color(0xFFC62828)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.navInvoices,
+                      totalInvoices.toString(),
+                      Icons.receipt_long_outlined,
+                      const Color(0xFFE65100)),
+                  const SizedBox(width: 12),
+                  _buildKpiCard(
+                      AppLocalizations.of(context)!.navCustomers,
+                      totalCustomers.toString(),
+                      Icons.people_outline,
+                      BrandColors.primary),
+                  const SizedBox(width: 12),
+                  _buildKpiCard(
+                    AppLocalizations.of(context)!.navProducts,
+                    totalProducts.toString(),
+                    Icons.inventory_2_outlined,
+                    const Color(0xFF2E7D32),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Two-column body
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left: recent invoices + top customers + top products
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        _buildCompactRecentInvoices(limit: 10),
+                        if (_topCustomers.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildTopCustomersCard(),
+                        ],
+                        if (_topProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildTopProductsCard(),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  // Right sidebar
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        _buildQuickActionsCard(),
+                        const SizedBox(height: 14),
+                        if (overdueInvoices.isNotEmpty) ...[
+                          _buildOverdueCompactCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (dueSoonInvoices.isNotEmpty) ...[
+                          _buildDueSoonCard(),
+                          const SizedBox(height: 14),
+                        ],
+                        if (outOfStockProducts.isNotEmpty)
+                          _buildOutOfStockCard(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: KPI Card ────────────────────────────────────────────────────────
+
+  Widget _buildKpiCard(String title, String value, IconData icon, Color color,
+      {bool alert = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(14),
+          border: alert
+              ? Border.all(color: color.withValues(alpha: 0.35), width: 1.5)
+              : null,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 3)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Icon(icon, color: color, size: 19),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Text(value,
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: Revenue Bar Chart ────────────────────────────────────────────────
+
+  Widget _buildRevenueBarChart(Color primary) {
+    final hasData = _monthlyRevenue.isNotEmpty;
+    final maxY = hasData
+        ? _monthlyRevenue
+                .map((e) => (e['revenue'] as num).toDouble())
+                .reduce((a, b) => a > b ? a : b) *
+            1.25
+        : 1000.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(AppLocalizations.of(context)!.dashboardRevenueLast6MonthsTitle,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface)),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 190,
+            child: hasData
+                ? BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY: maxY,
+                      barGroups: _monthlyRevenue.asMap().entries.map((entry) {
+                        final rev = (entry.value['revenue'] as num).toDouble();
+                        return BarChartGroupData(
+                          x: entry.key,
+                          barRods: [
+                            BarChartRodData(
+                              toY: rev,
+                              gradient: LinearGradient(
+                                colors: [
+                                  primary,
+                                  primary.withValues(alpha: 0.55)
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              width: 28,
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(6)),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              final idx = value.toInt();
+                              if (idx < 0 || idx >= _monthlyRevenue.length) {
+                                return const SizedBox.shrink();
+                              }
+                              final monthStr =
+                                  _monthlyRevenue[idx]['month'] as String;
+                              try {
+                                final date =
+                                    DateFormat('yyyy-MM').parse(monthStr);
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 5),
+                                  child: Text(DateFormat('MMM').format(date),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant)),
+                                );
+                              } catch (_) {
+                                return const SizedBox.shrink();
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        getDrawingHorizontalLine: (_) => FlLine(
+                            color: Colors.grey.withValues(alpha: 0.12),
+                            strokeWidth: 1),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                            '$_currencySymbol ${_fmtAmt(rod.toY)}',
+                            const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bar_chart_outlined,
+                            size: 48,
+                            color:
+                                Theme.of(context).colorScheme.outlineVariant),
+                        const SizedBox(height: 8),
+                        Text(
+                            AppLocalizations.of(context)!
+                                .dashboardNoPaymentDataYetLabel,
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                                fontSize: 13)),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Revenue Donut ────────────────────────────────────────────────────
+
+  Widget _buildRevenueDonut() {
+    final total = totalRevenue + totalOutstanding;
+    final hasData = total > 0.01;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(AppLocalizations.of(context)!.dashboardFinancialOverviewTitle,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface)),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 160,
+            child: hasData
+                ? PieChart(
+                    PieChartData(
+                      centerSpaceRadius: 46,
+                      sectionsSpace: 3,
+                      sections: [
+                        PieChartSectionData(
+                          value: totalRevenue,
+                          color: const Color(0xFF2E7D32),
+                          title: '',
+                          radius: 38,
+                        ),
+                        PieChartSectionData(
+                          value: totalOutstanding,
+                          color: const Color(0xFFC62828),
+                          title: '',
+                          radius: 38,
+                        ),
+                      ],
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                        AppLocalizations.of(context)!
+                            .dashboardNoInvoicesYetTitle,
+                        style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 13))),
+          ),
+          const SizedBox(height: 14),
+          _buildDonutLegend(
+              AppLocalizations.of(context)!.dashboardCollectedLabel,
+              const Color(0xFF2E7D32),
+              '$_currencySymbol ${_fmtAmt(totalRevenue)}'),
+          const SizedBox(height: 6),
+          _buildDonutLegend(
+              AppLocalizations.of(context)!.dashboardOutstandingLabel,
+              const Color(0xFFC62828),
+              '$_currencySymbol ${_fmtAmt(totalOutstanding)}'),
+          if (overdueInvoices.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB71C1C).withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      size: 13, color: Color(0xFFB71C1C)),
+                  const SizedBox(width: 6),
+                  Text(
+                      AppLocalizations.of(context)!
+                          .dashboardInvoiceCountOverdueLabel(
+                              overdueInvoices.length),
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFB71C1C),
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDonutLegend(String label, Color color, String amount) {
+    return Row(
+      children: [
+        Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 8),
+        Expanded(
+            child: Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant))),
+        Text(amount,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface)),
+      ],
+    );
+  }
+
+  // ── Shared: Compact Recent Invoices ─────────────────────────────────────────
+
+  Widget _buildCompactRecentInvoices({int limit = 7}) {
+    final invoices = recentInvoices.take(limit).toList();
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(AppLocalizations.of(context)!.dashboardRecentInvoicesTitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface)),
+              const Spacer(),
+              Text(AppLocalizations.of(context)!.dashboardLastNLabel(limit),
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Header row
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                    flex: 3,
+                    child: Text(
+                        AppLocalizations.of(context)!.dashboardColDocumentNo,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    flex: 2,
+                    child: Text(AppLocalizations.of(context)!.dashboardColType,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    flex: 3,
+                    child: Text(AppLocalizations.of(context)!.labelCustomer,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                Expanded(
+                    flex: 3,
+                    child: Text(AppLocalizations.of(context)!.labelAmount,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                            fontSize: 11,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600))),
+                const SizedBox(width: 60),
+              ],
+            ),
+          ),
+          Divider(
+              height: 1,
+              thickness: 1,
+              color: Theme.of(context).colorScheme.outlineVariant),
+          const SizedBox(height: 4),
+          if (invoices.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                  child: Text(
+                      AppLocalizations.of(context)!.dashboardNoInvoicesYetTitle,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 13))),
+            )
+          else
+            ...invoices.map(_buildCompactInvoiceRow),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactInvoiceRow(Invoice inv) {
+    final status = inv.paymentStatus;
+    final Color statusColor;
+    final String statusLabel;
+    final l10n = AppLocalizations.of(context)!;
+    if (inv.status == 'declined') {
+      statusColor = const Color(0xFFC62828);
+      statusLabel = l10n.invoiceStatusDeclinedBadge;
+    } else {
+      switch (status) {
+        case PaymentStatus.paid:
+          statusColor = const Color(0xFF2E7D32);
+          statusLabel = l10n.paymentStatusPaid;
+          break;
+        case PaymentStatus.partial:
+          statusColor = const Color(0xFFF57C00);
+          statusLabel = l10n.paymentStatusPartial;
+          break;
+        default:
+          final isOver = InvoiceCalculator.isOverdue(
+              dueDate: inv.dueDate, outstanding: inv.outstandingBalance);
+          statusColor =
+              isOver ? const Color(0xFFC62828) : const Color(0xFF546E7A);
+          statusLabel = isOver
+              ? l10n.dashboardOverdueSectionTitle
+              : l10n.paymentStatusUnpaid;
+      }
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text('#${inv.invoiceNumber ?? inv.id}',
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(_invoiceTypeLabel(context, inv.type),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(inv.customer.name,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text('$_currencySymbol ${_fmtAmt(inv.total)}',
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.right,
+                maxLines: 1),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6)),
+            child: Text(statusLabel,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: statusColor,
+                    fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 8),
+          if (inv.status != 'declined') ...[
+            Tooltip(
+              message: 'Edit',
+              child: InkWell(
+                onTap: () => widget.onEditInvoice(inv),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.edit_outlined,
+                      size: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ),
+            const SizedBox(width: 2),
+          ],
+          Tooltip(
+            message: 'Download PDF',
+            child: InkWell(
+              onTap: () => PDFService.downloadPDF(context, inv),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.download_outlined,
+                    size: 15,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Due Soon Card ────────────────────────────────────────────────────
+
+  Widget _buildDueSoonCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFF57C00).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.event_outlined,
+                    color: Color(0xFFF57C00), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.dashboardDueSoonTitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFF57C00).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${dueSoonInvoices.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFF57C00),
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...dueSoonInvoices.take(5).map((inv) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(inv.customer.name,
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
+                        style: const TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 2),
+                    _buildInvoiceActionMenu(inv),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Out of Stock Card ────────────────────────────────────────────────
+
+  Widget _buildOutOfStockCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.18), width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.inventory_2_outlined,
+                    color: Colors.red, size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                  AppLocalizations.of(context)!.dashboardOutOfStockSectionTitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${outOfStockProducts.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.red,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...outOfStockProducts.take(5).map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(p.name,
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text(AppLocalizations.of(context)!.dashboardZeroLeftLabel,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: AppLocalizations.of(context)!.actionUpdateStock,
+                      child: InkWell(
+                        onTap: () => _showUpdateStockDialog(p),
+                        borderRadius: BorderRadius.circular(7),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.add_box_outlined,
+                                  size: 13, color: Colors.green),
+                              const SizedBox(width: 4),
+                              Text(AppLocalizations.of(context)!.labelStock,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.green,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Overdue Compact Card ─────────────────────────────────────────────
+
+  Widget _buildOverdueCompactCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: const Color(0xFFC62828).withValues(alpha: 0.2), width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFC62828).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.warning_amber_rounded,
+                    color: Color(0xFFC62828), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.dashboardOverdueSectionTitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                    color: const Color(0xFFC62828).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10)),
+                child: Text('${overdueInvoices.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFC62828),
+                        fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...overdueInvoices.take(5).map((inv) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: Text(inv.customer.name,
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
+                    Text('$_currencySymbol ${_fmtAmt(inv.outstandingBalance)}',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFC62828),
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message:
+                          AppLocalizations.of(context)!.actionRecordPayment,
+                      child: InkWell(
+                        onTap: () => showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => ApplyPaymentDialog(
+                            invoice: inv,
+                            onPaymentRecorded: _loadDashboardData,
+                          ),
+                        ),
+                        borderRadius: BorderRadius.circular(7),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF6A1B9A).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.payments_outlined,
+                                  size: 13, color: Color(0xFF6A1B9A)),
+                              const SizedBox(width: 4),
+                              Text(AppLocalizations.of(context)!.actionPay,
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF6A1B9A),
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    _buildPdfActionMenu(inv),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Quick Actions Card ───────────────────────────────────────────────
+
+  Widget _buildQuickActionsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(AppLocalizations.of(context)!.dashboardQuickActionsTitle,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface)),
+          const SizedBox(height: 12),
+          _buildQuickActionRow(
+              Icons.add_circle_outline_rounded,
+              AppLocalizations.of(context)!.navNewInvoice,
+              Theme.of(context).primaryColor, () {
+            if (!mounted) return;
+            // Same route as the sidebar's "New Invoice": a plain blank
+            // invoice, the right layout, and the shortcuts' focus released.
+            context
+                .findAncestorStateOfType<_DashboardScreenState>()
+                ?._selectTab(1);
+          }),
+          const SizedBox(height: 4),
+          _buildQuickActionRow(
+              Icons.person_add_outlined,
+              AppLocalizations.of(context)!.navCustomers,
+              BrandColors.primary, () {
+            if (!mounted) return;
+            context
+                .findAncestorStateOfType<_DashboardScreenState>()
+                ?.setState(() {
+              context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._selectedIndex = 5;
+            });
+          }),
+          const SizedBox(height: 4),
+          _buildQuickActionRow(
+              Icons.bar_chart_outlined,
+              AppLocalizations.of(context)!.navReports,
+              const Color(0xFF2E7D32), () {
+            if (!mounted) return;
+            context
+                .findAncestorStateOfType<_DashboardScreenState>()
+                ?.setState(() {
+              context
+                  .findAncestorStateOfType<_DashboardScreenState>()
+                  ?._selectedIndex = 7;
+            });
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionRow(
+      IconData icon, String label, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: color, size: 15),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w500))),
+            Icon(Icons.chevron_right_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: Amount Formatter ─────────────────────────────────────────────────
+
+  String _fmtAmt(double amount) {
+    if (amount >= 10000000) {
+      return '${(amount / 10000000).toStringAsFixed(2)}Cr';
+    }
+    if (amount >= 100000) return '${(amount / 100000).toStringAsFixed(2)}L';
+    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}K';
+    return amount.toStringAsFixed(2);
+  }
+
+  // ── Layout: Bento Grid ──────────────────────────────────────────────────────
+
+  Widget _buildBentoLayout() {
+    final primary = Theme.of(context).primaryColor;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppLayout.maxWidthNormal),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLayoutDiscoveryBanner(),
+              _buildThemeDiscoveryBanner(),
+              _buildShortcutsDiscoveryBanner(),
+              _buildSupportBanner(),
+              _buildGreetingBanner(),
+              const SizedBox(height: 20),
+              // ── Top row: Hero chart + 2×2 KPI grid ──────────────────────────
+              SizedBox(
+                height: 290,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Hero: Revenue bar chart
+                    Expanded(
+                      flex: 3,
+                      child: _buildRevenueBarChart(primary),
+                    ),
+                    const SizedBox(width: 14),
+                    // 2×2 KPI tiles
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildKpiCard(
+                                  AppLocalizations.of(context)!
+                                      .dashboardRevenueCollectedLabel,
+                                  '$_currencySymbol ${_fmtAmt(totalRevenue)}',
+                                  Icons.account_balance_wallet_outlined,
+                                  const Color(0xFF6A1B9A),
+                                ),
+                                const SizedBox(width: 14),
+                                _buildKpiCard(
+                                  AppLocalizations.of(context)!.navInvoices,
+                                  totalInvoices.toString(),
+                                  Icons.receipt_long_outlined,
+                                  const Color(0xFFE65100),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildKpiCard(
+                                  AppLocalizations.of(context)!
+                                      .dashboardOutstandingLabel,
+                                  '$_currencySymbol ${_fmtAmt(totalOutstanding)}',
+                                  Icons.hourglass_top_outlined,
+                                  const Color(0xFFC62828),
+                                ),
+                                const SizedBox(width: 14),
+                                _buildKpiCard(
+                                  AppLocalizations.of(context)!
+                                      .dashboardOverdueSectionTitle,
+                                  overdueInvoices.length.toString(),
+                                  Icons.warning_amber_outlined,
+                                  const Color(0xFFB71C1C),
+                                  alert: overdueInvoices.isNotEmpty,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                _buildKpiCard(
+                                    AppLocalizations.of(context)!.navCustomers,
+                                    totalCustomers.toString(),
+                                    Icons.people_outline,
+                                    BrandColors.primary),
+                                const SizedBox(width: 14),
+                                _buildKpiCard(
+                                  AppLocalizations.of(context)!.navProducts,
+                                  totalProducts.toString(),
+                                  Icons.inventory_2_outlined,
+                                  const Color(0xFF2E7D32),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              // ── Bottom row: Wide invoice table + narrow sidebar ───────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        _buildCompactRecentInvoices(limit: 8),
+                        if (_topProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildTopProductsCard(),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        _buildQuickActionsCard(),
+                        if (overdueInvoices.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOverdueCompactCard(),
+                        ],
+                        if (dueSoonInvoices.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildDueSoonCard(),
+                        ],
+                        if (outOfStockProducts.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          _buildOutOfStockCard(),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Shared: PDF-Only Action Menu (⋯) ───────────────────────────────────────
+
+  Widget _buildPdfActionMenu(Invoice inv) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded,
+          size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      tooltip: AppLocalizations.of(context)!.dashboardPdfActionsTooltip,
+      offset: const Offset(0, 24),
+      onSelected: (value) {
+        if (value == 'preview') {
+          InvoicePdfServices.previewPDF(context, inv);
+        } else if (value == 'download') {
+          PDFService.downloadPDF(context, inv);
+        }
+      },
+      itemBuilder: (ctx) => [
+        PopupMenuItem(
+          value: 'preview',
+          child: Row(children: [
+            const Icon(Icons.visibility_outlined,
+                size: 16, color: Colors.green),
+            const SizedBox(width: 10),
+            Text(AppLocalizations.of(context)!.actionPdfPreview,
+                style: const TextStyle(fontSize: 13)),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'download',
+          child: Row(children: [
+            const Icon(Icons.download_outlined,
+                size: 16, color: Colors.deepPurple),
+            const SizedBox(width: 10),
+            Text(AppLocalizations.of(context)!.actionDownloadPdf,
+                style: const TextStyle(fontSize: 13)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  // ── Shared: Invoice Action Menu (⋯) ────────────────────────────────────────
+
+  Widget _buildInvoiceActionMenu(Invoice inv) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert_rounded,
+          size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      tooltip: AppLocalizations.of(context)!.dashboardActionsTooltip,
+      offset: const Offset(0, 24),
+      onSelected: (value) {
+        switch (value) {
+          case 'payment':
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => ApplyPaymentDialog(
+                invoice: inv,
+                onPaymentRecorded: _loadDashboardData,
+              ),
+            );
+            break;
+          case 'preview':
+            InvoicePdfServices.previewPDF(context, inv);
+            break;
+          case 'download':
+            PDFService.downloadPDF(context, inv);
+            break;
+        }
+      },
+      itemBuilder: (ctx) => [
+        if (inv.status != 'declined')
+          PopupMenuItem(
+            value: 'payment',
+            child: Row(children: [
+              const Icon(Icons.payments_outlined,
+                  size: 16, color: Color(0xFF6A1B9A)),
+              const SizedBox(width: 10),
+              Text(AppLocalizations.of(context)!.actionRecordPayment,
+                  style: const TextStyle(fontSize: 13)),
+            ]),
+          ),
+        PopupMenuItem(
+          value: 'preview',
+          child: Row(children: [
+            const Icon(Icons.visibility_outlined,
+                size: 16, color: Colors.green),
+            const SizedBox(width: 10),
+            Text(AppLocalizations.of(context)!.actionPdfPreview,
+                style: const TextStyle(fontSize: 13)),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'download',
+          child: Row(children: [
+            const Icon(Icons.download_outlined,
+                size: 16, color: Colors.deepPurple),
+            const SizedBox(width: 10),
+            Text(AppLocalizations.of(context)!.actionDownloadPdf,
+                style: const TextStyle(fontSize: 13)),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  // ── Shared: Top Customers Card ───────────────────────────────────────────────
+
+  Widget _buildTopCustomersCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                    color: BrandColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.emoji_events_outlined,
+                    color: BrandColors.primary, size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.dashboardTopCustomersTitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._topCustomers.map((c) {
+            final name = c['customer_name'] as String? ?? '';
+            final paid = (c['total_paid'] as num).toDouble();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 13,
+                    backgroundColor:
+                        BrandColors.primary.withValues(alpha: 0.1),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: BrandColors.primary,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: Text(name,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis)),
+                  Text('$_currencySymbol ${_fmtAmt(paid)}',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface)),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ── Shared: Top Products Card ────────────────────────────────────────────────
+
+  Widget _buildTopProductsCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.trending_up_outlined,
+                    color: Color(0xFF2E7D32), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Text(AppLocalizations.of(context)!.dashboardTopProductsTitle,
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._topProducts.map((p) {
+            final name = p['product_name'] as String? ?? '';
+            final qty = (p['total_qty'] as num).toDouble();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(7)),
+                    child: const Icon(Icons.inventory_2_outlined,
+                        size: 13, color: Color(0xFF2E7D32)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: Text(name,
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis)),
+                  Text(
+                      AppLocalizations.of(context)!.dashboardUnitsLabel(
+                          qty % 1 == 0
+                              ? qty.toInt().toString()
+                              : qty.toStringAsFixed(1)),
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface)),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _BetaTag extends StatelessWidget {
+  const _BetaTag();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: const Color(0xFF7C3AED),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        AppLocalizations.of(context)!.dashboardBetaBadge,
+        style: const TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,103 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+*.md
+*.zsync
+*.disabled
+*.AppImage
+crash-report.txt
+AppDir/
+AppDirbuild/
+dist/
+*~
+myapp_1.0.0/
+appimage-build/
+*screenshots2/
+# Added by code-review-graph
+.code-review-graph/
+graphify-out/
+
+*landing/*
+windows/packaging/exe/vc_redist.x64.exe
+
+output/
+email_builder/
+*.pdf
+*.txt
+*.csv
+*.pickle
+video/
+*.patch
+new_landing2/
+landing*
+.cursorrules
+.windsurfrules
+.opencode.json
+.mcp.json
+.claude/
+.cursor/
+
+lib/screens/test_old_screens/
+android/build/
+
+gh_actions_cleanup.py
+
+# Needed by the builds and the licences, although "*.txt" / "*.md" above
+# would hide them.
+!**/CMakeLists.txt
+!assets/fonts/*.txt
+!README.md
+!LICENSE
+!docs/*.md
+
+# Invoiso-era build files and the original author's funding manifest: kept on
+# disk for reference, not part of Invoiceo (CI builds with fastforge).
+/AppImageBuilder.yml
+/funding.json
+/installer.iss
+/make_deb*.sh
+/make_app_image*.sh
+/lib/*.dart3
