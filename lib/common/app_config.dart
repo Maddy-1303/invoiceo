@@ -6,7 +6,7 @@ class AppConfig
   static const brandName = "Invoiceo";
   /// Short technical name (backup metadata, file names).
   static const name = "invoiceo";
-  static const version = "v1.0.0";
+  static const version = "v1.0.1";
   static const developer = "Madhan Prasath";
   static const supportEmail = "madhanprasat2002r@gmail.com";
   /// Support request form (Google Forms) — Help → Contact Support opens it.

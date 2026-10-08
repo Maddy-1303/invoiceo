@@ -1,4 +1,4 @@
-# Invoiceo 1.0.0 — release report
+# Invoiceo 1.0.0 — release report (released as 1.0.1)
 
 Date: 8 October 2026 (launch planned for 9 October 2026)
 App repo: https://github.com/Maddy-1303/invoiceo (public, MIT, based on Invoiso © 2025 ANOOP P)

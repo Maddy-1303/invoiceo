@@ -17,7 +17,7 @@ SITE = 'https://invoiceo.in'
 NAME = 'Invoiceo'
 BUSINESS = 'Madcreations'
 EMAIL = 'madhanprasat2002r@gmail.com'
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 RELEASE_DATE = '9 October 2026'
 RELEASE_ISO = '2026-10-09'
 COFFEE = 'https://buymeacoffee.com/madcreations'
@@ -706,6 +706,22 @@ changelog_body = f'''<section class="page-head">
   <div class="container prose">
     <article class="release" id="v{VERSION}">
       <h2>Version {VERSION} <span class="badge badge-brand">Latest</span></h2>
+      <p class="date">{RELEASE_DATE}</p>
+      <p>Fixes and improvements from release testing.</p>
+      <ul>
+        <li>Stock can be a decimal number, so selling 0.5 kg takes exactly 0.5 from stock.</li>
+        <li>Receipts now count as sales in Reports and on the dashboard.</li>
+        <li>Tamil text prints correctly on payment receipts, customer statements and report PDFs.</li>
+        <li>PDF Settings shows a real sample invoice with your company details as its preview.</li>
+        <li>Every user can change their own password from the user menu.</li>
+        <li>Importing a backup now checks the file first and never replaces your data with an empty or wrong file.</li>
+        <li>Safer billing: a discount cannot make a line negative, quantity 0 is not accepted, and a converted quotation cannot be converted twice.</li>
+        <li>The Windows installer also works on ARM laptops, and the Linux AppImage works on newer Ubuntu versions.</li>
+      </ul>
+    </article>
+
+    <article class="release" id="v1.0.0">
+      <h2>Version 1.0.0</h2>
       <p class="date">{RELEASE_DATE}</p>
       <p>The first release under the {NAME} name.</p>
       <ul>
