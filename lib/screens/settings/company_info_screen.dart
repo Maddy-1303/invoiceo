@@ -206,11 +206,17 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen>
   Future<void> _saveCompanyInfo() async {
     if (_isSaving) return;
     final l10n = AppLocalizations.of(context)!;
+    // A blank name would print no shop name on invoices and reports.
+    if (nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.companyInfoNameRequiredMessage)));
+      return;
+    }
     setState(() => _isSaving = true);
     try {
       final newInfo = CompanyInfo(
           id: _companyInfo?.id,
-          name: nameController.text,
+          name: nameController.text.trim(),
           address: addressController.text,
           phone: phoneController.text,
           email: emailController.text,

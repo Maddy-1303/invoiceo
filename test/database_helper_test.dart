@@ -91,6 +91,25 @@ void main() {
     await db.close();
   });
 
+  test('fresh create products.stock is REAL (decimal stock)', () async {
+    final db = await openDatabase(
+      inMemoryDatabasePath,
+      version: currentVersion,
+      onCreate: (db, v) => DatabaseHelper().createDbForTest(db, v),
+    );
+
+    final cols = await db.rawQuery('PRAGMA table_info(products)');
+    expect(cols.firstWhere((c) => c['name'] == 'stock')['type'], 'REAL');
+    await db.insert('products', {'id': 'p1', 'name': 'Rice', 'stock': 49.6});
+    expect((await db.query('products')).single['stock'], 49.6);
+
+    // The v51 step finds stock already REAL and leaves the table alone.
+    await DatabaseHelper().upgradeDbForTest(db, 50, currentVersion);
+    expect((await db.query('products')).single['stock'], 49.6);
+
+    await db.close();
+  });
+
   test('fresh create company_info has country column defaulting to India',
       () async {
     final db = await openDatabase(

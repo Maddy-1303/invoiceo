@@ -120,7 +120,7 @@ void main() {
   final customer = Customer(
       id: 'c1', name: 'Test Customer', email: '', phone: '', address: '', gstin: '');
 
-  Product product(String id, String name, int stock, {bool unlimited = false}) => Product(
+  Product product(String id, String name, double stock, {bool unlimited = false}) => Product(
       id: id, name: name, description: '', price: 100, stock: stock, hsncode: '',
       tax_rate: 0, unlimitedStock: unlimited);
 

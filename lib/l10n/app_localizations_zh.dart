@@ -905,7 +905,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get labelProduct => '产品';
 
   @override
-  String dashboardStockLabel(int count) {
+  String dashboardStockLabel(String count) {
     return '库存：$count';
   }
 
@@ -1066,7 +1066,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createInvoiceInsufficientStockTitle => '库存不足';
 
   @override
-  String createInvoiceInsufficientStockMessage(int stock, double qty) {
+  String createInvoiceInsufficientStockMessage(String stock, String qty) {
     return '仅有 $stock 件库存。仍要添加 $qty 件吗？';
   }
 
@@ -1085,7 +1085,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get createInvoiceUnlimitedStockLabel => '无限库存';
 
   @override
-  String createInvoiceAvailableStockLabel(int stock) {
+  String createInvoiceAvailableStockLabel(String stock) {
     return '可用库存：$stock';
   }
 
@@ -5283,5 +5283,19 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String pdfSettingsSampleItemName(int number) {
     return '示例商品 $number';
+  }
+
+  @override
+  String get companyInfoNameRequiredMessage => '请输入公司名称。';
+
+  @override
+  String get createInvoiceNegativeLineMessage => '行合计不能小于零。请检查折扣。';
+
+  @override
+  String get invoiceMgmtAlreadyConvertedTitle => '已转换';
+
+  @override
+  String invoiceMgmtAlreadyConvertedBody(String number) {
+    return '报价单 $number 已转为发票。如需再开一张类似发票，请使用“复制”。';
   }
 }

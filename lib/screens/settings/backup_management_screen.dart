@@ -29,13 +29,13 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
   }
 
   Future<void> _loadBackups() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final companyId =
           await CompanyRegistryService.getActiveCompanyId() ?? defaultCompanyId;
       final backups = await _backupManager.getBackupList(companyId);
-      setState(() => _backups = backups);
+      if (mounted) setState(() => _backups = backups);
     } catch (e) {
       if (!mounted) return;
       _showErrorDialog(AppLocalizations.of(context)!.backupLoadErrorMessage(e.toString()));
@@ -46,7 +46,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
 
   Future<void> _createBackup(BackupType type) async {
     final l10n = AppLocalizations.of(context)!;
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final companyId =
@@ -67,7 +67,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
     } catch (e) {
       _showErrorDialog(l10n.backupCreateErrorMessage(e.toString()));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -80,7 +80,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
 
     if (!confirmed) return;
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final result = await _backupManager.restoreBackup(
@@ -95,7 +95,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
     } catch (e) {
       _showErrorDialog(l10n.backupRestoreErrorMessage(e.toString()));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -108,7 +108,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
 
     if (!confirmed) return;
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final success = await _backupManager.deleteBackup(backup.filePath);
@@ -122,13 +122,13 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
     } catch (e) {
       _showErrorDialog(l10n.backupDeleteErrorMessage(e.toString()));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _downloadBackup(BackupInfo backup) async {
     final l10n = AppLocalizations.of(context)!;
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     try {
       final result = await _backupManager.downloadBackup(backup.filePath);
       if (result.success) {
@@ -139,7 +139,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
     } catch (e) {
       _showErrorDialog(l10n.backupDownloadErrorMessage(e.toString()));
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -171,7 +171,7 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
     );
     if (!confirmed || !mounted) return;
 
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
 
     try {
       final result =
@@ -388,6 +388,8 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
   }
 
   void _showRestartDialog() {
+
+    if (!mounted) return; // the page was left while it worked
     final l10n = AppLocalizations.of(context)!;
     showRestartRequiredDialog(context,
         title: l10n.backupRestoreSuccessTitle,
@@ -395,6 +397,8 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
   }
 
   void _showSuccessDialog(String message) {
+
+    if (!mounted) return; // the page was left while it worked
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
@@ -412,6 +416,8 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
   }
 
   void _showErrorDialog(String message) {
+
+    if (!mounted) return; // the page was left while it worked
     final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,

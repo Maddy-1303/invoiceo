@@ -19,6 +19,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:invoiceo/database/database_helper.dart';
+import 'package:invoiceo/models/product.dart';
 
 const _v4Schema = [
   '''
@@ -98,6 +99,71 @@ const _v4Schema = [
     )
   ''',
 ];
+
+// products as a fresh v50 install made it: stock still INTEGER.
+const _v50Products = '''
+  CREATE TABLE products (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    description TEXT,
+    price REAL,
+    stock INTEGER,
+    hsncode TEXT,
+    tax_rate INTEGER,
+    type TEXT DEFAULT 'product',
+    default_discount REAL DEFAULT 0,
+    purchase_price REAL DEFAULT 0.0,
+    alias_name TEXT,
+    unit TEXT DEFAULT '',
+    unlimited_stock INTEGER DEFAULT 0,
+    price_includes_tax INTEGER DEFAULT 0
+  )
+''';
+
+/// A v50 database with products only (all that v51 touches) and sample rows:
+/// whole, big, zero, negative and NULL stock.
+Future<Database> _openV50Products({List<String> extra = const []}) async {
+  final db = await openDatabase(
+    inMemoryDatabasePath,
+    version: 50,
+    onCreate: (db, v) async {
+      await db.execute(_v50Products);
+      await db.execute('CREATE INDEX idx_products_name ON products(name)');
+      await db.execute(
+          'CREATE INDEX idx_products_name_nc ON products(name COLLATE NOCASE)');
+      for (final sql in extra) {
+        await db.execute(sql);
+      }
+    },
+  );
+  await db.insert('products', {
+    'id': 'p1',
+    'name': 'Rice',
+    'description': 'Ponni',
+    'price': 60.0,
+    'stock': 50,
+    'hsncode': '1006',
+    'tax_rate': 5,
+    'unit': 'kg',
+    'purchase_price': 45.0,
+  });
+  await db.insert('products', {'id': 'p2', 'name': 'Big', 'price': 1.0, 'stock': 123456789});
+  await db.insert('products',
+      {'id': 'p3', 'name': 'Cut', 'price': 1.0, 'stock': 0, 'unlimited_stock': 1});
+  await db.insert('products', {'id': 'p4', 'name': 'Short', 'price': 1.0, 'stock': -3});
+  await db.insert('products', {'id': 'p5', 'name': 'Legacy', 'price': 1.0});
+  return db;
+}
+
+Future<Map<String, Map<String, Object?>>> _stockRows(Database db) async => {
+      for (final r in await db.rawQuery(
+          'SELECT *, typeof(stock) AS stock_type FROM products'))
+        r['id'] as String: r
+    };
+
+Future<String> _stockColumnType(Database db) async =>
+    (await db.rawQuery('PRAGMA table_info(products)'))
+        .firstWhere((c) => c['name'] == 'stock')['type'] as String;
 
 Future<Database> _openV4WithSampleData() async {
   final db = await openDatabase(
@@ -223,6 +289,95 @@ void main() {
     expect(companyInfo['country'], 'India');
     expect(companyInfo['pan_number'], '');
     expect(companyInfo['fssai_code'], '');
+
+    // v51 made stock REAL; the old whole number is kept exactly.
+    expect(await _stockColumnType(db), 'REAL');
+    final product = (await _stockRows(db))['p1']!;
+    expect(product['stock'], 5.0);
+    expect(product['stock_type'], 'real');
+    expect(product['name'], 'Old Product');
+    expect(product['type'], 'product');
+
+    await db.close();
+  });
+
+  test('v50 -> v51: stock becomes REAL, whole stock kept exactly, decimals accepted',
+      () async {
+    final db = await _openV50Products(extra: [
+      // A column some older build added on its own: it must survive.
+      'ALTER TABLE products ADD COLUMN extra_note TEXT',
+    ]);
+    await db.update('products', {'extra_note': 'keep me'},
+        where: 'id = ?', whereArgs: ['p1']);
+
+    await DatabaseHelper().upgradeDbForTest(db, 50, 51);
+
+    expect(await _stockColumnType(db), 'REAL');
+    final rows = await _stockRows(db);
+    expect(rows.keys.toSet(), {'p1', 'p2', 'p3', 'p4', 'p5'});
+    expect(rows['p1']!['stock'], 50.0);
+    expect(rows['p1']!['stock_type'], 'real');
+    expect(rows['p2']!['stock'], 123456789.0);
+    expect(rows['p3']!['stock'], 0.0);
+    expect(rows['p4']!['stock'], -3.0);
+    expect(rows['p5']!['stock'], isNull);
+    // Every other value is untouched.
+    expect(rows['p1']!['description'], 'Ponni');
+    expect(rows['p1']!['price'], 60.0);
+    expect(rows['p1']!['hsncode'], '1006');
+    expect(rows['p1']!['tax_rate'], 5);
+    expect(rows['p1']!['unit'], 'kg');
+    expect(rows['p1']!['purchase_price'], 45.0);
+    expect(rows['p1']!['extra_note'], 'keep me');
+    expect(rows['p3']!['unlimited_stock'], 1);
+    // The app reads them as doubles; NULL is 0.
+    expect(Product.fromMap(rows['p1']!).stock, 50.0);
+    expect(Product.fromMap(rows['p5']!).stock, 0.0);
+
+    // Decimals go in and come back exactly.
+    await db.update('products', {'stock': 49.6}, where: 'id = ?', whereArgs: ['p1']);
+    expect((await _stockRows(db))['p1']!['stock'], 49.6);
+
+    // Column defaults, the primary key and the indexes are kept.
+    await db.insert('products', {'id': 'p6', 'name': 'New', 'price': 1.0, 'stock': 12.5});
+    final p6 = (await _stockRows(db))['p6']!;
+    expect(p6['stock'], 12.5);
+    expect(p6['type'], 'product');
+    expect(p6['unit'], '');
+    expect(p6['unlimited_stock'], 0);
+    expect(p6['price_includes_tax'], 0);
+    expect(p6['default_discount'], 0);
+    await expectLater(db.insert('products', {'id': 'p1', 'name': 'Twin'}),
+        throwsA(isA<DatabaseException>()));
+    final schema = (await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE tbl_name LIKE 'products%'"))
+        .map((r) => r['name'])
+        .toSet();
+    expect(schema, containsAll(['products', 'idx_products_name', 'idx_products_name_nc']));
+    expect(schema, isNot(contains('products_new')));
+
+    // Running the step again changes nothing.
+    await DatabaseHelper().upgradeDbForTest(db, 50, 51);
+    expect((await _stockRows(db))['p1']!['stock'], 49.6);
+    expect((await _stockRows(db)).length, 6);
+
+    await db.close();
+  });
+
+  test('v51 keeps the INTEGER column when a view would block the rebuild; '
+      'decimals still work', () async {
+    final db = await _openV50Products(
+        extra: ['CREATE VIEW cheap AS SELECT id FROM products WHERE price < 10']);
+
+    await DatabaseHelper().upgradeDbForTest(db, 50, 51);
+
+    expect(await _stockColumnType(db), 'INTEGER');
+    expect((await _stockRows(db))['p1']!['stock'], 50);
+    // INTEGER affinity still keeps 49.6 as a decimal.
+    await db.update('products', {'stock': 49.6}, where: 'id = ?', whereArgs: ['p1']);
+    final p1 = (await _stockRows(db))['p1']!;
+    expect(p1['stock'], 49.6);
+    expect(Product.fromMap(p1).stock, 49.6);
 
     await db.close();
   });

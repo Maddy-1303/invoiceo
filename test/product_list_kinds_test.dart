@@ -10,6 +10,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:invoiceo/database/database_helper.dart';
 import 'package:invoiceo/database/product_service.dart';
 import 'package:invoiceo/models/product.dart';
+import 'package:invoiceo/utils/formatters.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +31,7 @@ void main() {
     tmp.deleteSync(recursive: true);
   });
 
-  Product p(String id, {String type = 'product', int stock = 0, bool unlimited = false,
+  Product p(String id, {String type = 'product', double stock = 0, bool unlimited = false,
           int tax = 0, String hsn = '1001'}) =>
       Product(id: id, name: 'Item $id', description: '', price: 10, stock: stock,
           hsncode: hsn, tax_rate: tax, type: type, unlimitedStock: unlimited);
@@ -71,6 +72,42 @@ void main() {
         ['all', 'in_stock', 'low', 'out', 'expired'], type: 'product');
     expect(c, {'all': 4, 'in_stock': 2, 'low': 1, 'out': 1, 'expired': 0});
     expect(c['in_stock']! + c['low']! + c['out']!, c['all']);
+  });
+
+  // Stock is a decimal: low = 0 < stock <= 10, out = stock <= 0.
+  test('decimal stock: 0.5 and 10 are low, 10.5 is in stock, -0.25 is out', () async {
+    await ProductService.insertProduct(p('d1', stock: 0.5));
+    await ProductService.insertProduct(p('d2', stock: 10.5));
+    await ProductService.insertProduct(p('d3', stock: -0.25));
+    await ProductService.insertProduct(p('d4', stock: 10));
+    expect((await ProductService.getProductById('d1'))!.stock, 0.5);
+    expect(await ids('low', type: 'product'), ['d1', 'd4', 'p3']);
+    expect(await ids('out', type: 'product'), ['d3', 'p4']);
+    expect(await ids('in_stock', type: 'product'), ['d2', 'p1', 'p2']);
+    final c = await ProductService.getProductListTabCounts(
+        ['all', 'in_stock', 'low', 'out'], type: 'product');
+    expect(c, {'all': 8, 'in_stock': 3, 'low': 3, 'out': 2});
+    // Sort by stock (ties by id): -0.25, 0 (p2 unlimited, p4), 0.5, 5, 10, 10.5, 50.
+    final byStock = (await ProductService.getProductListPage(
+            offset: 0, limit: 50, orderBy: 'stock', type: 'product'))
+        .map((e) => e.id)
+        .toList();
+    expect(byStock, ['d3', 'p2', 'p4', 'd1', 'p3', 'd4', 'd2', 'p1']);
+  });
+
+  test('stock reads and shows as people write it', () {
+    expect(Product.stockFrom(5), 5.0, reason: 'an old INTEGER row');
+    expect(Product.stockFrom(12.5), 12.5);
+    expect(Product.stockFrom('12.5'), 12.5);
+    expect(Product.stockFrom(null), 0);
+    expect(Product.stockFrom('abc'), 0);
+    expect(Product.roundStock(50 - 0.4 - 0.2), 49.4);
+    expect(AppFormatters.formatStock(50.0), '50');
+    expect(AppFormatters.formatStock(49.6), '49.6');
+    expect(AppFormatters.formatStock(0.25), '0.25');
+    expect(AppFormatters.formatStock(50 - 0.4 - 0.2), '49.4');
+    expect(AppFormatters.formatStock(-0.5), '-0.5');
+    expect(AppFormatters.formatStock(0), '0');
   });
 
   test('services: with tax, tax-free and without SAC', () async {

@@ -942,7 +942,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get labelProduct => 'பொருள்';
 
   @override
-  String dashboardStockLabel(int count) {
+  String dashboardStockLabel(String count) {
     return 'இருப்பு: $count';
   }
 
@@ -1108,7 +1108,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get createInvoiceInsufficientStockTitle => 'போதுமான இருப்பு இல்லை';
 
   @override
-  String createInvoiceInsufficientStockMessage(int stock, double qty) {
+  String createInvoiceInsufficientStockMessage(String stock, String qty) {
     return 'இருப்பில் $stock அலகு(கள்) மட்டுமே உள்ளன. இருப்பினும் $qty சேர்க்கவா?';
   }
 
@@ -1127,7 +1127,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get createInvoiceUnlimitedStockLabel => 'வரம்பற்ற இருப்பு';
 
   @override
-  String createInvoiceAvailableStockLabel(int stock) {
+  String createInvoiceAvailableStockLabel(String stock) {
     return 'கிடைக்கும் இருப்பு: $stock';
   }
 
@@ -5652,5 +5652,21 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String pdfSettingsSampleItemName(int number) {
     return 'மாதிரிப் பொருள் $number';
+  }
+
+  @override
+  String get companyInfoNameRequiredMessage =>
+      'உங்கள் நிறுவனத்தின் பெயரை உள்ளிடவும்.';
+
+  @override
+  String get createInvoiceNegativeLineMessage =>
+      'ஒரு வரியின் மொத்தம் பூஜ்ஜியத்திற்குக் கீழே இருக்க முடியாது. தள்ளுபடியைச் சரிபார்க்கவும்.';
+
+  @override
+  String get invoiceMgmtAlreadyConvertedTitle => 'ஏற்கனவே மாற்றப்பட்டது';
+
+  @override
+  String invoiceMgmtAlreadyConvertedBody(String number) {
+    return 'விலைப்புள்ளி $number ஏற்கனவே விலைப்பட்டியலாக மாற்றப்பட்டது. இதுபோல் இன்னொரு விலைப்பட்டியல் செய்ய, நகலெடு என்பதைப் பயன்படுத்தவும்.';
   }
 }

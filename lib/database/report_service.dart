@@ -11,6 +11,7 @@ import 'package:invoiceo/models/additional_cost.dart';
 import 'package:invoiceo/utils/app_date.dart';
 import 'package:invoiceo/utils/formatters.dart';
 import 'package:invoiceo/models/report_models.dart';
+import 'package:invoiceo/models/product.dart';
 import 'package:invoiceo/services/pdf/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
 import 'package:invoiceo/services/pdf/shaped_pw.dart' as pw;
@@ -1003,7 +1004,7 @@ class ReportService {
     return InventoryValuationSummary(
       stockValue: (r['stock_value'] as num).toDouble(),
       retailValue: (r['retail_value'] as num).toDouble(),
-      totalUnits: (r['total_units'] as num).toInt(),
+      totalUnits: (r['total_units'] as num).toDouble(),
       productCount: (r['product_count'] as num).toInt(),
       excludedCount: (excludedRows.first['excluded_count'] as num).toInt(),
     );
@@ -1025,7 +1026,7 @@ class ReportService {
         .map((r) => InventoryValuationRow(
               productId: r['id'] as String? ?? '',
               name: r['name'] as String? ?? '',
-              stock: (r['stock'] as num?)?.toInt() ?? 0,
+              stock: Product.stockFrom(r['stock']),
               purchasePrice: (r['purchase_price'] as num?)?.toDouble() ?? 0.0,
               price: (r['price'] as num?)?.toDouble() ?? 0.0,
               unit: r['unit'] as String? ?? '',
@@ -1043,7 +1044,7 @@ class ReportService {
         [
           i + 1,
           rows[i].name,
-          rows[i].stock,
+          AppFormatters.formatStock(rows[i].stock),
           rows[i].purchasePrice.toStringAsFixed(2),
           rows[i].stockValue.toStringAsFixed(2),
           rows[i].retailValue.toStringAsFixed(2),
@@ -1051,7 +1052,7 @@ class ReportService {
       [
         '',
         'Total',
-        summary.totalUnits,
+        AppFormatters.formatStock(summary.totalUnits),
         '',
         summary.stockValue.toStringAsFixed(2),
         summary.retailValue.toStringAsFixed(2),
@@ -1119,7 +1120,7 @@ class ReportService {
                 [
                   '${i + 1}',
                   rows[i].name,
-                  '${rows[i].stock}',
+                  AppFormatters.formatStock(rows[i].stock),
                   money(rows[i].purchasePrice),
                   money(rows[i].stockValue),
                   money(rows[i].retailValue),
@@ -1127,7 +1128,7 @@ class ReportService {
               [
                 '',
                 'Total',
-                '${summary.totalUnits}',
+                AppFormatters.formatStock(summary.totalUnits),
                 '',
                 money(summary.stockValue),
                 money(summary.retailValue),

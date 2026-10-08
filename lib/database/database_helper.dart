@@ -16,7 +16,7 @@ class DatabaseHelper {
   static String? get path => _path;
   static Database? _database;
   static String _dbFileName = 'invoice_manager.db';
-  final dbVersion = 50;
+  final dbVersion = 51;
 
   /// Placeholder company name seeded by `_createDB`. Onboarding shows an
   /// empty name field while the saved name still equals it.
@@ -81,7 +81,7 @@ class DatabaseHelper {
         name TEXT,
         description TEXT,
         price REAL,
-        stock INTEGER,
+        stock REAL,
         hsncode TEXT,
         tax_rate INTEGER,
         type TEXT DEFAULT 'product',
@@ -867,6 +867,84 @@ class DatabaseHelper {
       )
         ''');
       });
+    }
+
+    if (oldVersion < 51) {
+      // Stock is a decimal now (0.4 kg sold takes 0.4). products.stock was
+      // INTEGER; SQLite can't change a column type with ALTER, so the table
+      // is rebuilt with stock REAL. Whole-number stock reads back the same
+      // (50 -> 50.0); every other column, row and index is kept.
+      await _runMigrationStep(db, 51, 'make_products_stock_real', () async {
+        await _makeProductStockReal(db);
+      });
+    }
+  }
+
+  /// Rebuilds the products table with `stock REAL`. Columns are copied from
+  /// the table as it is (PRAGMA table_info), so a column this code doesn't
+  /// know is kept too. No-op when stock is already REAL.
+  ///
+  /// If the rebuild can't be done safely the INTEGER column is kept: SQLite
+  /// still stores 49.6 there as a decimal, so stock stays right either way.
+  static Future<void> _makeProductStockReal(Database db) async {
+    final cols = await db.rawQuery('PRAGMA table_info(products)');
+    final stock = cols.where((c) => c['name'] == 'stock').toList();
+    if (stock.isEmpty ||
+        '${stock.first['type']}'.trim().toUpperCase() == 'REAL') {
+      return;
+    }
+    // A view or trigger could block the rename below. The app makes none.
+    final viewsOrTriggers = Sqflite.firstIntValue(await db.rawQuery(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type IN ('view', 'trigger')")) ??
+        0;
+    if (viewsOrTriggers > 0) {
+      AppLogger.w(_tag, 'products.stock kept INTEGER: views or triggers found');
+      return;
+    }
+    // Index SQL, to create them again (dropping a table drops its indexes).
+    final indexSql = (await db.rawQuery(
+            "SELECT sql FROM sqlite_master WHERE type = 'index' "
+            "AND tbl_name = 'products' AND sql IS NOT NULL"))
+        .map((r) => r['sql'] as String)
+        .toList();
+
+    String q(Object? name) => '"${'$name'.replaceAll('"', '""')}"';
+    final names = cols.map((c) => q(c['name'])).join(', ');
+    final pk = (cols.where((c) => ((c['pk'] as int?) ?? 0) > 0).toList()
+          ..sort((a, b) => (a['pk'] as int).compareTo(b['pk'] as int)))
+        .map((c) => q(c['name']))
+        .toList();
+    final defs = [
+      for (final c in cols)
+        [
+          q(c['name']),
+          c['name'] == 'stock' ? 'REAL' : '${c['type'] ?? ''}',
+          if (c['notnull'] == 1) 'NOT NULL',
+          if (c['dflt_value'] != null)
+            '${c['dflt_value']}'.contains('(')
+                ? 'DEFAULT (${c['dflt_value']})'
+                : 'DEFAULT ${c['dflt_value']}',
+        ].where((s) => s.isNotEmpty).join(' '),
+      if (pk.isNotEmpty) 'PRIMARY KEY (${pk.join(', ')})',
+    ];
+
+    // Build and fill the new table first; the old one is still untouched if
+    // this fails.
+    try {
+      await db.execute('DROP TABLE IF EXISTS products_new');
+      await db.execute('CREATE TABLE products_new (${defs.join(', ')})');
+      // REAL affinity turns the old integers into reals as they are copied.
+      await db.execute(
+          'INSERT INTO products_new ($names) SELECT $names FROM products');
+    } catch (e) {
+      AppLogger.w(_tag, 'products.stock kept INTEGER: $e');
+      await db.execute('DROP TABLE IF EXISTS products_new');
+      return;
+    }
+    await db.execute('DROP TABLE products');
+    await db.execute('ALTER TABLE products_new RENAME TO products');
+    for (final sql in indexSql) {
+      await db.execute(sql);
     }
   }
 

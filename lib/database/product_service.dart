@@ -375,13 +375,13 @@ class ProductService {
     await db.delete('product_metadata', where: 'product_id = ?', whereArgs: [productId]);
   }
 
-  static Future<void> updateProductStock(String id, int newStock) async {
+  static Future<void> updateProductStock(String id, double newStock) async {
     final db = await dbHelper.database;
-    await db.update('products', {'stock': newStock},
+    await db.update('products', {'stock': Product.roundStock(newStock)},
         where: 'id = ?', whereArgs: [id]);
   }
 
-  static Future<bool> hasSufficientStock(String productId, int quantity) async {
+  static Future<bool> hasSufficientStock(String productId, double quantity) async {
     final product = await getProductById(productId);
     if (product == null) return false;
     return product.unlimitedStock || product.stock >= quantity;

@@ -23,6 +23,7 @@ import 'package:invoiceo/models/user.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/services/invoice_pdf_services.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
+import 'package:invoiceo/utils/formatters.dart';
 
 // ── Small pure helpers (tested in test/modern_dashboard_test.dart) ──────────
 
@@ -1130,7 +1131,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text('${p.stock}',
+                child: Text(AppFormatters.formatStock(p.stock),
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color)),
               ),
@@ -1168,7 +1169,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
   }
 
   Future<void> _updateStock(Product p) async {
-    final value = await showDialog<int>(
+    final value = await showDialog<double>(
       context: context,
       builder: (_) => _StockDialog(product: p),
     );
@@ -1266,7 +1267,7 @@ class _StockDialog extends StatefulWidget {
 
 class _StockDialogState extends State<_StockDialog> {
   late final TextEditingController _controller =
-      TextEditingController(text: '${widget.product.stock}');
+      TextEditingController(text: AppFormatters.formatStock(widget.product.stock));
 
   @override
   void dispose() {
@@ -1274,7 +1275,11 @@ class _StockDialogState extends State<_StockDialog> {
     super.dispose();
   }
 
-  void _save() => Navigator.pop(context, int.tryParse(_controller.text.trim()));
+  // A decimal is fine (12.5 kg); text that is not a number saves nothing.
+  void _save() {
+    final v = double.tryParse(_controller.text.trim());
+    Navigator.pop(context, v == null || !v.isFinite || v < 0 ? null : v);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1291,8 +1296,8 @@ class _StockDialogState extends State<_StockDialog> {
             key: const ValueKey('modernDashStockField'),
             controller: _controller,
             autofocus: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
             decoration: InputDecoration(
                 labelText: l10n.modernDashNewStockLabel,
                 border: const OutlineInputBorder()),

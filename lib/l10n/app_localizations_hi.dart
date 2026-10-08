@@ -931,7 +931,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get labelProduct => 'उत्पाद';
 
   @override
-  String dashboardStockLabel(int count) {
+  String dashboardStockLabel(String count) {
     return 'स्टॉक: $count';
   }
 
@@ -1095,7 +1095,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get createInvoiceInsufficientStockTitle => 'अपर्याप्त स्टॉक';
 
   @override
-  String createInvoiceInsufficientStockMessage(int stock, double qty) {
+  String createInvoiceInsufficientStockMessage(String stock, String qty) {
     return 'केवल $stock इकाई(यां) उपलब्ध हैं। फिर भी $qty जोड़ें?';
   }
 
@@ -1114,7 +1114,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get createInvoiceUnlimitedStockLabel => 'असीमित स्टॉक';
 
   @override
-  String createInvoiceAvailableStockLabel(int stock) {
+  String createInvoiceAvailableStockLabel(String stock) {
     return 'उपलब्ध स्टॉक: $stock';
   }
 
@@ -5527,5 +5527,21 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String pdfSettingsSampleItemName(int number) {
     return 'नमूना आइटम $number';
+  }
+
+  @override
+  String get companyInfoNameRequiredMessage =>
+      'कृपया अपनी कंपनी का नाम दर्ज करें।';
+
+  @override
+  String get createInvoiceNegativeLineMessage =>
+      'किसी पंक्ति का कुल शून्य से कम नहीं हो सकता। छूट जाँचें।';
+
+  @override
+  String get invoiceMgmtAlreadyConvertedTitle => 'पहले ही बदला जा चुका है';
+
+  @override
+  String invoiceMgmtAlreadyConvertedBody(String number) {
+    return 'कोटेशन $number पहले ही इनवॉइस बन चुका है। इसके जैसा दूसरा इनवॉइस बनाने के लिए डुप्लिकेट का उपयोग करें।';
   }
 }

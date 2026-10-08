@@ -322,7 +322,7 @@ jobs:
   # Compiled natively on ubuntu-24.04 (glibc 2.39) for modern
   # systems. Uses appimagetool directly instead of appimage-builder
   # to avoid Python 3.12 compatibility issues on Noble.
-  # Bundles libstdc++ and libgcc_s; relies on system GTK/glib
+  # Uses the system's libstdc++, GTK and glib
   # which are standard on Ubuntu 24.04.
   # ─────────────────────────────────────────────────────────────
   build-appimage-ubuntu24:
@@ -371,13 +371,8 @@ jobs:
           # Copy Flutter bundle
           cp -r build/linux/x64/release/bundle/. AppDir/usr/bin/
 
-          # Bundle libstdc++ (provides GLIBCXX symbols required by Syncfusion)
-          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
-          echo "Bundling libstdc++: $LIBSTDCPP"
-          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
-
-          # Bundle libgcc_s
-          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+          # No libstdc++ / libgcc_s here: the system's own (newer) ones must
+          # be used, or graphics drivers on newer distros fail to load.
 
           # Bundle libsqlite3.so — sqflite_common_ffi calls
           # DynamicLibrary.open("libsqlite3.so") (unversioned).  Ubuntu only
@@ -411,6 +406,7 @@ jobs:
           Icon=logo
           Type=Application
           Categories=Office;
+          StartupWMClass=com.invoiceo.app
           Terminal=false
           EOF
 
@@ -486,13 +482,8 @@ jobs:
           # Copy Flutter bundle
           cp -r build/linux/x64/release/bundle/. AppDir/usr/bin/
 
-          # Bundle libstdc++ (provides GLIBCXX symbols required by Syncfusion)
-          LIBSTDCPP=$(find /usr/lib -name "libstdc++.so.6.0.*" | sort -V | tail -1)
-          echo "Bundling libstdc++: $LIBSTDCPP"
-          cp "$LIBSTDCPP" AppDir/usr/lib/libstdc++.so.6
-
-          # Bundle libgcc_s
-          cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 AppDir/usr/lib/
+          # No libstdc++ / libgcc_s here: the system's own (newer) ones must
+          # be used, or graphics drivers on newer distros fail to load.
 
           # Bundle libsqlite3.so — sqflite_common_ffi calls
           # DynamicLibrary.open("libsqlite3.so") (unversioned).  Ubuntu only
@@ -526,6 +517,7 @@ jobs:
           Icon=logo
           Type=Application
           Categories=Office;
+          StartupWMClass=com.invoiceo.app
           Terminal=false
           EOF
 

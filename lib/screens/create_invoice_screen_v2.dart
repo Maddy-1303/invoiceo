@@ -24,6 +24,7 @@ import 'package:invoiceo/models/custom_field_value.dart';
 import 'package:invoiceo/services/invoice_pdf_services.dart';
 import 'package:invoiceo/services/pdf_service.dart';
 import 'package:invoiceo/common/constants.dart';
+import 'package:invoiceo/utils/formatters.dart';
 import 'package:invoiceo/utils/scanner_capture.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 
@@ -813,7 +814,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
           builder: (ctx) => AlertDialog(
             title: Text(AppLocalizations.of(context)!.createInvoiceInsufficientStockTitle),
             content: Text(
-              AppLocalizations.of(context)!.createInvoiceInsufficientStockMessage(product.stock, qty),
+              AppLocalizations.of(context)!.createInvoiceInsufficientStockMessage(
+                  AppFormatters.formatStock(product.stock), AppFormatters.formatStock(qty)),
             ),
             actions: [
               TextButton(
@@ -988,7 +990,8 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                         const Icon(Icons.inventory_2,
                             color: Colors.green, size: 18),
                         const SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.createInvoiceAvailableStockLabel(product.stock),
+                        Text(AppLocalizations.of(context)!.createInvoiceAvailableStockLabel(
+                                AppFormatters.formatStock(product.stock)),
                             style: const TextStyle(color: Colors.green)),
                       ],
                     ),
@@ -4923,7 +4926,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
                           children: [
                             TextSpan(
                                 text:
-                                    '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${product.stock}'
+                                    '$_currencySymbol${product.price.toStringAsFixed(2)}  ·  Stock: ${AppFormatters.formatStock(product.stock)}'
                                     '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'),
                             if (hasStorage) ...[
                               const TextSpan(text: '  ·  '),

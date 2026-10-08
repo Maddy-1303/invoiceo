@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:invoiceo/screens/auth/change_password_screen.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:invoiceo/l10n/app_localizations.dart';
 import 'package:invoiceo/widgets/discovery_banner.dart';
@@ -787,6 +788,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     switch (action) {
       case ModernUserAction.settings:
         _selectTab(8);
+      case ModernUserAction.changePassword:
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ChangePasswordScreen(user: _currentUser)));
       case ModernUserAction.coffee:
         launchUrl(Uri.parse(AppConfig.buyMeCoffee),
             mode: LaunchMode.externalApplication);
@@ -2944,7 +2948,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
   }
 
   Future<void> _showUpdateStockDialog(Product product) async {
-    final controller = TextEditingController(text: product.stock.toString());
+    final controller =
+        TextEditingController(text: AppFormatters.formatStock(product.stock));
     final l10n = AppLocalizations.of(context)!;
     await showDialog(
       context: context,
@@ -2961,7 +2966,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           width: 300,
           child: TextField(
             controller: controller,
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             autofocus: true,
             decoration: InputDecoration(
               labelText: l10n.dashboardNewStockQuantityLabel,
@@ -2977,8 +2982,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
               child: Text(l10n.actionCancel)),
           FilledButton(
             onPressed: () async {
-              final qty = int.tryParse(controller.text.trim());
-              if (qty == null || qty < 0) return;
+              // A decimal is fine: 12.5 kg.
+              final qty = double.tryParse(controller.text.trim());
+              if (qty == null || !qty.isFinite || qty < 0) return;
               await ref
                   .read(productRepositoryProvider)
                   .updateProductStock(product.id, qty);
@@ -3116,7 +3122,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                         ),
                         child: Text(
                           AppLocalizations.of(context)!
-                              .dashboardStockLabel(product.stock),
+                              .dashboardStockLabel(
+                                  AppFormatters.formatStock(product.stock)),
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,

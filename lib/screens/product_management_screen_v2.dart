@@ -497,6 +497,10 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     }
   }
 
+  /// A typed stock ("12.5") as a number, 3 decimals at most; blank is 0.
+  static double _parseStock(String text) =>
+      Product.roundStock(double.tryParse(text.trim()) ?? 0);
+
   Future<void> _addProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -513,7 +517,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         price: price,
-        stock: _unlimitedStock ? 0 : int.parse(_stockController.text.trim()),
+        stock: _unlimitedStock ? 0 : _parseStock(_stockController.text),
         hsncode: _hsnCodeController.text.trim(),
         tax_rate: int.parse(_taxRateController.text.trim()),
         type: _newItemType,
@@ -783,9 +787,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       onFieldSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
-          : (isStock || isTaxRate)
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
+          : isStock
+              // Stock can be a decimal (12.5 kg).
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+              : isTaxRate
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
@@ -822,8 +829,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           if (price == null || price < 0) return l10n.fieldEnterValidPriceMessage;
         }
         if (isStock) {
-          final stock = int.tryParse(value!);
-          if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
+          // A decimal is fine: 12.5 kg.
+          final stock = double.tryParse(value!.trim());
+          if (stock == null || !stock.isFinite || stock < 0) {
+            return l10n.fieldEnterValidStockMessage;
+          }
         }
         if (isTaxRate) {
           final tax = int.tryParse(value!);
@@ -1182,8 +1192,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         final unitStr = getField(row, 'unit');
         final unlimitedStockStr = getField(row, 'unlimited_stock');
         final priceIncludesTaxStr = getField(row, 'price_includes_tax');
-        final taxRate = taxStr.isEmpty ? 0 : (int.tryParse(taxStr) ?? 0);
-        final stock = stockStr.isEmpty ? 0 : (int.tryParse(stockStr) ?? 0);
+        // "18.0" / "10.0" (as Excel and Sheets write them) read as 18 / 10.
+        int wholeNumber(String v) =>
+            int.tryParse(v.trim()) ?? double.tryParse(v.trim())?.round() ?? 0;
+        final taxRate = taxStr.isEmpty ? 0 : wholeNumber(taxStr);
+        // Stock can be a decimal: "12.5" kg.
+        final stock = stockStr.isEmpty ? 0.0 : _parseStock(stockStr);
         // Modern Products / Services page: a blank or unknown type is this
         // page's kind, and a service without an unlimited_stock value has
         // unlimited stock (like the New Service panel).
@@ -1509,7 +1523,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               p.description,
               p.price,
               p.tax_rate,
-              p.stock,
+              AppFormatters.formatStock(p.stock),
               p.type,
               p.defaultDiscount,
               p.purchasePrice,
@@ -1625,7 +1639,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                       e.$2.description,
                       e.$2.price.toStringAsFixed(2),
                       '${e.$2.tax_rate}%',
-                      e.$2.unlimitedStock ? 'Unlimited' : e.$2.stock,
+                      e.$2.unlimitedStock ? 'Unlimited' : AppFormatters.formatStock(e.$2.stock),
                       e.$2.type,
                       e.$2.defaultDiscount > 0 ? e.$2.defaultDiscount.toStringAsFixed(2) : '-',
                       e.$2.unit,
@@ -2486,7 +2500,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         : p.stock > 0
             ? Colors.orange[700]
             : Colors.red[700];
-    return Text('${p.stock}',
+    return Text(AppFormatters.formatStock(p.stock),
         style: TextStyle(color: color, fontWeight: FontWeight.w600));
   }
 
@@ -2855,7 +2869,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               if (_columnsConfig.stock)
                 Expanded(
                   child: _buildFormField(_stockController, l10n.labelStock, Icons.inventory,
-                      keyboardType: TextInputType.number,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       isStock: true,
                       required: !_unlimitedStock,
                       enabled: !_unlimitedStock),
@@ -3097,7 +3112,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     final discountCtrl = TextEditingController(
         text: product.defaultDiscount > 0 ? product.defaultDiscount.toString() : '0.0');
     final taxCtrl = TextEditingController(text: product.tax_rate.toString());
-    final stockCtrl = TextEditingController(text: product.stock.toString());
+    final stockCtrl =
+        TextEditingController(text: AppFormatters.formatStock(product.stock));
     final customUnitCtrl = TextEditingController(
         text: ProductUnits.presets.contains(product.unit) ? '' : product.unit);
     final storageCtrl = TextEditingController(text: metadata?.storageLocation ?? '');
@@ -3200,7 +3216,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                 name: nameCtrl.text.trim(),
                 description: descCtrl.text.trim(),
                 price: price,
-                stock: unlimitedStock ? 0 : int.parse(stockCtrl.text.trim()),
+                stock: unlimitedStock ? 0 : _parseStock(stockCtrl.text),
                 hsncode: hsnCtrl.text.trim(),
                 tax_rate: int.parse(taxCtrl.text.trim()),
                 type: itemType,
@@ -3433,7 +3449,8 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
                                   if (_columnsConfig.stock)
                                     Expanded(
                                       child: field(stockCtrl, l10n.labelStock, Icons.inventory,
-                                          keyboardType: TextInputType.number,
+                                          keyboardType: const TextInputType
+                                              .numberWithOptions(decimal: true),
                                           isStock: !unlimitedStock,
                                           isRequired: !unlimitedStock),
                                     ),
@@ -3834,7 +3851,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           : ''),
       'stock' => p.unlimitedStock
           ? Text('∞', style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant))
-          : Text('${p.stock}',
+          : Text(AppFormatters.formatStock(p.stock),
               style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
@@ -4913,9 +4930,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       },
       inputFormatters: isPrice
           ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}$'))]
-          : (isStock || isTaxRate)
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
+          : isStock
+              // Stock can be a decimal (12.5 kg).
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+              : isTaxRate
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixText == null ? Icon(icon) : null,
@@ -4951,8 +4971,11 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
           if (price == null || price < 0) return l10n.fieldEnterValidPriceMessage;
         }
         if (isStock) {
-          final stock = int.tryParse(value);
-          if (stock == null || stock < 0) return l10n.fieldEnterValidStockMessage;
+          // A decimal is fine: 12.5 kg.
+          final stock = double.tryParse(value.trim());
+          if (stock == null || !stock.isFinite || stock < 0) {
+            return l10n.fieldEnterValidStockMessage;
+          }
         }
         if (isTaxRate) {
           final tax = int.tryParse(value);

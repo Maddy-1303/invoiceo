@@ -1504,5 +1504,9 @@
   "pdfPreviewErrorMessage": "Impossible d’afficher l’aperçu. Utilisez Imprimer ou Télécharger à la place.",
   "pdfSettingsSampleCompanyName": "Votre entreprise",
   "pdfSettingsSampleCustomerName": "Client exemple",
-  "pdfSettingsSampleItemName": "Article exemple {number}"
+  "pdfSettingsSampleItemName": "Article exemple {number}",
+  "companyInfoNameRequiredMessage": "Veuillez saisir le nom de votre entreprise.",
+  "createInvoiceNegativeLineMessage": "Le total d’une ligne ne peut pas être négatif. Vérifiez la remise.",
+  "invoiceMgmtAlreadyConvertedTitle": "Déjà convertie",
+  "invoiceMgmtAlreadyConvertedBody": "Le devis {number} est déjà une facture. Pour en créer une autre semblable, utilisez Dupliquer."
 }

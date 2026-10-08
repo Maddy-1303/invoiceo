@@ -23,6 +23,7 @@ import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/domain/invoice_calculator.dart';
 import 'package:invoiceo/domain/invoice_totals_calculator.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/services/backend_services.dart';
 import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/providers/app_config_provider.dart';
 import 'package:invoiceo/providers/repositories.dart';
@@ -188,6 +189,10 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
   // Settings > "Print automatically after creating": when on, Create
   // already prints, so Create ▾ leaves out "Save & Print".
   bool _autoPrintOn = false;
+  // Invoice Settings prefix ("INV-") and leading zeros, for the number on
+  // the Created screen. Null until loaded.
+  String? _numberPrefix;
+  bool _numberLeadingZeros = true;
   bool _productArrowed = false; // arrow keys used on the product list
 
   // The right-hand panel folds to a slim strip, like the left sidebar.
@@ -287,7 +292,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
   // Editing: how much of each product the saved document already took from
   // stock. Copied when the form opens, because the table edits those same
   // line objects in place (their quantities change as the user types).
-  final Map<String, int> _stockHeldByEdited = {};
+  final Map<String, double> _stockHeldByEdited = {};
   bool _customFieldsEnabled = false;
   List<CustomFieldDef> _customFieldDefs = [];
   Map<String, String> _customFieldValues = {}; // defId -> value, filled via _showCustomFieldsDialogV2
@@ -301,6 +306,17 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
   @override
   void initState() {
     super.initState();
+    Future.wait([
+      BackendServices.settings.getSetting(SettingKey.invoicePrefix),
+      BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros),
+    ]).then((r) {
+      if (!mounted) return;
+      final raw = (r[0] ?? 'INV').trim();
+      setState(() {
+        _numberPrefix = raw.isNotEmpty ? '$raw-' : '';
+        _numberLeadingZeros = r[1] != 'false';
+      });
+    }).catchError((_) {});
     InvoicePdfServices.autoPrintAfterCreateEnabled().then((on) {
       if (mounted && on != _autoPrintOn) setState(() => _autoPrintOn = on);
     });
@@ -375,7 +391,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
       // A quotation or a declined invoice took no stock.
       if (_invoice!.type != 'Quotation' && _invoice!.status != 'declined') {
         for (final line in _invoice!.items) {
-          final q = line.quantity.round();
+          final q = line.quantity;
           _stockHeldByEdited.update(line.product.id, (held) => held + q,
               ifAbsent: () => q);
         }
@@ -1005,12 +1021,14 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
 
     Future<void> addInvoiceProductImpl() async
     {
-      final qty = !_showQuantity
+      final typedQty = !_showQuantity
           ? 1.0
           : _fractionalQuantity
           ? (double.tryParse(quantityController.text) ?? 1.0)
           : (int.tryParse(quantityController.text) ?? 1)
           .toDouble();
+      // 0 or less is not a sale: use 1, as the table's quantity cell does.
+      final qty = typedQty > 0 ? typedQty : 1.0;
       final discount =
           double.tryParse(discountController.text) ?? 0.0;
       final parsedUnitPrice =
@@ -1032,7 +1050,8 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
           builder: (ctx) => AlertDialog(
             title: Text(AppLocalizations.of(context)!.createInvoiceInsufficientStockTitle),
             content: Text(
-              AppLocalizations.of(context)!.createInvoiceInsufficientStockMessage(product.stock, qty),
+              AppLocalizations.of(context)!.createInvoiceInsufficientStockMessage(
+                  AppFormatters.formatStock(product.stock), AppFormatters.formatStock(qty)),
             ),
             actions: [
               TextButton(
@@ -1207,7 +1226,8 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
                         const Icon(Icons.inventory_2,
                             color: Colors.green, size: 18),
                         const SizedBox(width: 8),
-                        Text(AppLocalizations.of(context)!.createInvoiceAvailableStockLabel(product.stock),
+                        Text(AppLocalizations.of(context)!.createInvoiceAvailableStockLabel(
+                                AppFormatters.formatStock(product.stock)),
                             style: const TextStyle(color: Colors.green)),
                       ],
                     ),
@@ -1653,6 +1673,19 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
     }
   }
 
+  /// False (with a message) when a line's total is below zero, for example a
+  /// discount bigger than the price.
+  bool _linesNotNegative() {
+    if (invoiceItems.every((i) => i.total >= 0)) return true;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(AppLocalizations.of(context)!.createInvoiceNegativeLineMessage),
+      backgroundColor: Colors.red,
+      behavior: SnackBarBehavior.floating,
+      showCloseIcon: true,
+    ));
+    return false;
+  }
+
   Future<bool> _createInvoice() async {
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1693,6 +1726,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
       );
       return false;
     }
+    if (!_linesNotNegative()) return false;
 
     if(!mounted) return false;
     setState(() => isLoading = true);
@@ -4059,6 +4093,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
 
   Future<bool> _updateInvoice() async {
     if (_invoice == null) return false;
+    if (!_linesNotNegative()) return false;
 
     if (nameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -4293,7 +4328,14 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
     final primary = Theme.of(context).primaryColor;
-    final number = _invoice?.invoiceNumber ?? _invoice?.id ?? '';
+    // The number as the PDF prints it (prefix and leading-zero settings),
+    // e.g. "INV-00000012"; plain "#00000012" while those are loading.
+    final raw = _invoice?.invoiceNumber ?? _invoice?.id ?? '';
+    final printed = _numberPrefix == null || _invoice == null
+        ? null
+        : _invoice!.pdfNumberText(_numberPrefix!,
+            showLeadingZeros: _numberLeadingZeros);
+    final number = printed ?? '#$raw';
     return Container(
       key: const ValueKey('modernSuccessId'),
       padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
@@ -4318,7 +4360,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
           children: [
             Text(l10n.mSuccessIdLabel(type),
                 style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-            Text('#$number',
+            Text(number,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
           ],
         ),
@@ -5461,7 +5503,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
                           children: [
                             TextSpan(
                                 text:
-                                    '${AppFormatters.formatAmount(product.price, _currencySymbol)}  ·  ${AppLocalizations.of(context)!.dashboardStockLabel(product.stock)}'
+                                    '${AppFormatters.formatAmount(product.price, _currencySymbol)}  ·  ${AppLocalizations.of(context)!.dashboardStockLabel(AppFormatters.formatStock(product.stock))}'
                                     '${product.hsncode.trim().isEmpty ? '' : '  ·  HSN ${product.hsncode}'}'),
                             if (hasStorage) ...[
                               const TextSpan(text: '  ·  '),
@@ -6182,7 +6224,8 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
     if (p == null || p.type == 'service' || p.unlimitedStock) return null;
     // Editing: this document's own saved quantities were already taken from
     // stock (read from the copy made on open, not from the edited lines).
-    return p.stock.toDouble() + (_stockHeldByEdited[item.product.id] ?? 0);
+    return Product.roundStock(
+        p.stock + (_stockHeldByEdited[item.product.id] ?? 0));
   }
 
   Widget _qtyCell(InvoiceItem item, int index) {
@@ -6214,10 +6257,15 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
   Widget _discountCell(InvoiceItem item, int index) {
     final c = _bound(_discBindings, item, item.discount, _moneyText);
     return _cellInput(c, (t) {
-      final v = t.trim().isEmpty ? 0.0 : _parseNum(t);
+      var v = t.trim().isEmpty ? 0.0 : _parseNum(t);
       if (v == null || v < 0) return;
+      // Never more than the price (per unit) or the line (flat).
+      final cap = item.discountPerUnit
+          ? item.effectivePrice
+          : item.effectivePrice * item.quantity;
+      if (v > cap) v = cap;
       setState(() {
-        item.discount = v;
+        item.discount = v!;
         _discBindings[item.id]!.synced = v;
       });
     }, key: ValueKey('disc_$index'), prefix: _currencySymbol);

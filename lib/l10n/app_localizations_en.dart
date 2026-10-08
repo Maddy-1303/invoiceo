@@ -932,7 +932,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelProduct => 'Product';
 
   @override
-  String dashboardStockLabel(int count) {
+  String dashboardStockLabel(String count) {
     return 'Stock: $count';
   }
 
@@ -1096,7 +1096,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createInvoiceInsufficientStockTitle => 'Insufficient Stock';
 
   @override
-  String createInvoiceInsufficientStockMessage(int stock, double qty) {
+  String createInvoiceInsufficientStockMessage(String stock, String qty) {
     return 'Only $stock unit(s) available. Add $qty anyway?';
   }
 
@@ -1115,7 +1115,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createInvoiceUnlimitedStockLabel => 'Unlimited Stock';
 
   @override
-  String createInvoiceAvailableStockLabel(int stock) {
+  String createInvoiceAvailableStockLabel(String stock) {
     return 'Available Stock: $stock';
   }
 
@@ -5507,5 +5507,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String pdfSettingsSampleItemName(int number) {
     return 'Sample item $number';
+  }
+
+  @override
+  String get companyInfoNameRequiredMessage =>
+      'Please enter your company name.';
+
+  @override
+  String get createInvoiceNegativeLineMessage =>
+      'A line total cannot be below zero. Check the discount.';
+
+  @override
+  String get invoiceMgmtAlreadyConvertedTitle => 'Already converted';
+
+  @override
+  String invoiceMgmtAlreadyConvertedBody(String number) {
+    return 'Quotation $number is already an invoice. To make another invoice like it, use Duplicate.';
   }
 }

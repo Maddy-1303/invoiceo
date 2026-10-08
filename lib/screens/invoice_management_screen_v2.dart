@@ -437,26 +437,25 @@ class _InvoiceManagementScreenV2State
 
   Future<void> _confirmAndConvert(Invoice quotation) async {
     if (widget.onConvertToInvoice == null) return;
+    // A converted quotation is converted once only (a second invoice would
+    // take its stock again); Duplicate makes another one.
     if (quotation.status == 'converted') {
       final l10n = AppLocalizations.of(context)!;
-      final proceed = await showDialog<bool>(
+      await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(l10n.invoiceMgmtConvertAgainTitle),
-          content: Text(l10n.invoiceMgmtConvertAgainBody(
+          title: Text(l10n.invoiceMgmtAlreadyConvertedTitle),
+          content: Text(l10n.invoiceMgmtAlreadyConvertedBody(
               quotation.invoiceNumber ?? quotation.id)),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(l10n.actionCancel)),
-            FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(l10n.invoiceMgmtConvertToInvoiceAction)),
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.actionClose)),
           ],
         ),
       );
-      if (proceed != true) return;
+      return;
     }
     widget.onConvertToInvoice!(quotation);
   }
@@ -1927,7 +1926,8 @@ class _InvoiceManagementScreenV2State
         const PopupMenuDivider(),
       ],
       if (widget.filterType == 'Quotation') ...[
-        if (widget.onConvertToInvoice != null)
+        if (widget.onConvertToInvoice != null &&
+            (invoice.status ?? 'draft') != 'converted')
           PopupMenuItem(
               value: 'convert',
               child: _MenuRow(Icons.swap_horiz, l10n.invoiceMgmtConvertToInvoiceAction, BrandColors.accent)),

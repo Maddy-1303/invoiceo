@@ -60,6 +60,10 @@ class UpdateService {
         headers: {'Accept': 'application/vnd.github+json'},
       ).timeout(const Duration(seconds: 8));
 
+      // Any answer (even "too many requests") counts as today's check, so a
+      // busy GitHub is not asked again on every start.
+      await BackendServices.settings.setSetting(
+          SettingKey.lastUpdateCheck, DateTime.now().toIso8601String());
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final latestTag = (data['tag_name'] as String? ?? '').trim();

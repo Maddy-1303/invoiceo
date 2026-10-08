@@ -153,7 +153,6 @@ These were confirmed but left alone because they need a product decision or are 
 
 - Customer / product export PDFs have English column headings.
 - Hindi, Nepali, French, Spanish and Chinese each miss 48 older strings, which show in English. Tibetan is about 87% done.
-- Stock is counted in whole units: fractional quantities (0.5 kg) are rounded when stock changes.
 - In a catalogue with more than 30 products, the "too much quantity" red mark on edited invoices is checked only for products already loaded on screen.
 - The UPI QR still prints on quotations (some shops want advance payment). Decide.
 - Language and theme can be changed only by an admin (Settings → Company Info).
@@ -176,3 +175,52 @@ These were confirmed but left alone because they need a product decision or are 
 3. Watch Actions. The release appears only if all builds pass, and the website's download buttons pick it up automatically.
 4. For a trial build, use a `test-v1.0.1` tag. It becomes a pre-release and the website does not change.
 5. To refresh the website pictures, run `flutter test tool/screenshots/marketing_screenshots_test.dart`, then `python3 tool/build_website.py ../invoiceo-website`, then commit and push in `invoiceo-website`.
+
+## 9. End-to-end release testing (8 October, evening)
+
+Four tester agents worked like a new shop owner, each from a fresh empty database, and drove the real app screens:
+
+| Area | Tests |
+|---|---|
+| First run: login, forced password change, onboarding, companies, users, permissions, logout, session timeout, Tamil | `test/e2e_release_accounts_test.dart` (16 pass) |
+| Billing: products, services, customers, CSV, invoices, quotations → invoice, receipts, payments, decline / trash / restore, drafts, stock, 35 PDF template × page-size combinations, Tamil PDFs, edge cases | `test/e2e_release_billing_test.dart` (28 pass) |
+| Settings take effect on new invoices and PDFs, backup / restore / import, every report, all 8 languages on every page, Modern and Standard | `test/e2e_release_settings_test.dart` (31 pass) |
+| Installers: SHA-256 checks, contents of the .exe / .dmg / .deb / AppImage, first start on each OS, website links | static check of the real v1.0.0 files |
+
+**Whole suite: 531 tests pass, 5 skipped (the open low items below), 0 analyzer errors.**
+
+### Bugs found and fixed
+- **High:**
+  - Importing an empty or non-Invoiceo `.invoicedb` said "success" and emptied the shop. Backups are now checked (SQLite header, integrity check, Invoiceo tables) before anything is replaced.
+  - "Change Password" in Settings → Users always said "incorrect": it used the old password check.
+  - A discount bigger than the price saved a negative line. The discount is now capped, and Create / Update refuse a negative line.
+  - **Fractional quantities did not change stock** (0.4 kg was rounded to 0). Stock is now a decimal number: database upgrade v51, exact stock on sale / edit / decline / trash / restore, decimals in all stock fields and reports.
+- **Medium:**
+  - Quantity 0 was accepted in the add prompt.
+  - CSV tax "18.0" was imported as 0%.
+  - The Customers page allowed a duplicate phone.
+  - A normal user could create companies.
+  - A normal user had no way to change their own password; it is now in the user menu.
+  - Leaving Backup during a backup raised an error.
+  - A converted quotation could be converted again (a second invoice and stock taken twice). It is now blocked in the menu and in the database.
+- **Low:**
+  - The login company picker overflowed with long names.
+  - A blank company name could be saved.
+  - The Created screen showed `#00000012` instead of the printed `INV-00000012`.
+- **Installers:**
+  - The AppImage no longer forces an old libstdc++, which could break graphics on Ubuntu 24.04+.
+  - The Windows installer now runs on ARM laptops.
+  - A failed SQLite load on Windows no longer leaves a silent, windowless app.
+  - The AppImage has a dock icon class on Wayland.
+  - Corrected the .deb size and the minimum Linux versions on the website.
+  - The update check no longer retries on every start when GitHub says "too many requests".
+
+### Still open (low, decided or for 1.0.1)
+- The header date chip on the create screen always uses `dd MMM yyyy`, not the date-format setting. The PDF is correct.
+- Product Details "Default Discount" off does not hide the invoice Discount column. Kept on purpose: it controls the product's default only.
+- CSV import with the same new product name twice in one file makes two products.
+- Renaming the company inside Settings updates the sidebar only after leaving Settings.
+- Skipping the onboarding company step keeps "Your Company Name".
+- English strings remain in the Standard layout's New Invoice screen (the Modern layout is translated).
+- The Windows and macOS installers are not code-signed, so SmartScreen / Gatekeeper show warnings. Smart App Control on a fresh Windows 11 can block unsigned apps.
+- The .deb declares no package dependencies. It starts on standard Ubuntu 22.04+ desktops, not on minimal installs.

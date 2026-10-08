@@ -45,6 +45,15 @@ class AppFormatters {
 
   static String formatAmount(double amount, String symbol) =>
       '$symbol ${_numberFormat.format(amount)}';
+
+  /// A stock or quantity as people write it: 50 (not 50.0), 49.6, 0.25.
+  /// At most 3 decimals, no thousands commas (CSV export reads it back).
+  static String formatStock(num value) {
+    if (!value.isFinite) return '0';
+    final r = (value * 1000).round() / 1000;
+    if (r == r.truncateToDouble()) return r.toInt().toString();
+    return r.toStringAsFixed(3).replaceFirst(RegExp(r'0+$'), '');
+  }
 }
 
 extension StringLimit on String {

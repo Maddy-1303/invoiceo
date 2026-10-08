@@ -117,6 +117,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   // Formatting
   final _fmt = NumberFormat('#,##0.00');
   final _fmtInt = NumberFormat('#,##0');
+  // Stock and quantities can be decimals (0.4 kg): 1,250 / 49.6.
+  final _fmtQty = NumberFormat('#,##0.###');
 
   String? get _reportCurrencyCode =>
       _currencyScope == _CurrencyScope.selected ? _currencyCode : null;
@@ -3381,7 +3383,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
-              child: Text(_fmtInt.format(p.unitsSold),
+              child: Text(_fmtQty.format(p.unitsSold),
                   textAlign: TextAlign.right,
                   style: TextStyle(
                       fontSize: 13,
@@ -3505,7 +3507,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                           Expanded(
                               child: _kpiCard(
                                   l10n.reportsInventoryTotalUnitsLabel,
-                                  _fmtInt.format(_inventorySummary.totalUnits),
+                                  _fmtQty.format(_inventorySummary.totalUnits),
                                   const Color(0xFF0F766E),
                                   Icons.inventory_2_outlined)),
                           const SizedBox(width: 12),
@@ -3656,7 +3658,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   overflow: TextOverflow.ellipsis)),
           Expanded(
               flex: 2,
-              child: Text(_fmtInt.format(p.stock),
+              child: Text(_fmtQty.format(p.stock),
                   textAlign: TextAlign.right,
                   style: TextStyle(
                       fontSize: 13,

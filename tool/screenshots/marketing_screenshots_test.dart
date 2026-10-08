@@ -142,7 +142,7 @@ void main() {
       await CustomerService.insertCustomer(c);
     }
 
-    Product p(String id, String name, double price, int stock,
+    Product p(String id, String name, double price, double stock,
             {String hsn = '0902', int tax = 5, double cost = 0, String type = 'product',
             bool unlimited = false, String unit = 'pcs'}) =>
         Product(id: id, name: name, description: '', price: price, stock: stock, hsncode: hsn,

@@ -937,7 +937,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get labelProduct => 'उत्पादन';
 
   @override
-  String dashboardStockLabel(int count) {
+  String dashboardStockLabel(String count) {
     return 'स्टक: $count';
   }
 
@@ -1101,7 +1101,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get createInvoiceInsufficientStockTitle => 'अपर्याप्त स्टक';
 
   @override
-  String createInvoiceInsufficientStockMessage(int stock, double qty) {
+  String createInvoiceInsufficientStockMessage(String stock, String qty) {
     return 'केवल $stock इकाई उपलब्ध छ। फेरि पनि $qty थप्ने?';
   }
 
@@ -1120,7 +1120,7 @@ class AppLocalizationsNe extends AppLocalizations {
   String get createInvoiceUnlimitedStockLabel => 'असीमित स्टक';
 
   @override
-  String createInvoiceAvailableStockLabel(int stock) {
+  String createInvoiceAvailableStockLabel(String stock) {
     return 'उपलब्ध स्टक: $stock';
   }
 
@@ -5556,5 +5556,21 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String pdfSettingsSampleItemName(int number) {
     return 'नमूना सामान $number';
+  }
+
+  @override
+  String get companyInfoNameRequiredMessage =>
+      'कृपया आफ्नो कम्पनीको नाम लेख्नुहोस्।';
+
+  @override
+  String get createInvoiceNegativeLineMessage =>
+      'कुनै पङ्क्तिको जम्मा शून्यभन्दा कम हुन सक्दैन। छुट जाँच गर्नुहोस्।';
+
+  @override
+  String get invoiceMgmtAlreadyConvertedTitle => 'पहिले नै रूपान्तरण भइसकेको';
+
+  @override
+  String invoiceMgmtAlreadyConvertedBody(String number) {
+    return 'कोटेसन $number पहिले नै बिजक बनिसकेको छ। यस्तै अर्को बिजक बनाउन डुप्लिकेट प्रयोग गर्नुहोस्।';
   }
 }

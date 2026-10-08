@@ -74,7 +74,13 @@ Future<void> main() async {
     // there (see _openSqliteOnLinux).
     databaseFactory = createDatabaseFactoryFfi(ffiInit: _openSqliteOnLinux);
   } else if (!Platform.isAndroid) {
-    sqfliteFfiInit();
+    // Windows: if SQLite cannot be loaded, carry on so the splash screen
+    // can show its error instead of the app silently not opening.
+    try {
+      sqfliteFfiInit();
+    } catch (e) {
+      debugPrint('[main] sqfliteFfiInit failed: $e');
+    }
     databaseFactory = databaseFactoryFfi;
   }
   WidgetsFlutterBinding.ensureInitialized();

@@ -176,7 +176,7 @@ void main() {
       ]) {
         await ProductService.insertProduct(Product(
             id: p[0] as String, name: p[1] as String, description: '',
-            price: p[3] as double, stock: p[4] as int, hsncode: p[2] as String,
+            price: p[3] as double, stock: (p[4] as num).toDouble(), hsncode: p[2] as String,
             tax_rate: 18));
       }
     });
@@ -246,7 +246,7 @@ void main() {
 
     // ---- database ----
     late Invoice saved;
-    late Map<String, int> stock;
+    late Map<String, double> stock;
     await tester.runAsync(() async {
       final all = await InvoiceService.getAllInvoices();
       expect(all, hasLength(1), reason: 'exactly one invoice saved');

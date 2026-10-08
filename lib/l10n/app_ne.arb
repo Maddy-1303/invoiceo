@@ -1504,5 +1504,9 @@
   "pdfPreviewErrorMessage": "पूर्वावलोकन देखाउन सकिएन। यसको सट्टा प्रिन्ट वा डाउनलोड प्रयोग गर्नुहोस्।",
   "pdfSettingsSampleCompanyName": "तपाईंको कम्पनी",
   "pdfSettingsSampleCustomerName": "नमूना ग्राहक",
-  "pdfSettingsSampleItemName": "नमूना सामान {number}"
+  "pdfSettingsSampleItemName": "नमूना सामान {number}",
+  "companyInfoNameRequiredMessage": "कृपया आफ्नो कम्पनीको नाम लेख्नुहोस्।",
+  "createInvoiceNegativeLineMessage": "कुनै पङ्क्तिको जम्मा शून्यभन्दा कम हुन सक्दैन। छुट जाँच गर्नुहोस्।",
+  "invoiceMgmtAlreadyConvertedTitle": "पहिले नै रूपान्तरण भइसकेको",
+  "invoiceMgmtAlreadyConvertedBody": "कोटेसन {number} पहिले नै बिजक बनिसकेको छ। यस्तै अर्को बिजक बनाउन डुप्लिकेट प्रयोग गर्नुहोस्।"
 }

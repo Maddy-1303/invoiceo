@@ -671,10 +671,11 @@ void main() {
       final id = find.byKey(const ValueKey('modernSuccessId'));
       expect(find.descendant(of: id, matching: find.text('Invoice ID')), findsOneWidget);
       final number = (await tester.runAsync(InvoiceService.getAllInvoices))!.single.invoiceNumber;
-      expect(find.descendant(of: id, matching: find.text('#$number')), findsOneWidget);
+      // Shown and copied as the PDF prints it: prefix "INV-" by default.
+      expect(find.descendant(of: id, matching: find.text('INV-$number')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('modernSuccessCopy')));
       await tester.pump();
-      expect(copied, number);
+      expect(copied, 'INV-$number');
 
       for (final k in ['modernSuccessView', 'modernSuccessPreview', 'modernSuccessDownload',
           'modernSuccessPrint']) {

@@ -107,7 +107,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         ),
       );
 
-      await navigateAfterAuth(context, ref, updatedUser ?? widget.user);
+      if (widget.forced) {
+        await navigateAfterAuth(context, ref, updatedUser ?? widget.user);
+      } else {
+        // Opened from the user menu: just go back to where the user was.
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

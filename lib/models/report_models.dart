@@ -240,7 +240,7 @@ class TopProduct {
 class InventoryValuationSummary {
   final double stockValue;
   final double retailValue;
-  final int totalUnits;
+  final double totalUnits;
   final int productCount;
   final int excludedCount;
 
@@ -266,7 +266,7 @@ class InventoryValuationSummary {
 class InventoryValuationRow {
   final String productId;
   final String name;
-  final int stock;
+  final double stock;
   final double purchasePrice;
   final double price;
   final String unit;

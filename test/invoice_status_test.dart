@@ -56,7 +56,7 @@ void main() {
     gstin: '',
   );
 
-  Future<Product> addProduct({int stock = 10}) async {
+  Future<Product> addProduct({double stock = 10}) async {
     final p = Product(
       id: 'p1',
       name: 'Widget',
@@ -87,7 +87,7 @@ void main() {
     await InvoiceService.declineInvoice('i2');
   }
 
-  Future<int> stockOf(String id) async =>
+  Future<double> stockOf(String id) async =>
       (await ProductService.getProductById(id))!.stock;
 
   test('quotation insert and edit do not touch stock', () async {
@@ -105,6 +105,74 @@ void main() {
     final p = await addProduct();
     await InvoiceService.insertInvoice(doc('i1', 'Invoice', p));
     expect(await stockOf('p1'), 7);
+  });
+
+  // Fractional quantities (kg, litre) take exactly that much stock.
+  test('selling 0.4 then 2.5 of stock 50 leaves 47.1', () async {
+    final p = await addProduct(stock: 50);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p, qty: 0.4));
+    expect(await stockOf('p1'), 49.6);
+    await InvoiceService.insertInvoice(doc('i2', 'Invoice', p, qty: 2.5));
+    expect(await stockOf('p1'), 47.1);
+  });
+
+  test('no floating noise: 50 - 0.4 - 0.2 is 49.4', () async {
+    final p = await addProduct(stock: 50);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p, qty: 0.4));
+    await InvoiceService.insertInvoice(doc('i2', 'Invoice', p, qty: 0.2));
+    expect(await stockOf('p1'), 49.4);
+    await InvoiceService.softDeleteInvoice('i2');
+    expect(await stockOf('p1'), 49.6);
+    await InvoiceService.restoreInvoice('i2');
+    expect(await stockOf('p1'), 49.4);
+  });
+
+  test('edit, trash, restore, decline and delete give back exactly what was taken',
+      () async {
+    final p = await addProduct(stock: 50);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', p, qty: 0.4));
+    await InvoiceService.insertInvoice(doc('i2', 'Invoice', p, qty: 2.5));
+    expect(await stockOf('p1'), 47.1);
+
+    // Edit 2.5 -> 0.75: gives back 2.5, takes 0.75.
+    final i2 = (await InvoiceService.getInvoiceById('i2'))!;
+    i2.items = [InvoiceItem(product: p, quantity: 0.75)];
+    await InvoiceService.updateInvoice(i2);
+    expect(await stockOf('p1'), 48.85);
+
+    await InvoiceService.softDeleteInvoice('i2');
+    expect(await stockOf('p1'), 49.6);
+    await InvoiceService.restoreInvoice('i2');
+    expect(await stockOf('p1'), 48.85);
+
+    await InvoiceService.declineInvoice('i1');
+    expect(await stockOf('p1'), 49.25);
+
+    await InvoiceService.permanentDeleteInvoice('i2');
+    expect(await stockOf('p1'), 50);
+  });
+
+  test('a fractional quotation or unlimited-stock line still takes nothing',
+      () async {
+    final p = await addProduct(stock: 50);
+    await InvoiceService.insertInvoice(doc('q1', 'Quotation', p, qty: 0.4));
+    expect(await stockOf('p1'), 50);
+
+    final loose = Product(
+        id: 'u1',
+        name: 'Loose',
+        description: '',
+        price: 10,
+        stock: 0,
+        hsncode: '',
+        tax_rate: 0,
+        unlimitedStock: true);
+    await ProductService.insertProduct(loose);
+    await InvoiceService.insertInvoice(doc('i1', 'Invoice', loose, qty: 1.5));
+    expect(await stockOf('u1'), 0);
+    await InvoiceService.softDeleteInvoice('i1');
+    await InvoiceService.restoreInvoice('i1');
+    expect(await stockOf('u1'), 0);
   });
 
   test('declineInvoice restores stock once and drops it from dashboard',

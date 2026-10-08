@@ -1504,5 +1504,9 @@
   "pdfPreviewErrorMessage": "No se pudo mostrar la vista previa. Usa Imprimir o Descargar.",
   "pdfSettingsSampleCompanyName": "Su empresa",
   "pdfSettingsSampleCustomerName": "Cliente de ejemplo",
-  "pdfSettingsSampleItemName": "Artículo de ejemplo {number}"
+  "pdfSettingsSampleItemName": "Artículo de ejemplo {number}",
+  "companyInfoNameRequiredMessage": "Introduce el nombre de tu empresa.",
+  "createInvoiceNegativeLineMessage": "El total de una línea no puede ser negativo. Revisa el descuento.",
+  "invoiceMgmtAlreadyConvertedTitle": "Ya convertida",
+  "invoiceMgmtAlreadyConvertedBody": "El presupuesto {number} ya es una factura. Para crear otra igual, usa Duplicar."
 }

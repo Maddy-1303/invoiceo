@@ -5,7 +5,7 @@ class Product {
   String name;
   String description;
   double price;
-  int stock;
+  double stock; // a decimal: 0.4 kg can be sold
   String hsncode;
   // ignore: non_constant_identifier_names
   int tax_rate;
@@ -44,7 +44,7 @@ class Product {
       price: (map['price'] is int)
           ? (map['price'] as int).toDouble()
           : (map['price'] ?? 0.0).toDouble(),
-      stock: map['stock'] ?? 0,
+      stock: stockFrom(map['stock']),
       hsncode: map['hsncode'] ?? '',
       tax_rate: map['tax_rate'] ?? 0,
       type: map['type'] as String? ?? 'product',
@@ -65,7 +65,7 @@ class Product {
       price: (map['product_price'] is int)
           ? (map['product_price'] as int).toDouble()
           : (map['product_price'] ?? 0.0).toDouble(),
-      stock: map['product_stock'] ?? 0,
+      stock: stockFrom(map['product_stock']),
       hsncode: map['product_hsn_code'] ?? '',
       tax_rate: map['product_tax_rate'] ?? 0,
       type: map['product_type'] as String? ?? 'product',
@@ -84,7 +84,7 @@ class Product {
       'name': name,
       'description': description,
       'price': price,
-      'stock': stock,
+      'stock': roundStock(stock),
       'hsncode': hsncode,
       'tax_rate': tax_rate,
       'type': type,
@@ -100,6 +100,17 @@ class Product {
   /// Name to print on PDFs — [aliasName] when [useAlias] is on and set, else [name].
   String displayName(bool useAlias) =>
       (useAlias && (aliasName?.trim().isNotEmpty ?? false)) ? aliasName! : name;
+
+  /// A stock value from the database or a backup as a double. Old rows hold
+  /// an int (50), and NULL or text that is not a number reads as 0.
+  static double stockFrom(Object? v) {
+    final d = v is num ? v.toDouble() : double.tryParse('${v ?? ''}'.trim());
+    return d == null || !d.isFinite ? 0.0 : d;
+  }
+
+  /// [v] rounded to 3 decimals, so 50 - 0.4 - 0.2 is 49.4 (not 49.39999…).
+  static double roundStock(num v) =>
+      v.isFinite ? (v * 1000).round() / 1000 : 0.0;
 }
 
 class ProductMetadata {

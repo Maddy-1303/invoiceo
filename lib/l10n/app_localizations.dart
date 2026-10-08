@@ -1680,7 +1680,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Stock: {count}'**
-  String dashboardStockLabel(int count);
+  String dashboardStockLabel(String count);
 
   /// No description provided for @actionUpdateStock.
   ///
@@ -1950,7 +1950,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Only {stock} unit(s) available. Add {qty} anyway?'**
-  String createInvoiceInsufficientStockMessage(int stock, double qty);
+  String createInvoiceInsufficientStockMessage(String stock, String qty);
 
   /// No description provided for @createInvoiceAddAnywayButton.
   ///
@@ -1980,7 +1980,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Available Stock: {stock}'**
-  String createInvoiceAvailableStockLabel(int stock);
+  String createInvoiceAvailableStockLabel(String stock);
 
   /// No description provided for @fieldDiscountLabel.
   ///
@@ -9307,6 +9307,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sample item {number}'**
   String pdfSettingsSampleItemName(int number);
+
+  /// Company Info: Save with an empty company name
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your company name.'**
+  String get companyInfoNameRequiredMessage;
+
+  /// Create invoice: a line's total is below zero (discount larger than price)
+  ///
+  /// In en, this message translates to:
+  /// **'A line total cannot be below zero. Check the discount.'**
+  String get createInvoiceNegativeLineMessage;
+
+  /// No description provided for @invoiceMgmtAlreadyConvertedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already converted'**
+  String get invoiceMgmtAlreadyConvertedTitle;
+
+  /// A converted quotation cannot be converted again
+  ///
+  /// In en, this message translates to:
+  /// **'Quotation {number} is already an invoice. To make another invoice like it, use Duplicate.'**
+  String invoiceMgmtAlreadyConvertedBody(String number);
 }
 
 class _AppLocalizationsDelegate

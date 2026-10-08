@@ -1504,5 +1504,9 @@
   "pdfPreviewErrorMessage": "无法显示预览。请改用打印或下载。",
   "pdfSettingsSampleCompanyName": "您的公司",
   "pdfSettingsSampleCustomerName": "示例客户",
-  "pdfSettingsSampleItemName": "示例商品 {number}"
+  "pdfSettingsSampleItemName": "示例商品 {number}",
+  "companyInfoNameRequiredMessage": "请输入公司名称。",
+  "createInvoiceNegativeLineMessage": "行合计不能小于零。请检查折扣。",
+  "invoiceMgmtAlreadyConvertedTitle": "已转换",
+  "invoiceMgmtAlreadyConvertedBody": "报价单 {number} 已转为发票。如需再开一张类似发票，请使用“复制”。"
 }

@@ -97,6 +97,16 @@ class InvoiceService {
       // Quotation→invoice conversion: stamp the source quotation in the same
       // transaction so the link can't be half-written.
       if (invoice.convertedFromInvoiceId != null) {
+        // Converted once only: refuse a second invoice from the same
+        // quotation (it would take the stock again).
+        final src = await txn.query('invoices',
+            columns: ['status'],
+            where: 'id = ?',
+            whereArgs: [invoice.convertedFromInvoiceId],
+            limit: 1);
+        if (src.isNotEmpty && src.first['status'] == 'converted') {
+          throw StateError('Quotation already converted');
+        }
         await txn.update(
           'invoices',
           {'status': 'converted', 'converted_to_invoice_id': invoice.id},
@@ -111,10 +121,12 @@ class InvoiceService {
     // once a quotation is converted to a real Invoice (a fresh insertInvoice
     // call with type == 'Invoice' at conversion time).
     if (invoice.type == 'Quotation') return;
+    // The exact quantity: 0.4 kg takes 0.4 (updateProductStock rounds the
+    // result to 3 decimals).
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
-        final newStock = product.stock - item.quantity.round();
+        final newStock = product.stock - item.quantity;
         await ProductService.updateProductStock(product.id, newStock);
       }
     }
@@ -225,8 +237,7 @@ class InvoiceService {
       final product =
           await ProductService.getProductById(oldItem['product_id'] as String);
       if (product != null && !product.unlimitedStock) {
-        final rawQty = oldItem['quantity'];
-        final oldQty = rawQty is int ? rawQty : (rawQty as double).round();
+        final oldQty = (oldItem['quantity'] as num?)?.toDouble() ?? 0.0;
         final restoredStock = product.stock + oldQty;
         await ProductService.updateProductStock(product.id, restoredStock);
       }
@@ -236,7 +247,7 @@ class InvoiceService {
     for (var item in invoice.items) {
       final product = await ProductService.getProductById(item.product.id);
       if (product != null && !product.unlimitedStock) {
-        final newStock = product.stock - item.quantity.round();
+        final newStock = product.stock - item.quantity;
         await ProductService.updateProductStock(product.id, newStock);
       }
     }
@@ -879,17 +890,23 @@ class InvoiceService {
 
   /// Gives the item quantities of invoice [id] back to stock ([sign] 1) or
   /// takes them again ([sign] -1). Unlimited-stock products are skipped.
+  /// Exact quantities (0.4 stays 0.4); the result is rounded to 3 decimals
+  /// in Dart, the same way as insertInvoice / updateInvoice.
   static Future<void> _adjustStock(Transaction txn, String id, int sign) async {
     final items = await txn.query('invoice_items',
         columns: ['product_id', 'quantity'],
         where: 'invoice_id = ?',
         whereArgs: [id]);
     for (final item in items) {
-      await txn.rawUpdate(
-        'UPDATE products SET stock = stock + ? '
-        'WHERE id = ? AND (unlimited_stock IS NULL OR unlimited_stock = 0)',
-        [sign * (item['quantity'] as num).round(), item['product_id']],
-      );
+      final qty = (item['quantity'] as num?)?.toDouble() ?? 0.0;
+      final rows = await txn.query('products',
+          columns: ['stock'],
+          where: 'id = ? AND (unlimited_stock IS NULL OR unlimited_stock = 0)',
+          whereArgs: [item['product_id']]);
+      if (rows.isEmpty) continue;
+      final stock = Product.stockFrom(rows.first['stock']) + sign * qty;
+      await txn.update('products', {'stock': Product.roundStock(stock)},
+          where: 'id = ?', whereArgs: [item['product_id']]);
     }
   }
 

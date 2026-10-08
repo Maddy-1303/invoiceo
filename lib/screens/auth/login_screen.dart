@@ -315,6 +315,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                         if (_companies.length > 1) ...[
                           DropdownButtonFormField<String>(
+                            isExpanded: true, // long names shorten, not overflow
                             value: _activeCompanyId,
                             decoration: InputDecoration(
                               labelText: l10n.loginCompanySelectorLabel,
@@ -325,7 +326,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               for (final company in _companies)
                                 DropdownMenuItem(
                                   value: company.id,
-                                  child: Text(company.name),
+                                  child: Text(company.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
                                 ),
                             ],
                             onChanged: _onCompanySelected,

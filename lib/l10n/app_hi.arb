@@ -1504,5 +1504,9 @@
   "pdfPreviewErrorMessage": "पूर्वावलोकन नहीं दिखा सके। इसके बजाय प्रिंट या डाउनलोड का उपयोग करें।",
   "pdfSettingsSampleCompanyName": "आपकी कंपनी",
   "pdfSettingsSampleCustomerName": "नमूना ग्राहक",
-  "pdfSettingsSampleItemName": "नमूना आइटम {number}"
+  "pdfSettingsSampleItemName": "नमूना आइटम {number}",
+  "companyInfoNameRequiredMessage": "कृपया अपनी कंपनी का नाम दर्ज करें।",
+  "createInvoiceNegativeLineMessage": "किसी पंक्ति का कुल शून्य से कम नहीं हो सकता। छूट जाँचें।",
+  "invoiceMgmtAlreadyConvertedTitle": "पहले ही बदला जा चुका है",
+  "invoiceMgmtAlreadyConvertedBody": "कोटेशन {number} पहले ही इनवॉइस बन चुका है। इसके जैसा दूसरा इनवॉइस बनाने के लिए डुप्लिकेट का उपयोग करें।"
 }

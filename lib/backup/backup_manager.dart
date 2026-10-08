@@ -458,9 +458,28 @@ class BackupManager {
       final extension = backupPath.split('.').last;
 
       if (extension == _backupExtension.replaceAll('.', '')) {
-        final tempDb = await openDatabase(backupPath, readOnly: true);
-        await tempDb.close();
-        return true;
+        // Must really be an Invoiceo database: an empty or foreign file
+        // would otherwise replace the live data and look like a success.
+        final head = await file.openRead(0, 16).fold<List<int>>(
+            <int>[], (a, b) => a..addAll(b));
+        if (head.length < 16 ||
+            String.fromCharCodes(head.take(15)) != 'SQLite format 3') {
+          return false;
+        }
+        final tempDb = await openDatabase(backupPath,
+            readOnly: true, singleInstance: false);
+        try {
+          final check = await tempDb.rawQuery('PRAGMA quick_check');
+          if (check.isEmpty || check.first.values.first != 'ok') return false;
+          final tables = (await tempDb.rawQuery(
+                  "SELECT name FROM sqlite_master WHERE type = 'table'"))
+              .map((r) => r['name'] as String)
+              .toSet();
+          const needed = ['invoices', 'customers', 'products', 'settings', 'company_info'];
+          return needed.every(tables.contains);
+        } finally {
+          await tempDb.close();
+        }
       } else if (extension == _jsonExtension.replaceAll('.', '')) {
         final content = await file.readAsString();
         jsonDecode(content);

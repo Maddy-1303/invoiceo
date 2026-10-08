@@ -471,7 +471,7 @@ download_body = f'''<section class="page-head">
       <div class="card platform" data-platform="linux" id="linux">
         {tile('terminal')}
         <h3>Linux</h3>
-        <p class="meta">.deb for Ubuntu, Debian and Linux Mint · AppImage for other distributions</p>
+        <p class="meta">.deb for Ubuntu 22.04+, Debian 12+ and Linux Mint 21+ · AppImage for other distributions</p>
         <a class="btn btn-primary" href="{DL}{FILES['linuxDeb']}" data-primary-download>{icon('download')} Download .deb<span data-size="linuxDeb"></span></a>
         <a class="btn btn-secondary" href="{DL}{FILES['linuxAppImage']}">{icon('download')} Download AppImage<span data-size="linuxAppImage"></span></a>
         <ol>
@@ -754,7 +754,7 @@ privacy_body = f'''<section class="page-head">
     <ul>
       <li><b>Hosting.</b> This site is hosted on GitHub Pages. GitHub may record technical information such as your IP address when you visit, as described in the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a>. Installers are downloaded from GitHub as well.</li>
       <li><b>Forms.</b> Our support, customization and feedback forms are Google Forms. What you type into them (such as your name, email, phone number and message) is sent to our Google account so that we can reply. Google’s handling of it is described in the <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>.</li>
-      <li><b>Analytics.</b> If we turn on Google Analytics on this site, it uses cookies to count visits and see which pages are used, with IP addresses anonymised. It is used only to improve the site.</li>
+      <li><b>Analytics.</b> This website uses Google Analytics to count visits and see which pages and download buttons are used. It sets cookies in your browser for this. Google Analytics does not store IP addresses, and we have turned off its advertising features. We use it only to improve the site. You can block these cookies in your browser settings.</li>
       <li><b>Email and WhatsApp.</b> If you contact us, we keep the conversation so that we can help you and follow up.</li>
     </ul>
 

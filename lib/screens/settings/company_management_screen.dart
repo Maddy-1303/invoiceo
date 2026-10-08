@@ -144,7 +144,13 @@ class _CompanyManagementScreenState
     );
   }
 
+  /// Only an admin (or the pre-login screen, where nobody is logged in)
+  /// may create companies: whoever creates one becomes its admin.
+  bool get _canCreate =>
+      widget.currentUser == null || widget.currentUser!.isAdmin();
+
   Future<void> _createCompany() async {
+    if (!_canCreate) return;
     final l10n = AppLocalizations.of(context)!;
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
@@ -569,7 +575,7 @@ class _CompanyManagementScreenState
                           ),
                         ),
                       ),
-                    if (!modern) ...[
+                    if (!modern && _canCreate) ...[
                       const SizedBox(height: 16),
                       OutlinedButton(
                         onPressed: _createCompany,

@@ -520,7 +520,11 @@ void main() {
 
     testWidgets('folded panel: Save Draft icon, and the ▾ under Create has the two choices',
         (tester) async {
-      await open(tester);
+      // With auto-print off: when it is on (the default) Create already
+      // prints, so "Save & Print" is left out.
+      await open(tester,
+          beforePump: () => BackendServices.settings
+              .setSetting(SettingKey.autoPrintAfterCreate, 'false'));
       await tester.enterText(nameField, 'mad');
       await tester.pump();
       await addProduct(tester, '2001');

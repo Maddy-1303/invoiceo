@@ -498,7 +498,7 @@ extension ModernCreateType on ModernCreate {
 }
 
 /// What the user menu offers.
-enum ModernUserAction { settings, coffee, help, logout }
+enum ModernUserAction { settings, changePassword, coffee, help, logout }
 
 /// Top bar: search, the plus button (new invoice / quotation / receipt), the
 /// language picker, and the signed-in user.
@@ -727,6 +727,9 @@ class ModernTopBar extends StatelessWidget {
           itemBuilder: (context) => [
             userItem(ModernUserAction.settings, Icons.settings_outlined,
                 l10n.navSettings),
+            // Every user, not only admins, can change their own password.
+            userItem(ModernUserAction.changePassword, Icons.lock_reset_outlined,
+                l10n.userMgmtChangePasswordTitle),
             userItem(ModernUserAction.coffee, Icons.coffee_outlined,
                 l10n.buyMeCoffeeLabel),
             userItem(ModernUserAction.help, Icons.help_outline,

@@ -550,7 +550,7 @@
   "@dashboardStockLabel": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "String"
       }
     }
   },
@@ -654,10 +654,10 @@
   "@createInvoiceInsufficientStockMessage": {
     "placeholders": {
       "stock": {
-        "type": "int"
+        "type": "String"
       },
       "qty": {
-        "type": "double"
+        "type": "String"
       }
     }
   },
@@ -676,7 +676,7 @@
   "@createInvoiceAvailableStockLabel": {
     "placeholders": {
       "stock": {
-        "type": "int"
+        "type": "String"
       }
     }
   },
@@ -3499,6 +3499,24 @@
     "placeholders": {
       "number": {
         "type": "int"
+      }
+    }
+  },
+  "companyInfoNameRequiredMessage": "Please enter your company name.",
+  "@companyInfoNameRequiredMessage": {
+    "description": "Company Info: Save with an empty company name"
+  },
+  "createInvoiceNegativeLineMessage": "A line total cannot be below zero. Check the discount.",
+  "@createInvoiceNegativeLineMessage": {
+    "description": "Create invoice: a line's total is below zero (discount larger than price)"
+  },
+  "invoiceMgmtAlreadyConvertedTitle": "Already converted",
+  "invoiceMgmtAlreadyConvertedBody": "Quotation {number} is already an invoice. To make another invoice like it, use Duplicate.",
+  "@invoiceMgmtAlreadyConvertedBody": {
+    "description": "A converted quotation cannot be converted again",
+    "placeholders": {
+      "number": {
+        "type": "String"
       }
     }
   }

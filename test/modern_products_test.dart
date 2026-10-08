@@ -71,7 +71,7 @@ void main() {
     await tester.runAsync(() async {
       await DatabaseHelper().switchToFile('modern_products_${dbCounter++}.db');
       Product p(String id, String name, double price,
-              {String type = 'product', int stock = 0, bool unlimited = false,
+              {String type = 'product', double stock = 0, bool unlimited = false,
               int tax = 0, String hsn = '1006', double purchase = 0}) =>
           Product(id: id, name: name, description: '', price: price, stock: stock,
               hsncode: hsn, tax_rate: tax, type: type, unlimitedStock: unlimited,

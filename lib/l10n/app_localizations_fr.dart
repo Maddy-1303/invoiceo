@@ -940,7 +940,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get labelProduct => 'Produit';
 
   @override
-  String dashboardStockLabel(int count) {
+  String dashboardStockLabel(String count) {
     return 'Stock : $count';
   }
 
@@ -1107,7 +1107,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createInvoiceInsufficientStockTitle => 'Stock insuffisant';
 
   @override
-  String createInvoiceInsufficientStockMessage(int stock, double qty) {
+  String createInvoiceInsufficientStockMessage(String stock, String qty) {
     return 'Seulement $stock unité(s) disponible(s). Ajouter $qty quand même ?';
   }
 
@@ -1126,7 +1126,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createInvoiceUnlimitedStockLabel => 'Stock illimité';
 
   @override
-  String createInvoiceAvailableStockLabel(int stock) {
+  String createInvoiceAvailableStockLabel(String stock) {
     return 'Stock disponible : $stock';
   }
 
@@ -5613,5 +5613,21 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String pdfSettingsSampleItemName(int number) {
     return 'Article exemple $number';
+  }
+
+  @override
+  String get companyInfoNameRequiredMessage =>
+      'Veuillez saisir le nom de votre entreprise.';
+
+  @override
+  String get createInvoiceNegativeLineMessage =>
+      'Le total d’une ligne ne peut pas être négatif. Vérifiez la remise.';
+
+  @override
+  String get invoiceMgmtAlreadyConvertedTitle => 'Déjà convertie';
+
+  @override
+  String invoiceMgmtAlreadyConvertedBody(String number) {
+    return 'Le devis $number est déjà une facture. Pour en créer une autre semblable, utilisez Dupliquer.';
   }
 }

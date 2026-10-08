@@ -393,7 +393,8 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       final user = _users.firstWhere((u) => u.id == userId);
-                      if (user.password == PasswordUtils.hash(oldPasswordController.text)) {
+                      if (PasswordUtils.verify(
+                          oldPasswordController.text, user.password, user.salt)) {
                         await ref.read(authRepositoryProvider).updatePassword(
                             userId, newPasswordController.text);
                         if (!context.mounted) return;

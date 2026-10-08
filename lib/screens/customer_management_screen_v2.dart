@@ -303,6 +303,29 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
     if (!_formKey.currentState!.validate() || !mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
+    // One phone number, one customer (as on the New Invoice screen).
+    final phone = _phoneController.text.trim();
+    if (phone.isNotEmpty) {
+      final owner = await ref.read(customerRepositoryProvider).findByPhone(phone);
+      if (!mounted) return;
+      if (owner != null && owner.id != customer?.id) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(l10n.createInvoicePhoneAlreadyInUseTitle),
+            content: Text(l10n.createInvoicePhoneAlreadyInUseMessage(owner.name)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l10n.actionClose),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
     try {
       final newCustomer = Customer(
