@@ -5,6 +5,8 @@ maintainer:
   email: madhanprasat2002r@gmail.com
 priority: optional
 section: x11
+# Required by fastforge (KB). About the size of the Linux bundle with its fonts.
+installed_size: 65000
 essential: false
 icon: assets/deb/images/logo.png
 
