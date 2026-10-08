@@ -1501,5 +1501,8 @@
   "shortcutCreatedNewInvoiceDescription": "创建后：新建发票",
   "shortcutCreatedNewReceiptDescription": "创建后：新建收据",
   "shortcutCreateAndPrintDescription": "创建并打印（与 Ctrl + P 相同）",
-  "pdfPreviewErrorMessage": "无法显示预览。请改用打印或下载。"
+  "pdfPreviewErrorMessage": "无法显示预览。请改用打印或下载。",
+  "pdfSettingsSampleCompanyName": "您的公司",
+  "pdfSettingsSampleCustomerName": "示例客户",
+  "pdfSettingsSampleItemName": "示例商品 {number}"
 }

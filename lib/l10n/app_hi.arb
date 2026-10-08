@@ -1501,5 +1501,8 @@
   "shortcutCreatedNewInvoiceDescription": "बनाने के बाद: नया इनवॉइस शुरू करें",
   "shortcutCreatedNewReceiptDescription": "बनाने के बाद: नई रसीद शुरू करें",
   "shortcutCreateAndPrintDescription": "बनाएँ और प्रिंट करें (Ctrl + P जैसा)",
-  "pdfPreviewErrorMessage": "पूर्वावलोकन नहीं दिखा सके। इसके बजाय प्रिंट या डाउनलोड का उपयोग करें।"
+  "pdfPreviewErrorMessage": "पूर्वावलोकन नहीं दिखा सके। इसके बजाय प्रिंट या डाउनलोड का उपयोग करें।",
+  "pdfSettingsSampleCompanyName": "आपकी कंपनी",
+  "pdfSettingsSampleCustomerName": "नमूना ग्राहक",
+  "pdfSettingsSampleItemName": "नमूना आइटम {number}"
 }

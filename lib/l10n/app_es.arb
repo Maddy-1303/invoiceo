@@ -1501,5 +1501,8 @@
   "shortcutCreatedNewInvoiceDescription": "Después de crear: empezar una factura nueva",
   "shortcutCreatedNewReceiptDescription": "Después de crear: empezar un recibo nuevo",
   "shortcutCreateAndPrintDescription": "Crear e imprimir (igual que Ctrl + P)",
-  "pdfPreviewErrorMessage": "No se pudo mostrar la vista previa. Usa Imprimir o Descargar."
+  "pdfPreviewErrorMessage": "No se pudo mostrar la vista previa. Usa Imprimir o Descargar.",
+  "pdfSettingsSampleCompanyName": "Su empresa",
+  "pdfSettingsSampleCustomerName": "Cliente de ejemplo",
+  "pdfSettingsSampleItemName": "Artículo de ejemplo {number}"
 }

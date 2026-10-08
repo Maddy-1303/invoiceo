@@ -31,6 +31,7 @@ import 'package:invoiceo/repositories/sqlite/sqlite_invoice_repository.dart';
 import 'package:invoiceo/repositories/sqlite/sqlite_payment_repository.dart';
 import 'package:invoiceo/repositories/sqlite/sqlite_settings_repository.dart';
 import 'package:invoiceo/screens/create_invoice_screen_modern.dart';
+import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/services/backend_services.dart';
 import 'package:invoiceo/services/invoice_pdf_services.dart';
 
@@ -569,11 +570,25 @@ void main() {
       expect((await tester.runAsync(() => InvoiceDraftService.getDraft('d-1'))), isNull);
     });
 
+    testWidgets('auto-print on (the default): Create ▾ has no Save & Print', (tester) async {
+      await open(tester);
+      await tester.enterText(nameField, 'Walk In');
+      await tester.pump();
+      await addProduct(tester, '2001');
+      await tester.tap(find.byKey(const ValueKey('modernCreateDropdown')));
+      await tester.pumpAndSettle();
+      expect(find.text('Create and start a new one'), findsOneWidget);
+      expect(find.text('Save & Print'), findsNothing,
+          reason: 'Create already prints when auto-print is on');
+    });
+
     testWidgets('Create ▾ has two choices: start a new one, and Save & Print', (tester) async {
       final printed = <String>[];
       InvoicePdfServices.printHook = (c, i) async => printed.add(i.id);
       addTearDown(() => InvoicePdfServices.printHook = null);
-      await open(tester);
+      await open(tester,
+          beforePump: () => BackendServices.settings
+              .setSetting(SettingKey.autoPrintAfterCreate, 'false'));
       // (the menu wakes up once there is something to save)
       await tester.enterText(nameField, 'Walk In');
       await tester.pump();

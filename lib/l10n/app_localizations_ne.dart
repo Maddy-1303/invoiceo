@@ -5546,4 +5546,15 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get pdfPreviewErrorMessage =>
       'पूर्वावलोकन देखाउन सकिएन। यसको सट्टा प्रिन्ट वा डाउनलोड प्रयोग गर्नुहोस्।';
+
+  @override
+  String get pdfSettingsSampleCompanyName => 'तपाईंको कम्पनी';
+
+  @override
+  String get pdfSettingsSampleCustomerName => 'नमूना ग्राहक';
+
+  @override
+  String pdfSettingsSampleItemName(int number) {
+    return 'नमूना सामान $number';
+  }
 }

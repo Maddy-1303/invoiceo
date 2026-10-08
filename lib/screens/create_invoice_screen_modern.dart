@@ -185,6 +185,9 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
   bool _isInterState = false; // India: interstate supply → IGST instead of CGST/SGST
   bool isEditing = false;
   bool _saveAndPrintInFlight = false; // one create-and-print at a time
+  // Settings > "Print automatically after creating": when on, Create
+  // already prints, so Create ▾ leaves out "Save & Print".
+  bool _autoPrintOn = false;
   bool _productArrowed = false; // arrow keys used on the product list
 
   // The right-hand panel folds to a slim strip, like the left sidebar.
@@ -298,6 +301,9 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
   @override
   void initState() {
     super.initState();
+    InvoicePdfServices.autoPrintAfterCreateEnabled().then((on) {
+      if (mounted && on != _autoPrintOn) setState(() => _autoPrintOn = on);
+    });
     // Barcode scanners type into whatever has focus. Watch the keyboard for
     // the whole screen so a scan works with the search box, another box, or
     // nothing focused.
@@ -7330,8 +7336,9 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
       if (!editing)
         (Icons.add_circle_outline, l10n.mInvCreateAndNew,
             () => _saveAndMaybePrint(startNew: true)),
-      (Icons.print_outlined, editing ? l10n.mInvUpdatePrint : l10n.mInvSavePrint,
-          () => _saveAndMaybePrint(forcePrint: true)),
+      if (editing || !_autoPrintOn)
+        (Icons.print_outlined, editing ? l10n.mInvUpdatePrint : l10n.mInvSavePrint,
+            () => _saveAndMaybePrint(forcePrint: true)),
     ];
   }
 

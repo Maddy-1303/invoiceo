@@ -3484,5 +3484,22 @@
   "pdfPreviewErrorMessage": "Could not show the preview. Use Print or Download instead.",
   "@pdfPreviewErrorMessage": {
     "description": "PDF preview dialog: shown when the preview cannot be drawn"
+  },
+  "pdfSettingsSampleCompanyName": "Your Company",
+  "@pdfSettingsSampleCompanyName": {
+    "description": "PDF Settings live preview: company name on the sample invoice when the company has no name yet"
+  },
+  "pdfSettingsSampleCustomerName": "Sample Customer",
+  "@pdfSettingsSampleCustomerName": {
+    "description": "PDF Settings live preview: customer name on the sample invoice"
+  },
+  "pdfSettingsSampleItemName": "Sample item {number}",
+  "@pdfSettingsSampleItemName": {
+    "description": "PDF Settings live preview: name of a made-up item on the sample invoice; {number} is 1, 2, 3",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   }
 }

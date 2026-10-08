@@ -1,9 +1,17 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:invoiceo/services/pdf/pdf_font_assets.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfFontService {
+  /// Tests can load the fonts their own way (flutter_test's asset bundle
+  /// misbehaves under the parallel loads below).
+  @visibleForTesting
+  static Future<pw.ThemeData> Function()? loadThemeHook;
+
   static Future<pw.ThemeData> loadTheme() async {
+    final hook = loadThemeHook;
+    if (hook != null) return hook();
     final fonts = await Future.wait([
       // 0-3: Primary fonts
       rootBundle.load(PdfFontAssets.regular),

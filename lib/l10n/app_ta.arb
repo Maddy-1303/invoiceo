@@ -1528,5 +1528,8 @@
   "shortcutCreatedNewInvoiceDescription": "உருவாக்கிய பின்: புதிய விலைப்பட்டியலைத் தொடங்கு",
   "shortcutCreatedNewReceiptDescription": "உருவாக்கிய பின்: புதிய ரசீதைத் தொடங்கு",
   "shortcutCreateAndPrintDescription": "உருவாக்கி அச்சிடு (Ctrl + P போலவே)",
-  "pdfPreviewErrorMessage": "முன்னோட்டத்தைக் காட்ட முடியவில்லை. அதற்குப் பதிலாக அச்சிடு அல்லது பதிவிறக்கு என்பதைப் பயன்படுத்தவும்."
+  "pdfPreviewErrorMessage": "முன்னோட்டத்தைக் காட்ட முடியவில்லை. அதற்குப் பதிலாக அச்சிடு அல்லது பதிவிறக்கு என்பதைப் பயன்படுத்தவும்.",
+  "pdfSettingsSampleCompanyName": "உங்கள் நிறுவனம்",
+  "pdfSettingsSampleCustomerName": "மாதிரி வாடிக்கையாளர்",
+  "pdfSettingsSampleItemName": "மாதிரிப் பொருள் {number}"
 }

@@ -1501,5 +1501,8 @@
   "shortcutCreatedNewInvoiceDescription": "बनाएपछि: नयाँ इनभ्वाइस सुरु गर्नुहोस्",
   "shortcutCreatedNewReceiptDescription": "बनाएपछि: नयाँ रसिद सुरु गर्नुहोस्",
   "shortcutCreateAndPrintDescription": "बनाउनुहोस् र प्रिन्ट गर्नुहोस् (Ctrl + P जस्तै)",
-  "pdfPreviewErrorMessage": "पूर्वावलोकन देखाउन सकिएन। यसको सट्टा प्रिन्ट वा डाउनलोड प्रयोग गर्नुहोस्।"
+  "pdfPreviewErrorMessage": "पूर्वावलोकन देखाउन सकिएन। यसको सट्टा प्रिन्ट वा डाउनलोड प्रयोग गर्नुहोस्।",
+  "pdfSettingsSampleCompanyName": "तपाईंको कम्पनी",
+  "pdfSettingsSampleCustomerName": "नमूना ग्राहक",
+  "pdfSettingsSampleItemName": "नमूना सामान {number}"
 }

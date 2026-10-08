@@ -1501,5 +1501,8 @@
   "shortcutCreatedNewInvoiceDescription": "Après la création : commencer une nouvelle facture",
   "shortcutCreatedNewReceiptDescription": "Après la création : commencer un nouveau reçu",
   "shortcutCreateAndPrintDescription": "Créer et imprimer (comme Ctrl + P)",
-  "pdfPreviewErrorMessage": "Impossible d’afficher l’aperçu. Utilisez Imprimer ou Télécharger à la place."
+  "pdfPreviewErrorMessage": "Impossible d’afficher l’aperçu. Utilisez Imprimer ou Télécharger à la place.",
+  "pdfSettingsSampleCompanyName": "Votre entreprise",
+  "pdfSettingsSampleCustomerName": "Client exemple",
+  "pdfSettingsSampleItemName": "Article exemple {number}"
 }

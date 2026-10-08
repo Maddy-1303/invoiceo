@@ -5597,4 +5597,15 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pdfPreviewErrorMessage =>
       'No se pudo mostrar la vista previa. Usa Imprimir o Descargar.';
+
+  @override
+  String get pdfSettingsSampleCompanyName => 'Su empresa';
+
+  @override
+  String get pdfSettingsSampleCustomerName => 'Cliente de ejemplo';
+
+  @override
+  String pdfSettingsSampleItemName(int number) {
+    return 'Artículo de ejemplo $number';
+  }
 }

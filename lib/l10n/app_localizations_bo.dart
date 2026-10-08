@@ -5499,4 +5499,15 @@ class AppLocalizationsBo extends AppLocalizations {
   @override
   String get pdfPreviewErrorMessage =>
       'Could not show the preview. Use Print or Download instead.';
+
+  @override
+  String get pdfSettingsSampleCompanyName => 'Your Company';
+
+  @override
+  String get pdfSettingsSampleCustomerName => 'Sample Customer';
+
+  @override
+  String pdfSettingsSampleItemName(int number) {
+    return 'Sample item $number';
+  }
 }

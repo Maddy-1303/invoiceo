@@ -9289,6 +9289,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not show the preview. Use Print or Download instead.'**
   String get pdfPreviewErrorMessage;
+
+  /// PDF Settings live preview: company name on the sample invoice when the company has no name yet
+  ///
+  /// In en, this message translates to:
+  /// **'Your Company'**
+  String get pdfSettingsSampleCompanyName;
+
+  /// PDF Settings live preview: customer name on the sample invoice
+  ///
+  /// In en, this message translates to:
+  /// **'Sample Customer'**
+  String get pdfSettingsSampleCustomerName;
+
+  /// PDF Settings live preview: name of a made-up item on the sample invoice; {number} is 1, 2, 3
+  ///
+  /// In en, this message translates to:
+  /// **'Sample item {number}'**
+  String pdfSettingsSampleItemName(int number);
 }
 
 class _AppLocalizationsDelegate

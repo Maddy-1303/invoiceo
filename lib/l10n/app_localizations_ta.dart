@@ -5642,4 +5642,15 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get pdfPreviewErrorMessage =>
       'முன்னோட்டத்தைக் காட்ட முடியவில்லை. அதற்குப் பதிலாக அச்சிடு அல்லது பதிவிறக்கு என்பதைப் பயன்படுத்தவும்.';
+
+  @override
+  String get pdfSettingsSampleCompanyName => 'உங்கள் நிறுவனம்';
+
+  @override
+  String get pdfSettingsSampleCustomerName => 'மாதிரி வாடிக்கையாளர்';
+
+  @override
+  String pdfSettingsSampleItemName(int number) {
+    return 'மாதிரிப் பொருள் $number';
+  }
 }

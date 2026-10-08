@@ -5603,4 +5603,15 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pdfPreviewErrorMessage =>
       'Impossible d’afficher l’aperçu. Utilisez Imprimer ou Télécharger à la place.';
+
+  @override
+  String get pdfSettingsSampleCompanyName => 'Votre entreprise';
+
+  @override
+  String get pdfSettingsSampleCustomerName => 'Client exemple';
+
+  @override
+  String pdfSettingsSampleItemName(int number) {
+    return 'Article exemple $number';
+  }
 }

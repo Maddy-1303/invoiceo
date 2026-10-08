@@ -1,9 +1,24 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiceo/database/settings_service.dart';
+import 'package:invoiceo/models/company_info.dart';
+import 'package:invoiceo/models/customer.dart';
+import 'package:invoiceo/models/invoice.dart';
+import 'package:invoiceo/models/invoice_item.dart';
+import 'package:invoiceo/models/product.dart';
 import 'package:invoiceo/providers/repositories.dart';
+import 'package:invoiceo/services/pdf/pdf_service.dart';
+import 'package:invoiceo/services/pdf/pdf_settings.dart';
+import 'package:invoiceo/services/pdf/shaped_text_rasterizer.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/common/constants.dart';
@@ -16,6 +31,10 @@ class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToCustomization;
 
   const PdfSettingsScreenV2({super.key, this.onNavigateToCustomization});
+
+  /// Tests: called with the settings of every sample PDF the preview makes.
+  @visibleForTesting
+  static void Function(PdfGenerationSettings settings)? onPreviewPdfBuilt;
 
   @override
   ConsumerState<PdfSettingsScreenV2> createState() =>
@@ -58,6 +77,12 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
   Map<SettingKey, String> _previewedPdfSectionSizes = {};
   bool _showPdfSectionSizes = false;
   bool _isSaving = false;
+  // The live preview: saved PDF settings (company, logo, fonts...) that the
+  // options picked here are laid over, and the currency for the sample.
+  bool _loaded = false;
+  PdfGenerationSettings? _previewBase;
+  CurrencyOption? _previewCurrency;
+  bool _previewBaseFailed = false;
 
   static const _presetThemeColors = [
     Color(0xFF002E78),
@@ -71,6 +96,24 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
   void initState() {
     super.initState();
     _loadTemplate();
+    _loadPreviewBase();
+  }
+
+  Future<void> _loadPreviewBase() async {
+    try {
+      final repo = ref.read(settingsRepositoryProvider);
+      final dateFmt = await repo.getDateFormat();
+      final currency = await repo.getCurrency();
+      final base = await PDFService.fetchPdfSettings(datePattern: dateFmt.key);
+      if (!mounted) return;
+      setState(() {
+        _previewBase = base;
+        _previewCurrency = currency;
+      });
+    } catch (e) {
+      debugPrint('PDF settings preview: could not load settings: $e');
+      if (mounted) setState(() => _previewBaseFailed = true);
+    }
   }
 
   Future<void> _loadTemplate() async {
@@ -131,6 +174,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
       _previewedPdfFontSize = _savedPdfFontSize;
       _savedPdfSectionSizes = savedPdfSectionSizes;
       _previewedPdfSectionSizes = Map.of(savedPdfSectionSizes);
+      _loaded = true;
     });
   }
 
@@ -680,6 +724,130 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
     );
   }
 
+  // ── Live preview: a real sample invoice ────────────────────────────────
+
+  /// Everything the sample PDF depends on. A change starts a new render.
+  String _previewSignature(AppLocalizations l10n) => [
+        _loaded,
+        _previewBase != null,
+        l10n.localeName,
+        _previewedTemplate.name,
+        _previewedPageSize.name,
+        _previewedLandscape,
+        _previewedThemeColorHex,
+        _previewedShowTotalQuantity,
+        _previewedThermalItemLayout,
+        _previewedThermalCompanyNameSize,
+        _previewedPdfFontSize,
+        for (final k in _pdfSectionSizeKeys) _previewedPdfSectionSizes[k],
+      ].join('|');
+
+  /// The saved settings with the options picked on this page laid over them.
+  PdfGenerationSettings _previewSettings(
+      PdfGenerationSettings base, AppLocalizations l10n) {
+    final overall = pdfFontSizeFromKey(_previewedPdfFontSize).scale;
+    double section(SettingKey key) =>
+        pdfSectionScale(_previewedPdfSectionSizes[key], overall);
+    // No company yet (or no name): a placeholder name, nothing else made up.
+    final saved = base.company;
+    final company = saved == null
+        ? CompanyInfo(
+            name: l10n.pdfSettingsSampleCompanyName,
+            address: '',
+            phone: '',
+            email: '',
+            website: '',
+            gstin: '')
+        : saved.name.trim().isNotEmpty
+            ? saved
+            : CompanyInfo(
+                id: saved.id,
+                name: l10n.pdfSettingsSampleCompanyName,
+                address: saved.address,
+                phone: saved.phone,
+                email: saved.email,
+                website: saved.website,
+                gstin: saved.gstin,
+                panNumber: saved.panNumber,
+                fssaiCode: saved.fssaiCode,
+                country: saved.country);
+    return base.forPreview(
+      company: company,
+      template: _previewedTemplate,
+      pageSize: _previewedPageSize,
+      pageFormat: PDFService.pageSizeToFormat(_previewedPageSize),
+      landscape: _previewedLandscape,
+      themeColor: _previewedThemeColorHex == null
+          ? null
+          : PdfColor.fromHex(_previewedThemeColorHex!),
+      showTotalQuantity: _previewedShowTotalQuantity,
+      thermalItemLayout: _previewedThermalItemLayout,
+      thermalCompanyNameSize: _previewedThermalCompanyNameSize,
+      fontSizeScale: overall,
+      companyNameScale: section(SettingKey.pdfCompanyNameFontSize),
+      docTitleScale: section(SettingKey.pdfDocTitleFontSize),
+      tableHeaderScale: section(SettingKey.pdfTableHeaderFontSize),
+      tableItemsScale: section(SettingKey.pdfTableItemsFontSize),
+      totalsScale: section(SettingKey.pdfTotalsFontSize),
+    );
+  }
+
+  /// A short made-up invoice: three items, no payments.
+  Invoice _sampleInvoice(AppLocalizations l10n, CompanyInfo? company) {
+    final india = isIndiaCountry(company?.country);
+    const prices = [450.0, 1200.0, 85.5];
+    const quantities = [2.0, 1.0, 4.0];
+    const taxRates = [18, 12, 5];
+    final currency = _previewCurrency;
+    return Invoice(
+      id: 'pdf-settings-preview',
+      invoiceNumber: '1',
+      customer: Customer(
+        id: 'pdf-settings-preview',
+        name: l10n.pdfSettingsSampleCustomerName,
+        email: '',
+        phone: '',
+        address: '',
+        gstin: '',
+      ),
+      items: [
+        for (var i = 0; i < prices.length; i++)
+          InvoiceItem(
+            id: 'pdf-settings-preview-$i',
+            product: Product(
+              id: 'pdf-settings-preview-$i',
+              name: l10n.pdfSettingsSampleItemName(i + 1),
+              description: '',
+              price: prices[i],
+              stock: 0,
+              hsncode: '',
+              tax_rate: india ? taxRates[i] : 0,
+            ),
+            quantity: quantities[i],
+          ),
+      ],
+      date: DateTime.now(),
+      type: 'Invoice',
+      taxMode: india ? TaxMode.perItem : TaxMode.none,
+      currencyCode: currency?.code ?? 'INR',
+      currencySymbol: currency?.symbol ?? '₹',
+    );
+  }
+
+  /// Builds the sample PDF with the app's real invoice code (Tamil and other
+  /// scripts shaped the same way). Null until the settings are loaded.
+  Future<pw.Document?> _buildPreviewDocument(AppLocalizations l10n) async {
+    final base = _previewBase;
+    if (!_loaded || base == null) return null;
+    final settings = _previewSettings(base, l10n);
+    final invoice = _sampleInvoice(l10n, settings.company);
+    final doc = await ShapedTextRasterizer.buildWithShaping(
+      () => PDFService.generateInvoicePDFWithSettings(invoice, settings),
+    );
+    PdfSettingsScreenV2.onPreviewPdfBuilt?.call(settings);
+    return doc;
+  }
+
   Widget _previewColumnV2() {
     final l10n = AppLocalizations.of(context)!;
     final previewPanel = _PreviewPanel(
@@ -689,6 +857,9 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
       thermalDetailedTemplate: _previewedThermalItemLayout != "table",
       landscape: _previewedLandscape &&
           _previewedTemplate == InvoiceTemplate.gridClassic,
+      previewSignature: _previewSignature(l10n),
+      buildPreviewDocument: () => _buildPreviewDocument(l10n),
+      previewUnavailable: _previewBaseFailed,
     );
 
     return Container(
@@ -1242,12 +1413,19 @@ class _PreviewPanel extends StatelessWidget {
   final Color themeColor;
   final bool thermalDetailedTemplate;
   final bool landscape;
+  final String previewSignature;
+  final Future<pw.Document?> Function() buildPreviewDocument;
+  // True when the sample PDF can't be made: the sketch is shown instead.
+  final bool previewUnavailable;
 
   const _PreviewPanel(
       {required this.previewedTemplate,
       required this.savedTemplate,
       required this.themeColor,
       required this.thermalDetailedTemplate,
+      required this.previewSignature,
+      required this.buildPreviewDocument,
+      this.previewUnavailable = false,
       this.landscape = false});
 
   @override
@@ -1313,52 +1491,235 @@ class _PreviewPanel extends StatelessWidget {
           ),
         ),
         Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
-        // Large preview
+        // A real sample PDF; the sketch only when that can't be drawn.
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final horizontalPadding =
-                  constraints.maxWidth < 520 ? 16.0 : 32.0;
-              final verticalPadding = constraints.maxHeight < 620 ? 16.0 : 32.0;
-
-              return Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: verticalPadding,
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: FittedBox(
-                    key: ValueKey(
-                        '${previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
-                    fit: BoxFit.contain,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: TemplatePreviewSketch(
-                        template: previewedTemplate,
-                        themeColor: themeColor,
-                        width: landscape ? 520 : 390,
-                        height: landscape ? 390 : 520,
-                        showDetails: true,
-                        thermalDetailedTemplate: thermalDetailedTemplate,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
+          child: _LivePdfPreview(
+            signature: previewSignature,
+            buildDocument: buildPreviewDocument,
+            unavailable: previewUnavailable,
+            fallback: _sketch(),
           ),
         ),
       ],
     );
+  }
+
+  Widget _sketch() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontalPadding =
+            constraints.maxWidth < 520 ? 16.0 : 32.0;
+        final verticalPadding = constraints.maxHeight < 620 ? 16.0 : 32.0;
+
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: FittedBox(
+              key: ValueKey(
+                  '${previewedTemplate.name}-${_colorToHex(themeColor)}-$landscape'),
+              fit: BoxFit.contain,
+              child: Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: TemplatePreviewSketch(
+                  template: previewedTemplate,
+                  themeColor: themeColor,
+                  width: landscape ? 520 : 390,
+                  height: landscape ? 390 : 520,
+                  showDetails: true,
+                  thermalDetailedTemplate: thermalDetailedTemplate,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The first page of a real sample PDF, drawn as a picture. It is made again
+/// 300 ms after the last change, and the old picture stays until the new one
+/// is ready. Shows [fallback] when this computer can't draw PDF pages.
+class _LivePdfPreview extends StatefulWidget {
+  final String signature;
+  final Future<pw.Document?> Function() buildDocument;
+  final bool unavailable;
+  final Widget fallback;
+
+  const _LivePdfPreview({
+    required this.signature,
+    required this.buildDocument,
+    required this.unavailable,
+    required this.fallback,
+  });
+
+  @override
+  State<_LivePdfPreview> createState() => _LivePdfPreviewState();
+}
+
+class _LivePdfPreviewState extends State<_LivePdfPreview> {
+  static const _debounce = Duration(milliseconds: 300);
+  // A page is never shown wider than this many pixels per PDF point, so a
+  // thermal receipt doesn't fill a wide panel.
+  static const _maxZoom = 1.5;
+
+  Future<bool>? _canRaster;
+  Timer? _timer;
+  bool _busy = false;
+  bool _runAgain = false;
+  bool _cannotDraw = false;
+  ui.Image? _image;
+  double _pageWidthPt = PdfPageFormat.a4.width;
+  double _panelWidth = 600;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule(Duration.zero);
+  }
+
+  @override
+  void didUpdateWidget(covariant _LivePdfPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.signature != widget.signature) _schedule(_debounce);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _image?.dispose();
+    super.dispose();
+  }
+
+  void _schedule(Duration delay) {
+    _timer?.cancel();
+    _timer = Timer(delay, _render);
+  }
+
+  Future<void> _render() async {
+    if (!mounted || widget.unavailable) return;
+    // One at a time; a change made meanwhile is drawn right after.
+    if (_busy) {
+      _runAgain = true;
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final canRaster =
+          await (_canRaster ??= Printing.info().then((i) => i.canRaster));
+      if (!canRaster) {
+        if (mounted) setState(() => _cannotDraw = true);
+        return;
+      }
+      final doc = await widget.buildDocument();
+      if (doc == null || !mounted) return;
+      final bytes = await doc.save();
+      // Only after save() does a thermal roll page get its real height.
+      final format = PDFService.firstPageFormat(doc);
+      if (format == null || !mounted) return;
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      final shownWidth = math.min(_panelWidth, format.width * _maxZoom);
+      final dpi = (shownWidth * dpr / format.width * PdfPageFormat.inch)
+          .clamp(72.0, 400.0);
+      ui.Image? image;
+      await for (final page
+          in Printing.raster(bytes, pages: const [0], dpi: dpi)) {
+        image ??= await page.toImage();
+      }
+      if (image == null) return;
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _image?.dispose();
+        _image = image;
+        _pageWidthPt = format.width;
+        _cannotDraw = false;
+      });
+    } catch (e) {
+      debugPrint('PDF settings preview failed: $e');
+      // Keep the last good picture; the sketch only if there is none.
+      if (mounted && _image == null) setState(() => _cannotDraw = true);
+    } finally {
+      _busy = false;
+      if (mounted) {
+        if (_runAgain) {
+          _runAgain = false;
+          unawaited(_render());
+        } else {
+          setState(() {});
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.unavailable || _cannotDraw) return widget.fallback;
+    final image = _image;
+    return LayoutBuilder(builder: (context, constraints) {
+      const padding = 16.0;
+      _panelWidth = math.max(constraints.maxWidth - padding * 2, 100);
+      return Container(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Stack(
+          children: [
+            if (image == null)
+              const Center(child: CircularProgressIndicator())
+            else
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(padding),
+                  child: Center(
+                    child: Container(
+                      width: math.min(_panelWidth, _pageWidthPt * _maxZoom),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: image.width / image.height,
+                        child: RawImage(
+                          key: const ValueKey('pdfSettingsLivePreview'),
+                          image: image,
+                          fit: BoxFit.fill,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_busy && image != null)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+          ],
+        ),
+      );
+    });
   }
 }
 

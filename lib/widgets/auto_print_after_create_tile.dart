@@ -48,8 +48,9 @@ class _AutoPrintAfterCreateTileState extends State<AutoPrintAfterCreateTile> {
         border: Border.all(color: scheme.outlineVariant),
       ),
       child: SwitchListTile(
-        title: Text(AppLocalizations.of(context)!.autoPrintAfterCreateTitle),
-        subtitle: Text(AppLocalizations.of(context)!.autoPrintAfterCreateSubtitle),
+        // One line (owner's choice); the long help text is not shown.
+        title: Text(AppLocalizations.of(context)!.autoPrintAfterCreateTitle,
+            maxLines: 1, overflow: TextOverflow.ellipsis),
         secondary: Icon(Icons.print_outlined,
             color: _on ? Theme.of(context).primaryColor : scheme.onSurfaceVariant),
         value: _on,

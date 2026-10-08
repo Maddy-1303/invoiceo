@@ -5273,4 +5273,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pdfPreviewErrorMessage => '无法显示预览。请改用打印或下载。';
+
+  @override
+  String get pdfSettingsSampleCompanyName => '您的公司';
+
+  @override
+  String get pdfSettingsSampleCustomerName => '示例客户';
+
+  @override
+  String pdfSettingsSampleItemName(int number) {
+    return '示例商品 $number';
+  }
 }
