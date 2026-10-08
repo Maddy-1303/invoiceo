@@ -376,9 +376,7 @@ class _InvoiceSettingsScreenV2State
 
   Future<void> _setWatermarkFullPage(bool fullPage) async {
     setState(() => _watermarkFullPage = fullPage);
-    await ref
-        .read(settingsRepositoryProvider)
-        .setWatermarkFullPage(fullPage);
+    await ref.read(settingsRepositoryProvider).setWatermarkFullPage(fullPage);
   }
 
   Future<void> _setDefaultInvoiceTitle(String? title) async {
@@ -610,53 +608,59 @@ class _InvoiceSettingsScreenV2State
     });
   }
 
+  /// Two fields side by side, or one above the other when narrow.
+  Widget _pairV2(Widget a, Widget b) {
+    return LayoutBuilder(builder: (context, c) {
+      if (c.maxWidth < 480) {
+        return Column(children: [a, const SizedBox(height: 20), b]);
+      }
+      return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(child: a),
+        const SizedBox(width: 24),
+        Expanded(child: b),
+      ]);
+    });
+  }
+
   Widget _sectionGeneralV2() {
     final l10n = AppLocalizations.of(context)!;
-    return _fieldWrapV2(
-      [
-        TextField(
-          controller: invoicePrefixController,
-          maxLength: 25,
-          decoration: _fieldDecorationV2(context,
-              label: l10n.invoiceSettingsPrefixLabel,
-              prefixIcon: const Icon(Icons.confirmation_number)),
-        ),
-        _invoiceCount == 0
-            ? TextField(
-                controller: invoiceStartingNumberController,
-                keyboardType: TextInputType.number,
-                maxLength: 8,
-                decoration: _fieldDecorationV2(context,
+    // Rows of two fields side by side; switches take the full width so
+    // their text stays on one or two lines (one column below 480 px).
+    final startingNumber = _invoiceCount == 0
+        ? TextField(
+            controller: invoiceStartingNumberController,
+            keyboardType: TextInputType.number,
+            maxLength: 8,
+            decoration: _fieldDecorationV2(context,
+                label: l10n.onboardingInvoiceStartingNumberLabel,
+                prefixIcon: const Icon(Icons.looks_one_outlined),
+                helperText: l10n.invoiceSettingsStartingNumberHelper),
+          )
+        // Invoices exist: shown greyed with a lock and a short note.
+        : TextField(
+            controller: invoiceStartingNumberController,
+            enabled: false,
+            decoration: _fieldDecorationV2(context,
                     label: l10n.onboardingInvoiceStartingNumberLabel,
                     prefixIcon: const Icon(Icons.looks_one_outlined),
-                    helperText: l10n.invoiceSettingsStartingNumberHelper),
-              )
-            : Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.lock_outline,
-                        size: 16, color: Colors.orange[700]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.invoiceSettingsStartingNumberLockedMessage,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.orange[800],
-                            height: 1.4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                    helperText: l10n.invoiceSettingsStartingNumberLockedMessage)
+                .copyWith(
+                    helperMaxLines: 4,
+                    suffixIcon: Icon(Icons.lock_outline,
+                        size: 18, color: Colors.orange[700])),
+          );
+    return _fieldWrapV2(
+      [],
+      [
+        _pairV2(
+            TextField(
+              controller: invoicePrefixController,
+              maxLength: 25,
+              decoration: _fieldDecorationV2(context,
+                  label: l10n.invoiceSettingsPrefixLabel,
+                  prefixIcon: const Icon(Icons.confirmation_number)),
+            ),
+            startingNumber),
         _toggleCardV2(
           title: l10n.onboardingLeadingZerosLabel,
           subtitle: l10n.onboardingLeadingZerosSubtitle,
@@ -664,49 +668,59 @@ class _InvoiceSettingsScreenV2State
           value: _invoiceLeadingZeros,
           onChanged: (val) => setState(() => _invoiceLeadingZeros = val),
         ),
-        const AutoPrintAfterCreateTile(),
-        _buildCurrencyField(),
-        DropdownButtonFormField<DateFormatOption>(
-          isExpanded: true,
-          value: _selectedDateFormat,
-          decoration: _fieldDecorationV2(context,
-              label: l10n.onboardingDateFormatLabel,
-              prefixIcon: const Icon(Icons.calendar_today)),
-          items: DateFormatOption.values.map((opt) {
-            return DropdownMenuItem<DateFormatOption>(
-              value: opt,
-              child: Text(dateFormatOptionLabel(context, opt),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
-            );
-          }).toList(),
-          selectedItemBuilder: (context) {
-            return DateFormatOption.values.map((opt) {
-              return Text(opt.key,
-                  maxLines: 1, overflow: TextOverflow.ellipsis);
-            }).toList();
-          },
-          onChanged: (value) {
-            if (!mounted) return;
-            setState(() => _selectedDateFormat = value!);
-          },
-        ),
-        DropdownButtonFormField<String>(
-          isExpanded: true,
-          value: _pdfTimeFormat,
-          decoration: _fieldDecorationV2(context,
-              label: l10n.invoiceSettingsTimeFormatLabel,
-              prefixIcon: const Icon(Icons.schedule)),
-          items: [
-            DropdownMenuItem(
-                value: '24', child: Text(l10n.invoiceSettingsTimeFormat24)),
-            DropdownMenuItem(
-                value: '12', child: Text(l10n.invoiceSettingsTimeFormat12)),
-          ],
-          onChanged: (value) {
-            if (!mounted) return;
-            setState(() => _pdfTimeFormat = value!);
-          },
-        ),
+        _pairV2(
+            _buildCurrencyField(),
+            DropdownButtonFormField<DateFormatOption>(
+              isExpanded: true,
+              value: _selectedDateFormat,
+              decoration: _fieldDecorationV2(context,
+                  label: l10n.onboardingDateFormatLabel,
+                  prefixIcon: const Icon(Icons.calendar_today)),
+              items: DateFormatOption.values.map((opt) {
+                return DropdownMenuItem<DateFormatOption>(
+                  value: opt,
+                  child: Text(dateFormatOptionLabel(context, opt),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                );
+              }).toList(),
+              selectedItemBuilder: (context) {
+                return DateFormatOption.values.map((opt) {
+                  return Text(opt.key,
+                      maxLines: 1, overflow: TextOverflow.ellipsis);
+                }).toList();
+              },
+              onChanged: (value) {
+                if (!mounted) return;
+                setState(() => _selectedDateFormat = value!);
+              },
+            )),
+        _pairV2(
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: _pdfTimeFormat,
+              decoration: _fieldDecorationV2(context,
+                  label: l10n.invoiceSettingsTimeFormatLabel,
+                  prefixIcon: const Icon(Icons.schedule)),
+              items: [
+                DropdownMenuItem(
+                    value: '24', child: Text(l10n.invoiceSettingsTimeFormat24)),
+                DropdownMenuItem(
+                    value: '12', child: Text(l10n.invoiceSettingsTimeFormat12)),
+              ],
+              onChanged: (value) {
+                if (!mounted) return;
+                setState(() => _pdfTimeFormat = value!);
+              },
+            ),
+            TextField(
+              controller: quantityLabelController,
+              maxLength: 30,
+              decoration: _fieldDecorationV2(context,
+                  label: l10n.invoiceSettingsQuantityColumnLabel,
+                  hint: l10n.invoiceSettingsQuantityColumnHint,
+                  helperText: l10n.invoiceSettingsQuantityColumnHelper,
+                  prefixIcon: const Icon(Icons.tag)),
+            )),
         _toggleCardV2(
           title: l10n.invoiceSettingsShowTimeInPdfLabel,
           subtitle: l10n.invoiceSettingsShowTimeInPdfSubtitle,
@@ -714,17 +728,7 @@ class _InvoiceSettingsScreenV2State
           value: _showTimeInPdf,
           onChanged: (val) => setState(() => _showTimeInPdf = val),
         ),
-        TextField(
-          controller: quantityLabelController,
-          maxLength: 30,
-          decoration: _fieldDecorationV2(context,
-              label: l10n.invoiceSettingsQuantityColumnLabel,
-              hint: l10n.invoiceSettingsQuantityColumnHint,
-              helperText: l10n.invoiceSettingsQuantityColumnHelper,
-              prefixIcon: const Icon(Icons.tag)),
-        ),
-      ],
-      [
+        const AutoPrintAfterCreateTile(),
         TextField(
           controller: additionalInfoController,
           maxLength: DefaultValues.additionalNotesLength,
@@ -1223,8 +1227,8 @@ class _InvoiceSettingsScreenV2State
                     ButtonSegment<bool>(
                         value: false,
                         icon: const Icon(Icons.table_rows_outlined, size: 16),
-                        label: Text(l10n
-                            .invoiceSettingsWatermarkPlacementItemsTable)),
+                        label: Text(
+                            l10n.invoiceSettingsWatermarkPlacementItemsTable)),
                     ButtonSegment<bool>(
                         value: true,
                         icon: const Icon(Icons.crop_portrait, size: 16),
@@ -1499,7 +1503,8 @@ class _InvoiceSettingsScreenV2State
           alignment: Alignment.topRight,
           children: [
             InteractiveViewer(
-              child: Image.asset('assets/images/grid_classic_additional_fields.png'),
+              child: Image.asset(
+                  'assets/images/grid_classic_additional_fields.png'),
             ),
             IconButton(
               icon: const Icon(Icons.close),
@@ -1526,9 +1531,12 @@ class _InvoiceSettingsScreenV2State
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(def.label,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             const SizedBox(height: 1),
-            Text(AppLocalizations.of(context)!.invoiceSettingsCustomFieldSampleValue,
+            Text(
+                AppLocalizations.of(context)!
+                    .invoiceSettingsCustomFieldSampleValue,
                 style: TextStyle(
                     fontSize: 11.5,
                     fontStyle: FontStyle.italic,
@@ -1552,11 +1560,13 @@ class _InvoiceSettingsScreenV2State
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: outline))),
+            decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: outline))),
             child: Row(
               children: [
                 Icon(Icons.visibility_outlined,
-                    size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Text(l10n.createInvoicePreviewLabel,
                     style: TextStyle(
@@ -1596,13 +1606,15 @@ class _InvoiceSettingsScreenV2State
             child: Row(
               children: [
                 Icon(Icons.info_outline,
-                    size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(l10n.pdfSettingsPreviewDisclaimer,
                       style: TextStyle(
                           fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               ],
             ),
@@ -1901,7 +1913,6 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
-
   Widget _navRailV2() {
     return SizedBox(
       width: 240,
@@ -1973,9 +1984,9 @@ class _InvoiceSettingsScreenV2State
                 child: _promoCardV2(),
               ),
             Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: _saveButtonV2(),
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _saveButtonV2(),
+            ),
           ],
         ),
       ),
@@ -2148,17 +2159,17 @@ class _InvoiceSettingsScreenV2State
               ),
             ),
             Container(
-                key: const ValueKey('invoiceSettingsSaveBar'),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainer,
-                  border: Border(
-                    top: BorderSide(
-                        color: Theme.of(context).colorScheme.outlineVariant),
-                  ),
+              key: const ValueKey('invoiceSettingsSaveBar'),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                border: Border(
+                  top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant),
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                child: _saveButtonV2(),
               ),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              child: _saveButtonV2(),
+            ),
           ],
         );
       }),
