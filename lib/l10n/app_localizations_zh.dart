@@ -3302,7 +3302,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsGrossAmountLabel => '总额';
 
   @override
-  String get reportsTaxAccrualNote => '按本期开票日期计提的税款 — 权责发生制，付款前。';
+  String get reportsTaxAccrualNote => '按本期日期的发票和收据计提的税款 — 权责发生制，付款前。';
 
   @override
   String get reportsTaxRateBucketsLabel => '税率分组';
@@ -5258,4 +5258,19 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       '创建发票（按钮或 Ctrl+S）时也会打印。Ctrl+P 或 F11 始终创建并打印。热敏收据直接发送到已保存的打印机；其他模板会打开打印对话框。仅限 Modern 布局（在 设置 > 辅助功能 中选择）。';
+
+  @override
+  String get shortcutSearchDescription => '搜索帮助和设置（Modern 布局；Mac 上为 Cmd + K）';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription => '创建后：新建发票';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription => '创建后：新建收据';
+
+  @override
+  String get shortcutCreateAndPrintDescription => '创建并打印（与 Ctrl + P 相同）';
+
+  @override
+  String get pdfPreviewErrorMessage => '无法显示预览。请改用打印或下载。';
 }

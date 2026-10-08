@@ -80,7 +80,8 @@ class InvoicePdfServices {
           datePattern: dateFmt.key);
       final bytes = await pdf.save();
       if (context.mounted) {
-        PDFService.showCenteredPDFViewer(context, bytes, invoice);
+        PDFService.showCenteredPDFViewer(context, bytes, invoice,
+            pageFormat: PDFService.firstPageFormat(pdf));
       }
     } catch (e) {
       if (context.mounted) {

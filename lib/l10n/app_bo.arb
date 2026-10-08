@@ -789,7 +789,7 @@
   "reportsTaxCollectedByRateTitle": "ཐང་གིས་བསྡུས་པའི་ཁྲལ།",
   "reportsTaxableAmountLabel": "Taxable Amount",
   "reportsGrossAmountLabel": "Gross",
-  "reportsTaxAccrualNote": "Tax charged on invoices dated in this period — accrual basis, before payment.",
+  "reportsTaxAccrualNote": "Tax charged on invoices and receipts dated in this period — accrual basis, before payment.",
   "reportsTaxCollectedLabel": "བསྡུས་པའི་ཁྲལ།",
   "reportsTaxRateBucketsLabel": "ཁྲལ་ཐང་སྡེ་ཚན།",
   "reportsTodayLabel": "དེ་རིང་།",
@@ -1130,7 +1130,9 @@
   "companyMgmtSwitchConfirmBody": "\"{name}\" ལ་བརྗེ་བར་ Invoiceo ཡང་བསྐྱར་འགོ་འཛུགས་འགྲོ།",
   "@companyMgmtSwitchConfirmBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "companyMgmtNewCompanyButton": "+ ཚོང་ལས་གསར་པ།",
@@ -1141,7 +1143,9 @@
   "companyMgmtDeleteConfirmTitle": "\"{name}\" བསུབ་དགོས་སམ།",
   "@companyMgmtDeleteConfirmTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "companyMgmtDeleteConfirmBody": "འདིས་ཚོང་ལས་འདིའི་ཆ་འཕྲིན་ཡོངས་རྫོགས་གཏན་གྱིས་བསུབ་གྱི་རེད། ངེས་གཏན་བྱེད་ཆེད་ཚོང་ལས་མིང་འཇུག་རོགས།",

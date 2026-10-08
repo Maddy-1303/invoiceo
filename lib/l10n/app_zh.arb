@@ -927,7 +927,7 @@
   "reportsTaxCollectedByRateTitle": "按税率收取的税款",
   "reportsTaxableAmountLabel": "应税金额",
   "reportsGrossAmountLabel": "总额",
-  "reportsTaxAccrualNote": "按本期开票日期计提的税款 — 权责发生制，付款前。",
+  "reportsTaxAccrualNote": "按本期日期的发票和收据计提的税款 — 权责发生制，付款前。",
   "reportsTaxCollectedLabel": "已收税款",
   "reportsTaxRateBucketsLabel": "税率分组",
   "reportsTodayLabel": "今天",
@@ -1496,5 +1496,10 @@
   "userMgmtStatRegularUsers": "普通用户",
   "userMgmtStatStandardAccess": "标准权限",
   "autoPrintAfterCreateTitle": "创建后自动打印",
-  "autoPrintAfterCreateSubtitle": "创建发票（按钮或 Ctrl+S）时也会打印。Ctrl+P 或 F11 始终创建并打印。热敏收据直接发送到已保存的打印机；其他模板会打开打印对话框。仅限 Modern 布局（在 设置 > 辅助功能 中选择）。"
+  "autoPrintAfterCreateSubtitle": "创建发票（按钮或 Ctrl+S）时也会打印。Ctrl+P 或 F11 始终创建并打印。热敏收据直接发送到已保存的打印机；其他模板会打开打印对话框。仅限 Modern 布局（在 设置 > 辅助功能 中选择）。",
+  "shortcutSearchDescription": "搜索帮助和设置（Modern 布局；Mac 上为 Cmd + K）",
+  "shortcutCreatedNewInvoiceDescription": "创建后：新建发票",
+  "shortcutCreatedNewReceiptDescription": "创建后：新建收据",
+  "shortcutCreateAndPrintDescription": "创建并打印（与 Ctrl + P 相同）",
+  "pdfPreviewErrorMessage": "无法显示预览。请改用打印或下载。"
 }

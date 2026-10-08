@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
@@ -15,7 +16,8 @@ class ProductColumnsSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductColumnsSettingsScreenState
-    extends ConsumerState<ProductColumnsSettingsScreen> {
+    extends ConsumerState<ProductColumnsSettingsScreen>
+    with ModernSectionActions {
   ProductColumnsConfig _config = const ProductColumnsConfig();
   bool _isLoading = true;
   bool _isSaving = false;
@@ -104,79 +106,107 @@ class _ProductColumnsSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    // Modern: the top bar already shows "Product Details" and holds Save, so
+    // this page draws no title bar and no Save column.
+    final inTopBar = inModernTopBar;
+    if (inTopBar) {
+      publishSectionActions(() => [
+            ModernTopBarButton.primary(
+              key: const ValueKey('productColumnsSave'),
+              icon: Icons.save_rounded,
+              label: _isSaving
+                  ? l10n.createInvoiceSavingEllipsisLabel
+                  : l10n.actionSave,
+              // Grey until the settings have loaded, and while saving.
+              onPressed: _isLoading || _isSaving ? null : _saveConfig,
+            ),
+          ]);
+    }
+
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? null
             : BrandColors.page,
-        appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.productColumnsScreenTitle),
-          centerTitle: false,
-        ),
+        appBar: inTopBar
+            ? null
+            : AppBar(
+                title: Text(l10n.productColumnsScreenTitle),
+                centerTitle: false,
+              ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : BrandColors.page,
-      appBar: AppBar(
-        title: Text(l10n.productColumnsScreenTitle),
-        elevation: 0,
-        centerTitle: false,
-      ),
+      appBar: inTopBar
+          ? null
+          : AppBar(
+              title: Text(l10n.productColumnsScreenTitle),
+              elevation: 0,
+              centerTitle: false,
+            ),
       body: Row(
         children: [
-          SizedBox(
-            width: 240,
-            child: Container(
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              child: Column(
-                children: [
-                  const Spacer(),
-                  // Save button pinned at bottom
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSaving ? null : _saveConfig,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.save_rounded),
-                        label: Text(_isSaving
-                            ? l10n.createInvoiceSavingEllipsisLabel
-                            : l10n.actionSave),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppBorderRadius.small),
+          if (!inTopBar) ...[
+            SizedBox(
+              width: 240,
+              child: Container(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    // Save button pinned at bottom
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _saveConfig,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.save_rounded),
+                          label: Text(_isSaving
+                              ? l10n.createInvoiceSavingEllipsisLabel
+                              : l10n.actionSave),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppBorderRadius.small),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          VerticalDivider(
-              width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+            VerticalDivider(
+                width: 1, color: Theme.of(context).colorScheme.outlineVariant),
+          ],
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 28),
+              key: const ValueKey('productColumnsFields'),
+              padding: inTopBar
+                  ? const EdgeInsets.all(24)
+                  : const EdgeInsets.symmetric(vertical: 28),
               child: Center(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 900),
+                  // Modern: the fields use the full width of the page.
+                  constraints:
+                      inTopBar ? null : const BoxConstraints(maxWidth: 900),
                   child: Card(
                     elevation: 4,
                     color: Theme.of(context).colorScheme.surfaceContainer,

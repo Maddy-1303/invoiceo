@@ -3471,7 +3471,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get reportsTaxAccrualNote =>
-      'Taxe facturée sur les factures datées de cette période — comptabilité d\'engagement, avant paiement.';
+      'Taxe facturée sur les factures et reçus datés de cette période — comptabilité d\'engagement, avant paiement.';
 
   @override
   String get reportsTaxRateBucketsLabel => 'Tranches de taux de taxe';
@@ -5583,4 +5583,24 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       'Créer une facture (bouton ou Ctrl+S) l’imprime aussi. Ctrl+P ou F11 crée et imprime toujours. Un reçu thermique part directement vers l’imprimante enregistrée ; les autres modèles ouvrent la fenêtre d’impression. Mise en page Modern uniquement (à choisir dans Paramètres > Accessibilité).';
+
+  @override
+  String get shortcutSearchDescription =>
+      'Rechercher dans l’aide et les paramètres (mise en page Modern ; Cmd + K sur Mac)';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription =>
+      'Après la création : commencer une nouvelle facture';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription =>
+      'Après la création : commencer un nouveau reçu';
+
+  @override
+  String get shortcutCreateAndPrintDescription =>
+      'Créer et imprimer (comme Ctrl + P)';
+
+  @override
+  String get pdfPreviewErrorMessage =>
+      'Impossible d’afficher l’aperçu. Utilisez Imprimer ou Télécharger à la place.';
 }

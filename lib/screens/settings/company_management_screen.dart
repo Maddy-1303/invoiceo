@@ -4,6 +4,7 @@ import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/database/company_registry_service.dart';
 import 'package:invoiceo/database/user_service.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/models/company_info.dart';
 import 'package:invoiceo/models/company_profile.dart';
 import 'package:invoiceo/models/user.dart';
@@ -34,7 +35,7 @@ class CompanyManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _CompanyManagementScreenState
-    extends ConsumerState<CompanyManagementScreen> {
+    extends ConsumerState<CompanyManagementScreen> with ModernSectionActions {
   // Matches the onboarding wizard's card width (lib/screens/onboarding/
   // onboarding_screen.dart) so this screen doesn't stretch edge-to-edge on
   // wide desktop windows.
@@ -478,8 +479,22 @@ class _CompanyManagementScreenState
         isDark ? Colors.green.shade400 : Colors.green.withValues(alpha: 0.4);
     final activeBadgeText = isDark ? Colors.green.shade300 : Colors.green;
 
+    // Modern (inside Settings): no title bar here, and New Company is in the
+    // top bar. Opened on its own (Login gear, company menu) it keeps both.
+    final modern = inModernTopBar;
+    if (modern) {
+      publishSectionActions(() => [
+            ModernTopBarButton.primary(
+              key: const ValueKey('companyMgmtNewCompany'),
+              icon: Icons.add,
+              label: l10n.companyMgmtNewCompanyTitle,
+              onPressed: _isLoading ? null : _createCompany,
+            ),
+          ]);
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.companyMgmtTitle)),
+      appBar: modern ? null : AppBar(title: Text(l10n.companyMgmtTitle)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Center(
@@ -554,11 +569,13 @@ class _CompanyManagementScreenState
                           ),
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: _createCompany,
-                      child: Text(l10n.companyMgmtNewCompanyButton),
-                    ),
+                    if (!modern) ...[
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: _createCompany,
+                        child: Text(l10n.companyMgmtNewCompanyButton),
+                      ),
+                    ],
                   ],
                 ),
               ),

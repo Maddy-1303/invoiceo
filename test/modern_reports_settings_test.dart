@@ -152,6 +152,112 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Settings: every section puts its title and buttons in the top bar',
+      (tester) async {
+    await pump(tester, SettingsScreen(currentUser: admin), index: 8);
+    expect(tester.takeException(), isNull);
+    final rail = find.byType(NavigationRail);
+    Finder inBarKey(String k) =>
+        find.descendant(of: topBar, matching: find.byKey(ValueKey(k)));
+
+    // Rail label -> (main top-bar button key, old in-page title that must
+    // be gone). The rail label is also the top-bar title.
+    const sections = <String, (String?, String?)>{
+      'Companies': ('companyMgmtNewCompany', 'Manage Companies'),
+      'Company Info': ('companyInfoSave', 'Company Information'),
+      'Backup': ('backupRefreshButton', 'Backup Management'),
+      'Users': ('userMgmtAddUserButton', 'User Management'),
+      'PDF Settings': ('pdfSettingsSave', null),
+      'Invoice Settings': ('invoiceSettingsSave', null),
+      'Product Details': ('productColumnsSave', null),
+      'Customize': (null, null),
+      'Accessibility': (null, null),
+      'Software Info': (null, 'Software Information'),
+    };
+    const allKeys = [
+      'companyMgmtNewCompany', 'companyInfoSave', 'companyInfoTheme',
+      'companyInfoLanguage', 'backupRefreshButton', 'userMgmtRefreshButton',
+      'userMgmtAddUserButton', 'pdfSettingsSave', 'pdfSettingsReset',
+      'invoiceSettingsSave', 'productColumnsSave',
+    ];
+
+    for (final MapEntry(key: label, value: (button, oldTitle))
+        in sections.entries) {
+      await tester.tap(find.descendant(of: rail, matching: find.text(label)));
+      await settle(tester);
+      expect(tester.takeException(), isNull, reason: label);
+      // Product Details keeps its full name in the top bar (owner's wish).
+      final barTitle =
+          label == 'Product Details' ? 'Customize Product Details' : label;
+      expect(inBar(barTitle), findsOneWidget, reason: '$label in the top bar');
+      if (barTitle != label) {
+        expect(find.text(barTitle), findsOneWidget,
+            reason: '$label: "$barTitle" only in the top bar');
+      }
+      expect(find.byType(AppBar), findsNothing, reason: '$label: no own AppBar');
+      if (button != null) {
+        expect(inBarKey(button), findsOneWidget, reason: '$label: $button');
+        expect(find.byKey(ValueKey(button)), findsOneWidget,
+            reason: '$label: $button only in the top bar');
+      }
+      for (final k in allKeys.where((k) => k != button)) {
+        final ownKeys = switch (label) {
+          'Company Info' => ['companyInfoTheme', 'companyInfoLanguage'],
+          'Users' => ['userMgmtRefreshButton'],
+          'PDF Settings' => ['pdfSettingsReset'],
+          _ => const <String>[],
+        };
+        if (ownKeys.contains(k)) continue;
+        expect(find.byKey(ValueKey(k)), findsNothing,
+            reason: '$label: no leftover $k from another section');
+      }
+      if (oldTitle != null) {
+        expect(find.text(oldTitle), findsNothing,
+            reason: '$label: old title bar "$oldTitle" is gone');
+      }
+      // The title shows once in the rail and once in the top bar, never a
+      // third time in a title bar inside the page.
+      expect(find.text(label), findsNWidgets(barTitle == label ? 2 : 1),
+          reason: '$label not repeated');
+    }
+
+    // PDF Settings -> Accessibility clears PDF's Reset and Save.
+    await tester.tap(find.descendant(of: rail, matching: find.text('PDF Settings')));
+    await settle(tester);
+    expect(inBarKey('pdfSettingsSave'), findsOneWidget);
+    expect(inBarKey('pdfSettingsReset'), findsOneWidget);
+    await tester.tap(find.descendant(of: rail, matching: find.text('Accessibility')));
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(inBar('Accessibility'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pdfSettingsSave')), findsNothing);
+    expect(find.byKey(const ValueKey('pdfSettingsReset')), findsNothing);
+
+    // The top-bar buttons act on the open section's live state.
+    await tester.tap(find.descendant(of: rail, matching: find.text('Product Details')));
+    await settle(tester);
+    await tester.tap(inBarKey('productColumnsSave'));
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Product columns saved.'), findsOneWidget);
+
+    await tester.tap(find.descendant(of: rail, matching: find.text('Users')));
+    await settle(tester);
+    await tester.tap(inBarKey('userMgmtAddUserButton'));
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Add New User'), findsOneWidget);
+    expect(
+        tester
+            .widget<ButtonStyleButton>(find.descendant(
+                of: inBarKey('userMgmtAddUserButton'),
+                matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+                matchRoot: true))
+            .onPressed,
+        isNull,
+        reason: 'Add User turns off while the panel is open');
+  });
+
   testWidgets('PDF Settings on a narrow area uses the full width (no overflow)', (tester) async {
     await pump(tester, const PdfSettingsScreenV2(), inFrame: false, size: const Size(820, 900));
     expect(tester.takeException(), isNull);

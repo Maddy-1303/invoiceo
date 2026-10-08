@@ -13,7 +13,8 @@ import 'package:invoiceo/utils/formatters.dart';
 import 'package:invoiceo/models/report_models.dart';
 import 'package:invoiceo/services/pdf/pdf_font_service.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:invoiceo/services/pdf/shaped_pw.dart' as pw;
+import 'package:invoiceo/services/pdf/shaped_text_rasterizer.dart';
 
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/common/app_config.dart';
@@ -36,6 +37,10 @@ class _InvRow {
   final double cogs;
   final String currencyCode;
   final String currencySymbol;
+  // A Receipt: a cash sale, paid in full on its date, never outstanding.
+  final bool isReceipt;
+  // True when the row has payment rows in invoice_payments.
+  final bool hasPayments;
 
   const _InvRow({
     required this.id,
@@ -50,6 +55,8 @@ class _InvRow {
     required this.cogs,
     required this.currencyCode,
     required this.currencySymbol,
+    this.isReceipt = false,
+    this.hasPayments = false,
   });
 }
 
@@ -98,6 +105,11 @@ class ReportService {
       'THEN ($_invoiceItemNetSql) / (1 + i.tax_rate) '
       'ELSE $_invoiceItemNetSql END';
 
+  // Sales are Invoices and Receipts. A Receipt is a cash sale, paid in full
+  // on its date: it counts in sales, tax, profit and collected, but is never
+  // outstanding. Quotations are not sales.
+  static const _salesTypesSql = "('Invoice', 'Receipt')";
+
   // Money text for report PDFs. An empty symbol means the report mixes
   // currencies ("All currencies"), so only the number is shown.
   static String _pdfMoney(String currencySymbol, double v) =>
@@ -105,10 +117,22 @@ class ReportService {
           ? v.toStringAsFixed(2)
           : '$currencySymbol ${v.toStringAsFixed(2)}';
 
+  // Builds a report PDF with Tamil and other complex scripts shaped
+  // correctly. [page] must build a fresh page each call (no side effects).
+  static Future<Uint8List> _shapedPdf(
+      pw.ThemeData theme, pw.Page Function() page) async {
+    final doc = await ShapedTextRasterizer.buildWithShaping(
+        () => pw.Document(theme: theme)..addPage(page()));
+    return doc.save();
+  }
+
   // ── Batch loader: invoice totals computed in Dart (accurate, no N+1) ────────
 
+  /// Invoices, plus Receipts when [includeReceipts] (sales reports). Leave
+  /// receipts out for invoice-only views: status counts, receivables and
+  /// statements.
   static Future<List<_InvRow>> _loadRows({
-    String type = 'Invoice',
+    bool includeReceipts = true,
     DateTime? from,
     DateTime? to,
     String? currencyCode,
@@ -116,9 +140,12 @@ class ReportService {
   }) async {
     final db = await _db.database;
 
-    final sb = StringBuffer(
-        "type = ? AND deleted_at IS NULL AND (status IS NULL OR status != 'declined')");
-    final args = <dynamic>[type];
+    final sb = StringBuffer(includeReceipts
+        ? 'type IN $_salesTypesSql'
+        : "type = 'Invoice'");
+    sb.write(
+        " AND deleted_at IS NULL AND (status IS NULL OR status != 'declined')");
+    final args = <dynamic>[];
     if (from != null) {
       sb.write(' AND date >= ?');
       args.add(AppDate.dateKeyStart(from));
@@ -140,6 +167,7 @@ class ReportService {
       'invoices',
       columns: [
         'id',
+        'type',
         'customer_id',
         'customer_name',
         'date',
@@ -191,7 +219,8 @@ class ReportService {
       final taxMode = TaxModeExtension.fromKey(inv['tax_mode'] as String?);
       final taxRate = (inv['tax_rate'] as num?)?.toDouble() ?? 0.0;
       final items = itemsByInv[id] ?? [];
-      final paid = paidByInv[id] ?? 0.0;
+      final isReceipt = inv['type'] == 'Receipt';
+      final hasPayments = paidByInv.containsKey(id);
 
       final addCosts =
           AdditionalCost.listFromJson(inv['additional_costs'] as String?)
@@ -209,8 +238,13 @@ class ReportService {
             (inv['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
       );
       final total = totals.total;
-      final outstanding =
-          InvoiceCalculator.outstanding(total: total, paid: paid);
+      // A receipt is paid in full on its date: its payment rows if it has
+      // any, otherwise its total (never both). It is never outstanding.
+      final paid =
+          isReceipt && !hasPayments ? total : (paidByInv[id] ?? 0.0);
+      final outstanding = isReceipt
+          ? 0.0
+          : InvoiceCalculator.outstanding(total: total, paid: paid);
 
       // Invoice-level discount applies to the whole pre-discount total; give
       // the tax-exclusive product-revenue portion its proportional share so
@@ -244,6 +278,8 @@ class ReportService {
         cogs: cogs,
         currencyCode: inv['currency_code'] as String? ?? 'INR',
         currencySymbol: inv['currency_symbol'] as String? ?? 'Rs.',
+        isReceipt: isReceipt,
+        hasPayments: hasPayments,
       );
     }).toList();
   }
@@ -272,10 +308,12 @@ class ReportService {
       realizedProfit += margin * collectedRatio;
     }
     return RevenueKpi(
-      invoiceCount: rows.length,
+      // Counts invoices only; the money above includes receipts.
+      invoiceCount: rows.where((r) => !r.isReceipt).length,
       billed: billed,
       collected: collected,
       outstanding: outstanding,
+      // Average over every sale (invoices and receipts), as billed is.
       avgInvoiceValue: billed / rows.length,
       profit: profit,
       realizedProfit: realizedProfit,
@@ -303,7 +341,7 @@ class ReportService {
       "SELECT COUNT(*) AS cnt "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type IN $_salesTypesSql "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND (ii.product_purchase_price IS NULL OR ii.product_purchase_price = 0) "
       "$ccFilter"
@@ -340,7 +378,7 @@ class ReportService {
       "COALESCE(SUM(ip.amount_paid), 0.0) AS collected "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type IN $_salesTypesSql "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "$currencyFilter"
       "AND ip.date_paid >= ? AND ip.date_paid <= ? "
@@ -366,7 +404,13 @@ class ReportService {
       netByMonth[m] = (netByMonth[m] ?? 0) + r.netRevenue;
       cogsByMonth[m] = (cogsByMonth[m] ?? 0) + r.cogs;
       outstandingByMonth[m] = (outstandingByMonth[m] ?? 0) + r.outstanding;
-      countByMonth[m] = (countByMonth[m] ?? 0) + 1;
+      // Counts invoices only; the money includes receipts.
+      if (!r.isReceipt) countByMonth[m] = (countByMonth[m] ?? 0) + 1;
+      // A receipt with no payment rows is collected in full on its date.
+      // (One with payment rows is already in the query above.)
+      if (r.isReceipt && !r.hasPayments) {
+        collectedByMonth[m] = (collectedByMonth[m] ?? 0) + r.total;
+      }
     }
 
     final allMonths = {...billedByMonth.keys, ...collectedByMonth.keys}.toList()
@@ -402,7 +446,9 @@ class ReportService {
     for (final r in rows) {
       if (r.date.length < 10) continue;
       final d = r.date.substring(0, 10);
-      countByDay[d] = (countByDay[d] ?? 0) + 1;
+      // Counts invoices only (a day of receipts only shows 0); the money
+      // includes receipts.
+      countByDay[d] = (countByDay[d] ?? 0) + (r.isReceipt ? 0 : 1);
       netByDay[d] = (netByDay[d] ?? 0) + r.netRevenue;
       cogsByDay[d] = (cogsByDay[d] ?? 0) + r.cogs;
     }
@@ -423,8 +469,12 @@ class ReportService {
   static Future<StatusBreakdown> getPaymentStatusBreakdown(
       DateTime from, DateTime to,
       {String? currencyCode}) async {
-    final rows =
-        await _loadRows(from: from, to: to, currencyCode: currencyCode);
+    // Invoice status counts are about invoices only.
+    final rows = await _loadRows(
+        includeReceipts: false,
+        from: from,
+        to: to,
+        currencyCode: currencyCode);
     int paid = 0, partial = 0, unpaid = 0;
     for (final r in rows) {
       switch (InvoiceCalculator.paymentStatus(total: r.total, paid: r.paid)) {
@@ -443,7 +493,9 @@ class ReportService {
 
   static Future<List<AgedReceivable>> getAgedReceivables(
       {String? currencyCode}) async {
-    final rows = await _loadRows(currencyCode: currencyCode);
+    // A receipt is never outstanding.
+    final rows =
+        await _loadRows(includeReceipts: false, currencyCode: currencyCode);
     final now = DateTime.now();
     final result = <AgedReceivable>[];
 
@@ -474,7 +526,9 @@ class ReportService {
   /// [getAgedReceivables]. Sorted by total outstanding descending.
   static Future<List<AgedReceivableSummaryRow>> getAgedReceivableSummary(
       {String? currencyCode}) async {
-    final rows = await _loadRows(currencyCode: currencyCode);
+    // A receipt is never outstanding.
+    final rows =
+        await _loadRows(includeReceipts: false, currencyCode: currencyCode);
     final now = DateTime.now();
     // Per customer: [current, 0-30, 31-60, 61-90, 90+, noDueDate]
     final buckets = <String, List<double>>{};
@@ -522,7 +576,9 @@ class ReportService {
   /// customer_id — for a customer-list "Outstanding" column/filter/sort.
   static Future<Map<String, double>> getOutstandingByCustomer(
       {String? currencyCode}) async {
-    final rows = await _loadRows(currencyCode: currencyCode);
+    // A receipt is never outstanding.
+    final rows =
+        await _loadRows(includeReceipts: false, currencyCode: currencyCode);
     final result = <String, double>{};
     for (final r in rows) {
       if (r.outstanding <= InvoiceCalculator.moneyEpsilon) continue;
@@ -532,7 +588,8 @@ class ReportService {
   }
 
   /// Distinct currency codes actually used across (non-deleted) invoices —
-  /// for a currency picker, e.g. next to the Outstanding column.
+  /// for a currency picker, e.g. next to the Outstanding column. Receipts
+  /// are left out: they are never outstanding.
   static Future<List<String>> getInvoiceCurrencies() async {
     final db = await _db.database;
     final rows = await db.rawQuery(
@@ -575,7 +632,7 @@ class ReportService {
       "ELSE $_invoiceItemNetSql END) AS taxable_amount "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type IN $_salesTypesSql "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'per_item' "
       "$ccFilter"
@@ -596,7 +653,7 @@ class ReportService {
     final globalInvRows = await db.rawQuery(
       "SELECT i.id, i.tax_rate, i.additional_costs "
       "FROM invoices i "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type IN $_salesTypesSql "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
       "$ccFilter"
@@ -611,7 +668,7 @@ class ReportService {
         "discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax "
         "FROM invoice_items WHERE invoice_id IN ("
         "SELECT i.id FROM invoices i "
-        "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+        "WHERE i.deleted_at IS NULL AND i.type IN $_salesTypesSql "
         "AND i.tax_mode = 'global' AND i.tax_rate > 0 "
         "$ccFilter"
         "AND i.date >= ? AND i.date <= ?)",
@@ -681,7 +738,8 @@ class ReportService {
       }
       return TopCustomer(
         name: e.value.first.customerName,
-        invoiceCount: e.value.length,
+        // Counts invoices only; the money includes receipts.
+        invoiceCount: e.value.where((r) => !r.isReceipt).length,
         billed: billed,
         collected: collected,
         outstanding: outstanding,
@@ -692,6 +750,9 @@ class ReportService {
     return result.take(limit).toList();
   }
 
+  // Customer statements show invoices and their payments only. A receipt is
+  // paid in full when it is made, so it never changes what the customer
+  // owes; it is left out, which keeps the running balance as it was.
   static Future<List<CustomerStatementCustomer>> getStatementCustomers({
     String? currencyCode,
   }) async {
@@ -735,7 +796,9 @@ class ReportService {
     DateTime to, {
     String? currencyCode,
   }) async {
+    // Invoices only: receipts are left out (see getStatementCustomers).
     final rows = await _loadRows(
+      includeReceipts: false,
       customerKey: customerKey,
       currencyCode: currencyCode,
     );
@@ -897,7 +960,7 @@ class ReportService {
       "SUM(ii.quantity * ii.product_purchase_price) AS cogs "
       "FROM invoice_items ii "
       "JOIN invoices i ON i.id = ii.invoice_id "
-      "WHERE i.deleted_at IS NULL AND i.type = 'Invoice' "
+      "WHERE i.deleted_at IS NULL AND i.type IN $_salesTypesSql "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "$ccFilter"
       "AND i.date >= ? AND i.date <= ? "
@@ -1003,15 +1066,15 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
 
     String money(double v) => _pdfMoney(currencySymbol, v);
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -1092,7 +1155,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   // ── 8. Quotation conversion ───────────────────────────────────────────────
@@ -1390,7 +1452,10 @@ class ReportService {
     DateTime to, {
     String? currencyCode,
   }) async {
+    // Invoice status (paid / partial / unpaid / overdue) is about invoices
+    // only; a receipt is always paid.
     final rows = await _loadRows(
+      includeReceipts: false,
       from: from,
       to: to,
       currencyCode: currencyCode,
@@ -1481,7 +1546,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -1498,8 +1562,9 @@ class ReportService {
     final totalProfit = totalSales - totalCogs;
     final totalMargin = totalSales == 0 ? 0.0 : (totalProfit / totalSales) * 100;
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -1574,7 +1639,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   static Future<Uint8List> exportRevenueReportPdf(
@@ -1585,7 +1649,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -1628,8 +1691,9 @@ class ReportService {
           ),
         );
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -1728,7 +1792,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   static Future<Uint8List> exportAgedReceivablesPdf(
@@ -1739,7 +1802,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -1758,8 +1820,9 @@ class ReportService {
     }
     final detailTotal = detail.fold<double>(0, (a, r) => a + r.outstanding);
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -1876,7 +1939,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   static Future<Uint8List> exportTaxReportPdf(
@@ -1886,7 +1948,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -1896,8 +1957,9 @@ class ReportService {
     final tTax = buckets.fold<double>(0, (a, b) => a + b.taxCollected);
     final tGross = buckets.fold<double>(0, (a, b) => a + b.gross);
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -1911,8 +1973,8 @@ class ReportService {
                 style: const pw.TextStyle(
                     fontSize: 10, color: PdfColors.grey700)),
             pw.Text(
-                'Accrual basis — tax charged on invoices dated in this period, '
-                'before payment.',
+                'Accrual basis — tax charged on invoices and receipts dated '
+                'in this period, before payment.',
                 style: const pw.TextStyle(
                     fontSize: 8, color: PdfColors.grey600)),
             pw.SizedBox(height: 12),
@@ -1968,7 +2030,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   static Future<Uint8List> exportTopCustomersPdf(
@@ -1978,7 +2039,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -1989,8 +2049,9 @@ class ReportService {
     final tCollected = list.fold<double>(0, (a, c) => a + c.collected);
     final tOutstanding = list.fold<double>(0, (a, c) => a + c.outstanding);
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -2069,7 +2130,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   static Future<Uint8List> exportTopProductsPdf(
@@ -2080,7 +2140,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -2092,8 +2151,9 @@ class ReportService {
     final tProfit = list.fold<double>(0, (a, p) => a + p.profit);
     final tMargin = tRevenue == 0 ? 0.0 : (tProfit / tRevenue) * 100;
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -2178,7 +2238,6 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 
   static Future<Uint8List> exportInvoiceStatusPdf(
@@ -2188,7 +2247,6 @@ class ReportService {
     bool showFooterBranding = true,
   }) async {
     final theme = await PdfFontService.loadTheme();
-    final doc = pw.Document(theme: theme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final dateFmt = (await BackendServices.settings.getDateFormat()).key;
     final generatedOn = DateFormat(dateFmt, 'en_US').format(DateTime.now());
@@ -2203,8 +2261,9 @@ class ReportService {
     final tPaid = list.fold<double>(0, (a, r) => a + r.paid);
     final tOutstanding = list.fold<double>(0, (a, r) => a + r.outstanding);
 
-    doc.addPage(
-      pw.MultiPage(
+    return _shapedPdf(
+      theme,
+      () => pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         header: (context) => pw.Column(
@@ -2291,6 +2350,5 @@ class ReportService {
         ],
       ),
     );
-    return doc.save();
   }
 }

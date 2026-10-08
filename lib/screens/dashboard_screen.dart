@@ -1791,7 +1791,9 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         ),
         content: SizedBox(
           width: 380,
-          child: Column(
+          // Ten shortcuts: scrolls on a short window instead of overflowing.
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: AppShortcuts.all(context)
                 .map((s) => Padding(
@@ -1824,6 +1826,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                       ),
                     ))
                 .toList(),
+            ),
           ),
         ),
         actions: [
@@ -2179,7 +2182,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                       final isOverdue =
                                           InvoiceCalculator.isOverdue(
                                         dueDate: invoice.dueDate,
-                                        outstanding: invoice.outstandingBalance,
+                                        outstanding: invoice.balanceDue,
                                       );
                                       return Container(
                                         width: 38,
@@ -2334,7 +2337,7 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
                                                     InvoiceCalculator.isOverdue(
                                                   dueDate: invoice.dueDate,
                                                   outstanding: invoice
-                                                      .outstandingBalance,
+                                                      .balanceDue,
                                                 );
                                                 final color = isOverdue
                                                     ? Colors.red[700]!
@@ -4837,7 +4840,8 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
         }
       },
       itemBuilder: (ctx) => [
-        if (inv.status != 'declined')
+        // Only invoices take payments: a receipt is paid when it is made.
+        if (inv.type == 'Invoice' && inv.status != 'declined')
           PopupMenuItem(
             value: 'payment',
             child: Row(children: [

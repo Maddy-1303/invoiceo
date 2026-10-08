@@ -9,7 +9,8 @@ import 'package:invoiceo/models/invoice_payment.dart';
 import 'package:invoiceo/services/pdf/pdf_font_service.dart';
 import 'package:invoiceo/services/pdf/pdf_widgets.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'package:invoiceo/services/pdf/shaped_pw.dart' as pw;
+import 'package:invoiceo/services/pdf/shaped_text_rasterizer.dart';
 import 'package:printing/printing.dart';
 
 class PaymentReceiptService {
@@ -22,7 +23,7 @@ class PaymentReceiptService {
     InvoicePayment payment,
   ) async {
     try {
-      final pdf = await _generatePDF(invoice, payment);
+      final pdf = await generatePDF(invoice, payment);
       await Printing.layoutPdf(
         onLayout: (_) async => pdf.save(),
         name: '${payment.receiptNumber}.pdf',
@@ -38,12 +39,14 @@ class PaymentReceiptService {
 
   // ─── PDF generation ───────────────────────────────────────────────────────
 
-  static Future<pw.Document> _generatePDF(
+  /// Builds the receipt PDF. Tamil and other complex scripts are shaped
+  /// correctly (see [ShapedTextRasterizer.buildWithShaping]).
+  @visibleForTesting
+  static Future<pw.Document> generatePDF(
     Invoice invoice,
     InvoicePayment payment,
   ) async {
     final pdfTheme = await PdfFontService.loadTheme();
-    final pdf = pw.Document(theme: pdfTheme);
     final company = await BackendServices.companyInfo.getCompanyInfo();
     final base64Logo = await BackendServices.settings.getCompanyLogo();
     // An empty string means the logo was removed.
@@ -56,24 +59,26 @@ class PaymentReceiptService {
         await BackendServices.settings.getSetting(SettingKey.invoiceLeadingZeros);
     final showLeadingZeros = leadingZerosStr != 'false';
 
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        theme: pdfTheme,
-        margin: const pw.EdgeInsets.all(40),
-        build: (ctx) => _buildReceiptBody(
-          company: company,
-          invoice: invoice,
-          payment: payment,
-          sym: sym,
-          logoImage: logoImage,
-          dateFmt: dateFmt,
-          showLeadingZeros: showLeadingZeros,
+    // Each shaping pass needs a fresh document and no side effects.
+    return ShapedTextRasterizer.buildWithShaping(
+      () => pw.Document(theme: pdfTheme)
+        ..addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            theme: pdfTheme,
+            margin: const pw.EdgeInsets.all(40),
+            build: (ctx) => _buildReceiptBody(
+              company: company,
+              invoice: invoice,
+              payment: payment,
+              sym: sym,
+              logoImage: logoImage,
+              dateFmt: dateFmt,
+              showLeadingZeros: showLeadingZeros,
+            ),
+          ),
         ),
-      ),
     );
-
-    return pdf;
   }
 
   static pw.Widget _buildReceiptBody({

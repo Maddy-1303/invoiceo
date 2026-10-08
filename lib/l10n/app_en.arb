@@ -2167,7 +2167,7 @@
   "reportsTaxCollectedLabel": "Tax",
   "reportsTaxableAmountLabel": "Taxable Amount",
   "reportsGrossAmountLabel": "Gross",
-  "reportsTaxAccrualNote": "Tax charged on invoices dated in this period — accrual basis, before payment.",
+  "reportsTaxAccrualNote": "Tax charged on invoices and receipts dated in this period — accrual basis, before payment.",
   "reportsTaxRateBucketsLabel": "Tax Rate Buckets",
   "reportsTodayLabel": "Today",
   "reportsTopCustomersByRevenueTitle": "Top {count} Customers by Revenue",
@@ -3464,5 +3464,25 @@
   "autoPrintAfterCreateSubtitle": "Creating an invoice (button or Ctrl+S) also prints it. Ctrl+P or F11 always creates and prints. A thermal receipt goes straight to the saved printer; other templates open the print dialog. Modern layout only (choose it in Settings > Accessibility).",
   "@autoPrintAfterCreateSubtitle": {
     "description": "Settings: user management stat cards / auto-print tile"
+  },
+  "shortcutSearchDescription": "Search help and settings (Modern layout; Cmd + K on a Mac)",
+  "@shortcutSearchDescription": {
+    "description": "Keyboard shortcuts list (Settings > Accessibility, dashboard help)"
+  },
+  "shortcutCreatedNewInvoiceDescription": "After creating: start a new invoice",
+  "@shortcutCreatedNewInvoiceDescription": {
+    "description": "Keyboard shortcuts list (Settings > Accessibility, dashboard help)"
+  },
+  "shortcutCreatedNewReceiptDescription": "After creating: start a new receipt",
+  "@shortcutCreatedNewReceiptDescription": {
+    "description": "Keyboard shortcuts list (Settings > Accessibility, dashboard help)"
+  },
+  "shortcutCreateAndPrintDescription": "Create and print (same as Ctrl + P)",
+  "@shortcutCreateAndPrintDescription": {
+    "description": "Keyboard shortcuts list (Settings > Accessibility, dashboard help)"
+  },
+  "pdfPreviewErrorMessage": "Could not show the preview. Use Print or Download instead.",
+  "@pdfPreviewErrorMessage": {
+    "description": "PDF preview dialog: shown when the preview cannot be drawn"
   }
 }

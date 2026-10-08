@@ -55,6 +55,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   int? _highlightCustomIndex;
   Object? _handledAccessibilityToken;
 
+  // Modern: the open section's buttons (Save, Reset...), shown in the top
+  // bar next to its title. Cleared whenever another section opens.
+  final _sectionActions = ValueNotifier<List<Widget>>(const []);
+  int? _actionsSectionId;
+
   // Update check state — shared between the NavigationRail badge and
   // AppInfoScreen, so it lives here rather than duplicated in both.
   UpdateInfo? _updateInfo;
@@ -64,6 +69,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   @override
   void initState() {
     super.initState();
+    _sectionActions.addListener(_pushSectionActions);
     // Company Info is the default landing tab; Companies (rail position 0
     // on offline editions) is opened explicitly, not landed on by default.
     _selectedIndex =
@@ -146,6 +152,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       }
     });
   }
+
+  @override
+  void dispose() {
+    _sectionActions.removeListener(_pushSectionActions);
+    _sectionActions.dispose();
+    super.dispose();
+  }
+
+  /// A section sent new buttons: update the top bar straight away (the
+  /// Settings page itself does not need to rebuild).
+  void _pushSectionActions() {
+    if (!mounted) return;
+    final scope = ModernHeaderScope.maybeOf(context);
+    if (scope == null) return;
+    scope.notifier.value = _modernHeader(scope.page);
+  }
+
+  ModernPageHeader _modernHeader(int page) => ModernPageHeader(
+        page: page,
+        title: _sectionTitle(ref.read(appEditionConfigProvider)),
+        subtitle: AppLocalizations.of(context)!.navSettings,
+        actions: _sectionActions.value,
+      );
+
+  /// The open section's id (Software Info for a non-admin).
+  int _openSectionId(AppEditionConfig cfg) {
+    final railOrder = _railOrder(cfg);
+    if (!widget.currentUser.isAdmin()) return _idSoftwareInfo;
+    return _selectedIndex < railOrder.length ? railOrder[_selectedIndex] : -1;
+  }
+
+  /// Modern: lets the open section put its buttons in the top bar.
+  Widget _withSectionScope(Widget section) => hasModernTopBar
+      ? ModernSectionScope(actions: _sectionActions, child: section)
+      : section;
 
   Widget _buildAppInfoScreen() {
     return AppInfoScreen(
@@ -236,10 +277,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   /// The open section's name (the Modern top bar shows it).
   String _sectionTitle(AppEditionConfig cfg) {
     final l10n = AppLocalizations.of(context)!;
-    final railOrder = _railOrder(cfg);
-    final id = !widget.currentUser.isAdmin()
-        ? _idSoftwareInfo
-        : (_selectedIndex < railOrder.length ? railOrder[_selectedIndex] : -1);
+    final id = _openSectionId(cfg);
     return switch (id) {
       _idCompanies => l10n.settingsNavCompaniesLabel,
       _idCompanyInfo => l10n.settingsNavCompanyInfoLabel,
@@ -248,7 +286,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       _idUsers => l10n.settingsNavUsersLabel,
       _idPdf => l10n.pdfSettingsTitle,
       _idInvoice => l10n.invoiceSettingsAppBarTitle,
-      _idProductColumns => l10n.settingsNavProductDetailsLabel,
+      _idProductColumns => l10n.productColumnsScreenTitle,
       _idCustomize => l10n.settingsNavCustomizeLabel,
       _idAccessibility => l10n.settingsNavAccessibilityLabel,
       _idSoftwareInfo => l10n.settingsNavSoftwareInfoLabel,
@@ -259,16 +297,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   @override
   Widget build(BuildContext context) {
     final cfg = ref.watch(appEditionConfigProvider);
-    // Modern: the top bar says which section is open ("PDF Settings"...).
+    // Modern: the top bar says which section is open ("PDF Settings"...),
+    // with that section's buttons.
     if (hasModernTopBar) {
-      publishModernHeader((page) => ModernPageHeader(
-            page: page,
-            title: _sectionTitle(cfg),
-            subtitle: AppLocalizations.of(context)!.navSettings,
-          ));
+      final id = _openSectionId(cfg);
+      if (_actionsSectionId != id) {
+        // Runs before the new section sends its own buttons (same frame).
+        _actionsSectionId = id;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _sectionActions.value = const [];
+        });
+      }
+      publishModernHeader(_modernHeader);
     }
     if (!widget.currentUser.isAdmin()) {
-      return _buildAppInfoScreen();
+      return _withSectionScope(_buildAppInfoScreen());
     }
     final l10n = AppLocalizations.of(context)!;
 
@@ -367,7 +410,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _buildContent(cfg)),
+          Expanded(child: _withSectionScope(_buildContent(cfg))),
         ],
       ),
     );

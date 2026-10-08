@@ -3500,7 +3500,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get reportsTaxAccrualNote =>
-      'இந்தக் காலத்தில் தேதியிடப்பட்ட விலைப்பட்டியல்களுக்கு விதிக்கப்பட்ட வரி — பணம் செலுத்தப்படுவதற்கு முன்பே, விலைப்பட்டியல் தேதி அடிப்படையில் கணக்கிடப்படுகிறது.';
+      'இந்தக் காலத்தில் தேதியிடப்பட்ட விலைப்பட்டியல்கள் மற்றும் ரசீதுகளுக்கு விதிக்கப்பட்ட வரி — பணம் செலுத்தப்படுவதற்கு முன்பே, தேதி அடிப்படையில் கணக்கிடப்படுகிறது.';
 
   @override
   String get reportsTaxRateBucketsLabel => 'வரி விகிதப் பிரிவுகள்';
@@ -5622,4 +5622,24 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       'விலைப்பட்டியலை உருவாக்கும்போது (பொத்தான் அல்லது Ctrl+S) அதுவும் அச்சிடப்படும். Ctrl+P அல்லது F11 எப்போதும் உருவாக்கி அச்சிடும். வெப்ப ரசீது சேமித்த அச்சுப்பொறிக்கு நேரடியாகச் செல்லும்; மற்ற வார்ப்புருக்கள் அச்சு உரையாடலைத் திறக்கும். Modern வடிவமைப்பில் மட்டும் (அமைப்புகள் > அணுகல்தன்மையில் தேர்வு செய்யவும்).';
+
+  @override
+  String get shortcutSearchDescription =>
+      'உதவி மற்றும் அமைப்புகளில் தேடு (Modern வடிவமைப்பு; Mac-இல் Cmd + K)';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription =>
+      'உருவாக்கிய பின்: புதிய விலைப்பட்டியலைத் தொடங்கு';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription =>
+      'உருவாக்கிய பின்: புதிய ரசீதைத் தொடங்கு';
+
+  @override
+  String get shortcutCreateAndPrintDescription =>
+      'உருவாக்கி அச்சிடு (Ctrl + P போலவே)';
+
+  @override
+  String get pdfPreviewErrorMessage =>
+      'முன்னோட்டத்தைக் காட்ட முடியவில்லை. அதற்குப் பதிலாக அச்சிடு அல்லது பதிவிறக்கு என்பதைப் பயன்படுத்தவும்.';
 }

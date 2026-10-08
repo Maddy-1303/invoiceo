@@ -1,7 +1,7 @@
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/models/company_info.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'shaped_pw.dart' as pw;
 
 /// Shared professional header for report-style PDFs (customer statement,
 /// daily report, ...): company block on the left, report title + generation

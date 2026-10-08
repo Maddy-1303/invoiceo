@@ -9,6 +9,7 @@ import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/common/supported_currencies.dart';
 import 'package:invoiceo/models/custom_field_def.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
@@ -24,7 +25,7 @@ class InvoiceSettingsScreenV2 extends ConsumerStatefulWidget {
 }
 
 class _InvoiceSettingsScreenV2State
-    extends ConsumerState<InvoiceSettingsScreenV2> {
+    extends ConsumerState<InvoiceSettingsScreenV2> with ModernSectionActions {
   final TextEditingController invoicePrefixController = TextEditingController();
   final TextEditingController invoiceStartingNumberController =
       TextEditingController();
@@ -386,7 +387,12 @@ class _InvoiceSettingsScreenV2State
   }
 
   @override
-  Widget build(BuildContext context) => _buildV2(context);
+  Widget build(BuildContext context) {
+    // Modern: no own title bar; Save goes to the top bar (not the side
+    // rail or the bottom bar).
+    if (inModernTopBar) publishSectionActions(() => [_topBarSaveV2()]);
+    return _buildV2(context);
+  }
 
   // ============================================================
   // V2 — settings grouped into sections behind a nav rail, instead of
@@ -1896,6 +1902,18 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
+  /// Save, for the Modern top bar. Off until the settings are loaded.
+  Widget _topBarSaveV2() {
+    final l10n = AppLocalizations.of(context)!;
+    return ModernTopBarButton.primary(
+      key: const ValueKey('invoiceSettingsSave'),
+      icon: Icons.save_rounded,
+      label:
+          _isSaving ? l10n.createInvoiceSavingEllipsisLabel : l10n.actionSave,
+      onPressed: (_isLoading || _isSaving) ? null : _saveSettings,
+    );
+  }
+
   Widget _navRailV2() {
     return SizedBox(
       width: 240,
@@ -1966,10 +1984,12 @@ class _InvoiceSettingsScreenV2State
                 padding: const EdgeInsets.all(16),
                 child: _promoCardV2(),
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: _saveButtonV2(),
-            ),
+            // Modern: Save is in the top bar.
+            if (!inModernTopBar)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: _saveButtonV2(),
+              ),
           ],
         ),
       ),
@@ -2054,10 +2074,13 @@ class _InvoiceSettingsScreenV2State
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? null
             : BrandColors.page,
-        appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.invoiceSettingsAppBarTitle),
-          centerTitle: false,
-        ),
+        appBar: inModernTopBar
+            ? null
+            : AppBar(
+                title: Text(
+                    AppLocalizations.of(context)!.invoiceSettingsAppBarTitle),
+                centerTitle: false,
+              ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -2066,11 +2089,15 @@ class _InvoiceSettingsScreenV2State
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : BrandColors.page,
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.invoiceSettingsAppBarTitle),
-        elevation: 0,
-        centerTitle: false,
-      ),
+      // Modern: the top bar shows the title (and Save).
+      appBar: inModernTopBar
+          ? null
+          : AppBar(
+              title: Text(
+                  AppLocalizations.of(context)!.invoiceSettingsAppBarTitle),
+              elevation: 0,
+              centerTitle: false,
+            ),
       body: LayoutBuilder(builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 900;
 
@@ -2105,9 +2132,8 @@ class _InvoiceSettingsScreenV2State
           );
         }
 
-        // Narrow: rail collapses to a horizontal chip strip; Save (and the
-        // custom-fields promo) move into a bottom bar so both stay
-        // reachable without needing a persistent side rail.
+        // Narrow: rail collapses to a horizontal chip strip; Save moves into
+        // a bottom bar (in Modern it is in the top bar, so no bottom bar).
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -2135,18 +2161,19 @@ class _InvoiceSettingsScreenV2State
                 ),
               ),
             ),
-            Container(
-              key: const ValueKey('invoiceSettingsSaveBar'),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainer,
-                border: Border(
-                  top: BorderSide(
-                      color: Theme.of(context).colorScheme.outlineVariant),
+            if (!inModernTopBar)
+              Container(
+                key: const ValueKey('invoiceSettingsSaveBar'),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  border: Border(
+                    top: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant),
+                  ),
                 ),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                child: _saveButtonV2(),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-              child: _saveButtonV2(),
-            ),
           ],
         );
       }),

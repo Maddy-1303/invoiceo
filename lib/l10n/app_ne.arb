@@ -927,7 +927,7 @@
   "reportsTaxCollectedByRateTitle": "दर अनुसार संकलित कर",
   "reportsTaxableAmountLabel": "करयोग्य रकम",
   "reportsGrossAmountLabel": "कुल",
-  "reportsTaxAccrualNote": "यस अवधिको मिति भएका बिजकहरूमा लगाइएको कर — प्रोद्भवन आधार, भुक्तानीअघि।",
+  "reportsTaxAccrualNote": "यस अवधिको मिति भएका बिजक र रसिदहरूमा लगाइएको कर — प्रोद्भवन आधार, भुक्तानीअघि।",
   "reportsTaxCollectedLabel": "संकलित कर",
   "reportsTaxRateBucketsLabel": "कर दर समूहहरू",
   "reportsTodayLabel": "आज",
@@ -1496,5 +1496,10 @@
   "userMgmtStatRegularUsers": "सामान्य प्रयोगकर्ता",
   "userMgmtStatStandardAccess": "सामान्य पहुँच",
   "autoPrintAfterCreateTitle": "बनाएपछि आफैं प्रिन्ट गर्नुहोस्",
-  "autoPrintAfterCreateSubtitle": "इनभ्वाइस बनाउँदा (बटन वा Ctrl+S) त्यो प्रिन्ट पनि हुन्छ। Ctrl+P वा F11 ले सधैं बनाएर प्रिन्ट गर्छ। थर्मल रसिद सिधै सुरक्षित प्रिन्टरमा जान्छ; अरू टेम्प्लेटले प्रिन्ट संवाद खोल्छन्। Modern लेआउटमा मात्र (सेटिङ > पहुँचयोग्यतामा छान्नुहोस्)।"
+  "autoPrintAfterCreateSubtitle": "इनभ्वाइस बनाउँदा (बटन वा Ctrl+S) त्यो प्रिन्ट पनि हुन्छ। Ctrl+P वा F11 ले सधैं बनाएर प्रिन्ट गर्छ। थर्मल रसिद सिधै सुरक्षित प्रिन्टरमा जान्छ; अरू टेम्प्लेटले प्रिन्ट संवाद खोल्छन्। Modern लेआउटमा मात्र (सेटिङ > पहुँचयोग्यतामा छान्नुहोस्)।",
+  "shortcutSearchDescription": "मद्दत र सेटिङमा खोज्नुहोस् (Modern लेआउट; Mac मा Cmd + K)",
+  "shortcutCreatedNewInvoiceDescription": "बनाएपछि: नयाँ इनभ्वाइस सुरु गर्नुहोस्",
+  "shortcutCreatedNewReceiptDescription": "बनाएपछि: नयाँ रसिद सुरु गर्नुहोस्",
+  "shortcutCreateAndPrintDescription": "बनाउनुहोस् र प्रिन्ट गर्नुहोस् (Ctrl + P जस्तै)",
+  "pdfPreviewErrorMessage": "पूर्वावलोकन देखाउन सकिएन। यसको सट्टा प्रिन्ट वा डाउनलोड प्रयोग गर्नुहोस्।"
 }

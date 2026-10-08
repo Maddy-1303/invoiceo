@@ -8,6 +8,7 @@ import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/widgets/template_list_tile.dart';
 import 'package:invoiceo/widgets/saved_thermal_printer_tile.dart';
 
@@ -21,7 +22,8 @@ class PdfSettingsScreenV2 extends ConsumerStatefulWidget {
       _PdfSettingsScreenV2State();
 }
 
-class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
+class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
+    with ModernSectionActions {
   InvoiceTemplate _savedTemplate = InvoiceTemplate.classic;
   InvoiceTemplate _previewedTemplate = InvoiceTemplate.classic;
   String? _savedThemeColorHex;
@@ -167,6 +169,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
           ref.read(settingsRepositoryProvider).setSetting(
               key, _previewedPdfSectionSizes[key] ?? ''),
       ]);
+      // Another section may have been opened while saving.
+      if (!mounted) return;
       setState(() {
         _savedTemplate = _previewedTemplate;
         _savedThemeColorHex = _previewedThemeColorHex;
@@ -288,7 +292,16 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       _defaultThemeColor(_previewedTemplate);
 
   @override
-  Widget build(BuildContext context) => _buildV2(context);
+  Widget build(BuildContext context) {
+    // Modern: no own title bar; Reset and Save go to the top bar.
+    if (inModernTopBar) {
+      // On a small window Reset is icon-only and Save says just "Save", so
+      // long labels (Tamil) still fit.
+      final small = MediaQuery.sizeOf(context).width < 1000;
+      publishSectionActions(() => _topBarActionsV2(small));
+    }
+    return _buildV2(context);
+  }
 
   // ============================================================
   // V2 — flat / modern layout. Reuses all v1 state, controllers,
@@ -418,6 +431,45 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
         ],
       ),
     );
+  }
+
+  /// The title bar's buttons, for the Modern top bar.
+  List<Widget> _topBarActionsV2(bool small) {
+    final l10n = AppLocalizations.of(context)!;
+    final onReset = _isSaving ? null : _resetToDefaultV2;
+    return [
+      if (small)
+        IconButton(
+          key: const ValueKey('pdfSettingsReset'),
+          tooltip: l10n.pdfSettingsResetToDefaultButton,
+          icon: const Icon(Icons.restart_alt_rounded),
+          onPressed: onReset,
+        )
+      else
+        Tooltip(
+          message: l10n.pdfSettingsResetToDefaultButton,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: ModernTopBarButton.soft(
+              key: const ValueKey('pdfSettingsReset'),
+              icon: Icons.restart_alt_rounded,
+              label: l10n.pdfSettingsResetToDefaultButton,
+              onPressed: onReset,
+            ),
+          ),
+        ),
+      const SizedBox(width: 8),
+      ModernTopBarButton.primary(
+        key: const ValueKey('pdfSettingsSave'),
+        icon: Icons.save_rounded,
+        label: _isSaving
+            ? l10n.createInvoiceSavingEllipsisLabel
+            : small
+                ? l10n.actionSave
+                : l10n.pdfSettingsSaveSettingsButton,
+        onPressed: (_hasUnsavedChangeV2 && !_isSaving) ? _saveTemplate : null,
+      ),
+    ];
   }
 
   Widget _templatesColumnV2() {
@@ -691,7 +743,8 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2> {
       body: SafeArea(
         child: Column(
           children: [
-            _headerBarV2(),
+            // Modern: the title and its buttons are in the top bar.
+            if (!inModernTopBar) _headerBarV2(),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {

@@ -92,6 +92,16 @@ After that, 6 agents fixed the findings in parallel, each with its own files. A 
 - PDF file names keep Tamil and other non-Latin customer names.
 - "All currencies" report PDFs no longer label mixed sums with one symbol. The Top Customers / Products bars use the right scale.
 
+### Added after the first build (owner's decisions, 8 October)
+- **Receipts count as sales** in Reports and on both dashboards (Sales, Collected, Tax, Profit, top products and customers). A receipt is always paid, never outstanding. Invoice counts, invoice status and Outstanding stay invoices-only. Without receipts every number is unchanged (`test/receipts_in_reports_test.dart`).
+- **Tamil shaping in payment receipt, customer statement and report PDFs** (built through `ShapedTextRasterizer`, like invoices).
+- **The PDF preview uses `printing`'s `PdfPreview`** (free, Apache 2.0). The Syncfusion viewer and its 4 libraries are removed, so there is no commercial licence to manage and the public repo is fully open source.
+- **Settings in the Modern layout:**
+  - Every section's title bar is gone, and its buttons are in the top bar, like Reports: PDF Reset / Save, Invoice Save, Company Info language / theme / Save, New Company, Backup Refresh, Users Refresh / Add User, Product Details Save.
+  - Product Details shows "Customize Product Details" and uses the full width.
+  - Top-bar buttons shrink on narrow windows instead of pushing the menus off the edge.
+- **Keyboard shortcut list** now includes F11, Ctrl+N, Ctrl+R and Ctrl+K.
+
 ### Licence
 - Software Info shows "Based on Invoiso © 2025 ANOOP P · MIT License" and a **View licenses** button. The Invoiso licence is registered on that page and bundled in the app.
 - The original author's funding file and the old Invoiso build scripts are kept on disk but are not in the public repo.
@@ -141,8 +151,6 @@ After that, 6 agents fixed the findings in parallel, each with its own files. A 
 
 These were confirmed but left alone because they need a product decision or are larger than a safe day-before-release change:
 
-- **Receipts are not counted in reports and the dashboard** (revenue, tax, profit), although they take stock. Decide whether a Receipt is a sale. If it is, count `type IN ('Invoice','Receipt')` in `report_service.dart`. If not, stop receipts taking stock.
-- **Tamil text in payment receipt, customer statement and report PDFs** is drawn unshaped (letters can look broken). Invoice PDFs and bulk exports are correct. The fix is to build those PDFs through `ShapedTextRasterizer` the way invoice PDFs are built.
 - Customer / product export PDFs have English column headings.
 - Hindi, Nepali, French, Spanish and Chinese each miss 48 older strings, which show in English. Tibetan is about 87% done.
 - Stock is counted in whole units: fractional quantities (0.5 kg) are rounded when stock changes.
@@ -152,7 +160,6 @@ These were confirmed but left alone because they need a product decision or are 
 - Opening an invoice to edit and coming back resets the list's search and filters.
 - While still inside Settings, a business-type change shows in the sidebar only after leaving Settings.
 - A services-only business still sees product cards on the dashboard.
-- The keyboard-shortcut list misses Ctrl+K, Ctrl+N / Ctrl+R and F11.
 - Deleting a company leaves its backups in a folder the app no longer lists.
 - Dark mode: some white-on-light-blue chips have low contrast.
 - The payment dialogs ignore the date-format setting.
@@ -160,7 +167,6 @@ These were confirmed but left alone because they need a product decision or are 
 - **Existing invoices with tax off and tax-inclusive products** now show their true, higher total, and can turn from Paid to Partial. Check any such invoices after updating.
 - Thermal printing on macOS / Linux uses the normal print dialog (the USB plugin works only on Windows).
 - **Unsigned installers:** Windows SmartScreen and macOS Gatekeeper show warnings until the apps are code-signed (Windows) and notarised (Apple Developer ID).
-- Check that the Syncfusion PDF viewer's Community Licence covers Invoiceo, or switch the preview to `printing`'s PdfPreview.
 - The first website commit (now replaced) showed real-looking phone numbers in two screenshots. GitHub may keep that old commit reachable by its id for a while.
 
 ## 8. How to make the next release

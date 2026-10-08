@@ -3465,7 +3465,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportsTaxAccrualNote =>
-      'Impuesto cargado en facturas con fecha de este período — base devengo, antes del pago.';
+      'Impuesto cargado en facturas y recibos con fecha de este período — base devengo, antes del pago.';
 
   @override
   String get reportsTaxRateBucketsLabel => 'Rangos de tasa de impuesto';
@@ -5577,4 +5577,24 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       'Al crear una factura (botón o Ctrl+S) también se imprime. Ctrl+P o F11 siempre crea e imprime. Un recibo térmico va directo a la impresora guardada; las demás plantillas abren el diálogo de impresión. Solo en el diseño Modern (elígelo en Ajustes > Accesibilidad).';
+
+  @override
+  String get shortcutSearchDescription =>
+      'Buscar en la ayuda y los ajustes (diseño Modern; Cmd + K en Mac)';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription =>
+      'Después de crear: empezar una factura nueva';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription =>
+      'Después de crear: empezar un recibo nuevo';
+
+  @override
+  String get shortcutCreateAndPrintDescription =>
+      'Crear e imprimir (igual que Ctrl + P)';
+
+  @override
+  String get pdfPreviewErrorMessage =>
+      'No se pudo mostrar la vista previa. Usa Imprimir o Descargar.';
 }

@@ -4,6 +4,7 @@ import 'package:invoiceo/backup/backup_manager.dart';
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/database/company_registry_service.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/models/backup_info.dart';
 import 'package:invoiceo/widgets/restart_required_dialog.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
@@ -15,7 +16,8 @@ class BackupManagementScreen extends StatefulWidget {
   State<BackupManagementScreen> createState() => _BackupManagementScreenState();
 }
 
-class _BackupManagementScreenState extends State<BackupManagementScreen> {
+class _BackupManagementScreenState extends State<BackupManagementScreen>
+    with ModernSectionActions {
   final BackupManager _backupManager = BackupManager();
   List<BackupInfo> _backups = [];
   bool _isLoading = false;
@@ -191,17 +193,32 @@ class _BackupManagementScreenState extends State<BackupManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Modern: the top bar shows the title, so no AppBar here; its Refresh
+    // button goes to the top bar.
+    final modern = inModernTopBar;
+    if (modern) {
+      publishSectionActions(() => [
+            ModernTopBarButton.soft(
+              key: const ValueKey('backupRefreshButton'),
+              icon: Icons.refresh,
+              label: l10n.actionRefresh,
+              onPressed: _isLoading ? null : _loadBackups,
+            ),
+          ]);
+    }
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.backupManagementTitle),
-        actionsPadding: EdgeInsets.only(right: 50),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadBackups,
-          ),
-        ],
-      ),
+      appBar: modern
+          ? null
+          : AppBar(
+              title: Text(l10n.backupManagementTitle),
+              actionsPadding: EdgeInsets.only(right: 50),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _loadBackups,
+                ),
+              ],
+            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/models/user.dart';
 import 'package:invoiceo/utils/password_utils.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
@@ -16,7 +17,7 @@ class UserManagementScreenV2 extends ConsumerStatefulWidget {
 }
 
 class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, ModernSectionActions {
   List<User> _users = [];
   List<User> _filteredUsers = [];
   bool _isLoading = false;
@@ -1619,6 +1620,41 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
       );
     }
 
+    // Modern: the top bar shows the title, so the header row is not drawn;
+    // its Refresh and Add User buttons go to the top bar.
+    final modern = inModernTopBar;
+    if (modern) {
+      final l10n = AppLocalizations.of(context)!;
+      // On a small window Refresh is icon-only (as PDF Settings' Reset), so
+      // long labels (Tamil) still fit in the top bar.
+      final small = MediaQuery.sizeOf(context).width < 1000;
+      publishSectionActions(() => [
+            if (small)
+              IconButton(
+                key: const ValueKey('userMgmtRefreshButton'),
+                tooltip: l10n.actionRefresh,
+                icon: const Icon(Icons.refresh),
+                onPressed: _isLoading ? null : _loadUsers,
+              )
+            else
+              ModernTopBarButton.soft(
+                key: const ValueKey('userMgmtRefreshButton'),
+                icon: Icons.refresh,
+                label: l10n.actionRefresh,
+                onPressed: _isLoading ? null : _loadUsers,
+              ),
+            const SizedBox(width: 8),
+            // Off while the Add/Edit panel is open, so a click does not
+            // wipe the form being filled.
+            ModernTopBarButton.primary(
+              key: const ValueKey('userMgmtAddUserButton'),
+              icon: Icons.add,
+              label: l10n.userMgmtAddUserButton,
+              onPressed: _showAddPanelV2 ? null : _openAddPanelV2,
+            ),
+          ]);
+    }
+
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -1641,8 +1677,10 @@ class _UserManagementScreenV2State extends ConsumerState<UserManagementScreenV2>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _headerBarV2(),
-                            const SizedBox(height: 12),
+                            if (!modern) ...[
+                              _headerBarV2(),
+                              const SizedBox(height: 12),
+                            ],
                             _statCardsRowV2(),
                             const SizedBox(height: 12),
                             Container(

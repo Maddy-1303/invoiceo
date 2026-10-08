@@ -3443,7 +3443,7 @@ class AppLocalizationsNe extends AppLocalizations {
 
   @override
   String get reportsTaxAccrualNote =>
-      'यस अवधिको मिति भएका बिजकहरूमा लगाइएको कर — प्रोद्भवन आधार, भुक्तानीअघि।';
+      'यस अवधिको मिति भएका बिजक र रसिदहरूमा लगाइएको कर — प्रोद्भवन आधार, भुक्तानीअघि।';
 
   @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूहहरू';
@@ -5526,4 +5526,24 @@ class AppLocalizationsNe extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       'इनभ्वाइस बनाउँदा (बटन वा Ctrl+S) त्यो प्रिन्ट पनि हुन्छ। Ctrl+P वा F11 ले सधैं बनाएर प्रिन्ट गर्छ। थर्मल रसिद सिधै सुरक्षित प्रिन्टरमा जान्छ; अरू टेम्प्लेटले प्रिन्ट संवाद खोल्छन्। Modern लेआउटमा मात्र (सेटिङ > पहुँचयोग्यतामा छान्नुहोस्)।';
+
+  @override
+  String get shortcutSearchDescription =>
+      'मद्दत र सेटिङमा खोज्नुहोस् (Modern लेआउट; Mac मा Cmd + K)';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription =>
+      'बनाएपछि: नयाँ इनभ्वाइस सुरु गर्नुहोस्';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription =>
+      'बनाएपछि: नयाँ रसिद सुरु गर्नुहोस्';
+
+  @override
+  String get shortcutCreateAndPrintDescription =>
+      'बनाउनुहोस् र प्रिन्ट गर्नुहोस् (Ctrl + P जस्तै)';
+
+  @override
+  String get pdfPreviewErrorMessage =>
+      'पूर्वावलोकन देखाउन सकिएन। यसको सट्टा प्रिन्ट वा डाउनलोड प्रयोग गर्नुहोस्।';
 }

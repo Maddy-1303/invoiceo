@@ -73,6 +73,10 @@ class Invoice {
 
   bool get isConverted => status == 'converted';
 
+  /// A Receipt is a cash sale, paid in full when it is made. It never owes
+  /// anything and never takes a payment.
+  bool get isReceipt => type == 'Receipt';
+
   /// Text to render for the invoice number in PDF/receipt output, or null to omit the line entirely.
   String? pdfNumberText(String invoicePrefix, {bool showLeadingZeros = true}) {
     if (hideInvoiceNumber) {
@@ -113,11 +117,19 @@ class Invoice {
 
   double get amountPaid => payments.fold(0.0, (sum, p) => sum + p.amountPaid);
 
+  // Total minus payments, for any type. The PDF uses it (for example the UPI
+  // QR amount), so it is the same for receipts. To ask "is money still
+  // owed?" use [balanceDue] or [paymentStatus].
   double get outstandingBalance =>
       InvoiceCalculator.outstanding(total: total, paid: amountPaid);
 
-  PaymentStatus get paymentStatus =>
-      InvoiceCalculator.paymentStatus(total: total, paid: amountPaid);
+  /// What is still owed on this document. A receipt owes nothing.
+  double get balanceDue => isReceipt ? 0.0 : outstandingBalance;
+
+  /// A receipt is always paid.
+  PaymentStatus get paymentStatus => isReceipt
+      ? PaymentStatus.paid
+      : InvoiceCalculator.paymentStatus(total: total, paid: amountPaid);
 }
 
 extension _InvoiceItemTotals on InvoiceItem {

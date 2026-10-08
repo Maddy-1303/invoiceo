@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/providers/theme_provider.dart';
 import 'package:invoiceo/widgets/language_picker.dart';
@@ -27,7 +28,8 @@ class CompanyInfoScreen extends ConsumerStatefulWidget {
   ConsumerState<CompanyInfoScreen> createState() => _CompanyInfoScreenState();
 }
 
-class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
+class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen>
+    with ModernSectionActions {
   final nameController = TextEditingController();
   final addressController = TextEditingController();
   final phoneController = TextEditingController();
@@ -413,57 +415,51 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                 ],
               ));
 
+    final themeMode = ref.watch(themeModeProvider);
+    // Modern: language, theme and Save go to the top bar (rebuilt after
+    // every build, so Save shows "Saving..." while it saves).
+    final modern = inModernTopBar;
+    if (modern) {
+      publishSectionActions(() => [
+            const LanguagePicker(
+                key: ValueKey('companyInfoLanguage'), compact: true),
+            const SizedBox(width: 8),
+            _themeModeToggle(themeMode, l10n,
+                key: const ValueKey('companyInfoTheme')),
+            const SizedBox(width: 8),
+            ModernTopBarButton.primary(
+              key: const ValueKey('companyInfoSave'),
+              icon: Icons.save_rounded,
+              label: _isSaving
+                  ? l10n.createInvoiceSavingEllipsisLabel
+                  : l10n.actionSave,
+              onPressed: _isSaving ? null : _saveCompanyInfo,
+            ),
+          ]);
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : BrandColors.page,
-      appBar: AppBar(
-        title: Text(l10n.companyInfoAppBarTitle),
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          const Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: LanguagePicker(compact: true),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: SegmentedButton<ThemeMode>(
-              segments: [
-                ButtonSegment(
-                    value: ThemeMode.light,
-                    icon: const Icon(Icons.light_mode_outlined),
-                    tooltip: l10n.themeLight),
-                ButtonSegment(
-                    value: ThemeMode.dark,
-                    icon: const Icon(Icons.dark_mode_outlined),
-                    tooltip: l10n.themeDark),
-                ButtonSegment(
-                    value: ThemeMode.system,
-                    icon: const Icon(Icons.brightness_auto_outlined),
-                    tooltip: l10n.themeSystem),
+      // Modern: no title bar here; its buttons are in the top bar.
+      appBar: modern
+          ? null
+          : AppBar(
+              title: Text(l10n.companyInfoAppBarTitle),
+              elevation: 0,
+              centerTitle: false,
+              actions: [
+                const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: LanguagePicker(compact: true),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: _themeModeToggle(themeMode, l10n),
+                ),
               ],
-              selected: {ref.watch(themeModeProvider)},
-              showSelectedIcon: false,
-              style: SegmentedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                selectedForegroundColor: Theme.of(context).primaryColor,
-                selectedBackgroundColor:
-                    Theme.of(context).primaryColor.withValues(alpha: 0.12),
-                side: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant),
-              ),
-              onSelectionChanged: (selection) {
-                final mode = selection.first;
-                ref.read(themeModeProvider.notifier).state = mode;
-                ref
-                    .read(settingsRepositoryProvider)
-                    .setThemeMode(themeModeToKey(mode));
-              },
             ),
-          ),
-        ],
-      ),
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -569,35 +565,36 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
                       ),
                     ),
                   ),
-                  // Save button pinned at bottom
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSaving ? null : _saveCompanyInfo,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.save_rounded),
-                        label: Text(_isSaving
-                            ? l10n.createInvoiceSavingEllipsisLabel
-                            : l10n.actionSave),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppBorderRadius.small),
+                  // Save button pinned at bottom (in the top bar in Modern)
+                  if (!modern)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSaving ? null : _saveCompanyInfo,
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.save_rounded),
+                          label: Text(_isSaving
+                              ? l10n.createInvoiceSavingEllipsisLabel
+                              : l10n.actionSave),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppBorderRadius.small),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -1169,6 +1166,43 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen> {
         ],
       ),
     );
+  }
+
+  /// Light / Dark / System switch (title bar, or the Modern top bar).
+  Widget _themeModeToggle(ThemeMode mode, AppLocalizations l10n, {Key? key}) {
+    return Builder(builder: (context) {
+      final theme = Theme.of(context);
+      return SegmentedButton<ThemeMode>(
+        key: key,
+        segments: [
+          ButtonSegment(
+              value: ThemeMode.light,
+              icon: const Icon(Icons.light_mode_outlined),
+              tooltip: l10n.themeLight),
+          ButtonSegment(
+              value: ThemeMode.dark,
+              icon: const Icon(Icons.dark_mode_outlined),
+              tooltip: l10n.themeDark),
+          ButtonSegment(
+              value: ThemeMode.system,
+              icon: const Icon(Icons.brightness_auto_outlined),
+              tooltip: l10n.themeSystem),
+        ],
+        selected: {mode},
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          foregroundColor: theme.colorScheme.onSurfaceVariant,
+          selectedForegroundColor: theme.primaryColor,
+          selectedBackgroundColor: theme.primaryColor.withValues(alpha: 0.12),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+        onSelectionChanged: (selection) {
+          final mode = selection.first;
+          ref.read(themeModeProvider.notifier).state = mode;
+          ref.read(settingsRepositoryProvider).setThemeMode(themeModeToKey(mode));
+        },
+      );
+    });
   }
 
   Widget _sectionLabel(String title) {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/layouts/ui_layout.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
@@ -17,7 +18,8 @@ class AccessibilityScreen extends ConsumerStatefulWidget {
       _AccessibilityScreenState();
 }
 
-class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
+class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen>
+    with ModernSectionActions {
   /// Applies and saves the screen layout for the whole app.
   Future<void> _setUiLayout(UiLayout layout) async {
     if (layout == ref.read(uiLayoutProvider)) return;
@@ -36,11 +38,14 @@ class _AccessibilityScreenState extends ConsumerState<AccessibilityScreen> {
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : BrandColors.page,
-      appBar: AppBar(
-        title: Text(l10n.settingsNavAccessibilityLabel),
-        elevation: 0,
-        centerTitle: false,
-      ),
+      // Modern: the top bar already shows "Accessibility".
+      appBar: inModernTopBar
+          ? null
+          : AppBar(
+              title: Text(l10n.settingsNavAccessibilityLabel),
+              elevation: 0,
+              centerTitle: false,
+            ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Center(

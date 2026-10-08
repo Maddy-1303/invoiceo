@@ -773,8 +773,14 @@ class InvoiceService {
             (row['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
       ).total;
       final paid = paidByInvoice[id] ?? 0.0;
-      final outstanding =
-          InvoiceCalculator.outstanding(total: total, paid: paid);
+      // A receipt is paid in full when it is made: never owed, never overdue.
+      final isReceipt = row['type'] == 'Receipt';
+      final outstanding = isReceipt
+          ? 0.0
+          : InvoiceCalculator.outstanding(total: total, paid: paid);
+      final status = isReceipt
+          ? PaymentStatus.paid
+          : InvoiceCalculator.paymentStatus(total: total, paid: paid);
 
       if (filter.hidePaid &&
           row['type'] == 'Invoice' &&
@@ -788,9 +794,7 @@ class InvoiceService {
           )) {
         continue;
       }
-      if (paymentFilter &&
-          InvoiceCalculator.paymentStatus(total: total, paid: paid).name !=
-              filter.paymentStatus) {
+      if (paymentFilter && status.name != filter.paymentStatus) {
         continue;
       }
       ids.add(id);
@@ -1091,8 +1095,78 @@ class InvoiceService {
   // ─────────────────────────────────────────────
   // Dashboard-specific targeted queries
 
+  /// Receipts (not trashed) with no payment rows, with their totals. A
+  /// receipt is a cash sale paid in full on its date, so its total counts
+  /// as collected on that date. A receipt that does have payment rows counts
+  /// through those rows instead (never both). [where] narrows the receipts
+  /// (columns of `invoices`); [args] fill its `?`.
+  static Future<List<({String date, String? customerName, double total})>>
+      _receiptsPaidOnTheirDate(Database db,
+          {String where = '1 = 1', List<Object?> args = const []}) async {
+    final receiptWhere = "type = 'Receipt' AND deleted_at IS NULL "
+        "AND (status IS NULL OR status != 'declined') "
+        'AND NOT EXISTS (SELECT 1 FROM invoice_payments '
+        'WHERE invoice_payments.invoice_id = invoices.id) '
+        'AND $where';
+    final rows = await db.query(
+      'invoices',
+      columns: [
+        'id',
+        'date',
+        'customer_name',
+        'tax_rate',
+        'tax_mode',
+        'additional_costs',
+        'invoice_discount_type',
+        'invoice_discount_value',
+      ],
+      where: receiptWhere,
+      whereArgs: args,
+    );
+    if (rows.isEmpty) return const [];
+
+    final itemRows = await db.rawQuery(
+      'SELECT invoice_id, unit_price, product_price, quantity, discount, '
+      'discount_per_unit, extra_cost, product_tax_rate, product_price_includes_tax '
+      'FROM invoice_items WHERE invoice_id IN '
+      '(SELECT id FROM invoices WHERE $receiptWhere) ORDER BY rowid ASC',
+      args,
+    );
+    final itemsByReceipt = <String, List<Map<String, dynamic>>>{};
+    for (final row in itemRows) {
+      itemsByReceipt.putIfAbsent(row['invoice_id'] as String, () => []).add(row);
+    }
+
+    return rows.map((row) {
+      final taxMode = TaxModeExtension.fromKey(row['tax_mode'] as String?);
+      final taxRate = (row['tax_rate'] as num?)?.toDouble() ?? 0.0;
+      final total = InvoiceTotalsCalculator.totals(
+        lines: (itemsByReceipt[row['id'] as String] ?? []).map((r) =>
+            InvoiceTotalsCalculator.lineFromDbRow(r,
+                taxMode: taxMode, globalTaxRatePercent: taxRate * 100)),
+        taxMode: taxMode,
+        globalTaxRate: taxRate,
+        globalTaxRateFormat: TaxRateFormat.fraction,
+        additionalCostsTotal:
+            AdditionalCost.listFromJson(row['additional_costs'] as String?)
+                .fold(0.0, (sum, cost) => sum + cost.amount),
+        invoiceDiscountType: InvoiceDiscountTypeExtension.fromKey(
+            row['invoice_discount_type'] as String?),
+        invoiceDiscountValue:
+            (row['invoice_discount_value'] as num?)?.toDouble() ?? 0.0,
+      ).total;
+      return (
+        date: row['date'] as String? ?? '',
+        customerName: row['customer_name'] as String?,
+        total: total,
+      );
+    }).toList();
+  }
+
   /// Returns invoice count, total revenue collected, and total outstanding
   /// using batch SQL — avoids loading full Invoice objects for summary data.
+  /// The count and outstanding are invoices only; revenue also counts
+  /// receipts (cash sales, paid in full on their date).
   static Future<({int count, double revenue, double outstanding})>
       getDashboardFinancials() async {
     final db = await dbHelper.database;
@@ -1105,16 +1179,19 @@ class InvoiceService {
     );
     final count = (countResult.first['cnt'] as int?) ?? 0;
 
-    // Revenue: pure SQL — no item loading needed
+    // Revenue: payments on invoices and receipts, plus every receipt that
+    // has no payment rows at its full total.
     final revenueResult = await db.rawQuery(
       'SELECT COALESCE(SUM(ip.amount_paid), 0.0) as revenue '
       'FROM invoice_payments ip '
       'JOIN invoices i ON ip.invoice_id = i.id '
-      'WHERE i.type = ? AND i.deleted_at IS NULL '
+      "WHERE i.type IN ('Invoice', 'Receipt') AND i.deleted_at IS NULL "
       "AND (i.status IS NULL OR i.status != 'declined')",
-      ['Invoice'],
     );
-    final revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
+    var revenue = (revenueResult.first['revenue'] as num?)?.toDouble() ?? 0.0;
+    for (final r in await _receiptsPaidOnTheirDate(db)) {
+      revenue += r.total;
+    }
 
     // Outstanding: batch-load invoice rows + items + payments (3 queries, no N+1)
     final invoiceRows = await db.query(
@@ -1302,6 +1379,8 @@ class InvoiceService {
 
   /// Revenue grouped by month for the last [months] calendar months.
   /// Returns rows with keys 'month' (YYYY-MM string) and 'revenue' (double).
+  /// Payments by their date, plus each receipt with no payment rows at its
+  /// full total on the receipt's date.
   static Future<List<Map<String, dynamic>>> getMonthlyRevenue(
       {int months = 6}) async {
     final db = await dbHelper.database;
@@ -1313,48 +1392,84 @@ class InvoiceService {
       "COALESCE(SUM(ip.amount_paid), 0.0) as revenue "
       "FROM invoice_payments ip "
       "JOIN invoices i ON ip.invoice_id = i.id "
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type IN ('Invoice', 'Receipt') AND i.deleted_at IS NULL "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND substr(ip.date_paid, 1, 10) >= ? "
       "GROUP BY substr(ip.date_paid, 1, 7) "
       "ORDER BY month ASC",
       [cutoffStr],
     );
-    return rows
-        .map((r) => {
-              'month': r['month'] as String,
-              'revenue': (r['revenue'] as num).toDouble()
-            })
+    final revenueByMonth = <String, double>{
+      for (final r in rows)
+        r['month'] as String: (r['revenue'] as num).toDouble()
+    };
+    final receipts = await _receiptsPaidOnTheirDate(db,
+        where: 'substr(date, 1, 10) >= ?', args: [cutoffStr]);
+    for (final r in receipts) {
+      if (r.date.length < 7) continue;
+      final month = r.date.substring(0, 7);
+      revenueByMonth[month] = (revenueByMonth[month] ?? 0.0) + r.total;
+    }
+    final monthKeys = revenueByMonth.keys.toList()..sort();
+    return monthKeys
+        .map((m) => <String, dynamic>{'month': m, 'revenue': revenueByMonth[m]!})
         .toList();
   }
 
-  /// Top [limit] customers by total payments received.
+  /// Top [limit] customers by total payments received. A receipt with no
+  /// payment rows counts at its full total (paid when it was made).
   static Future<List<Map<String, dynamic>>> getTopCustomers(
       {int limit = 5}) async {
     final db = await dbHelper.database;
     final rows = await db.rawQuery(
       'SELECT i.customer_name, '
       'COALESCE(SUM(ip.amount_paid), 0.0) as total_paid, '
-      'COUNT(DISTINCT i.id) as invoice_count '
+      "COUNT(DISTINCT CASE WHEN i.type = 'Invoice' THEN i.id END) "
+      'as invoice_count '
       'FROM invoices i '
       'LEFT JOIN invoice_payments ip ON i.id = ip.invoice_id '
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type IN ('Invoice', 'Receipt') AND i.deleted_at IS NULL "
       "AND (i.status IS NULL OR i.status != 'declined') "
       'GROUP BY i.customer_name '
-      'ORDER BY total_paid DESC, invoice_count DESC '
-      'LIMIT ?',
-      [limit],
+      'ORDER BY total_paid DESC, invoice_count DESC',
     );
-    return rows
-        .map((r) => {
-              'customer_name': r['customer_name'] as String? ?? '',
-              'total_paid': (r['total_paid'] as num).toDouble(),
-              'invoice_count': (r['invoice_count'] as int?) ?? 0,
+    // Receipt totals per customer name (a receipt always has its own row
+    // above, so every name here is in the SQL result).
+    final receiptPaid = <String?, double>{};
+    for (final r in await _receiptsPaidOnTheirDate(db)) {
+      receiptPaid[r.customerName] =
+          (receiptPaid[r.customerName] ?? 0.0) + r.total;
+    }
+    final ranked = [
+      for (var i = 0; i < rows.length; i++)
+        (
+          index: i,
+          name: rows[i]['customer_name'] as String?,
+          paid: (rows[i]['total_paid'] as num).toDouble() +
+              (receiptPaid[rows[i]['customer_name'] as String?] ?? 0.0),
+          count: (rows[i]['invoice_count'] as int?) ?? 0,
+        )
+    ]
+      // Same order as the SQL; ties keep the SQL order.
+      ..sort((a, b) {
+        final byPaid = b.paid.compareTo(a.paid);
+        if (byPaid != 0) return byPaid;
+        final byCount = b.count.compareTo(a.count);
+        if (byCount != 0) return byCount;
+        return a.index.compareTo(b.index);
+      });
+    return ranked
+        .take(limit)
+        .map((c) => <String, dynamic>{
+              'customer_name': c.name ?? '',
+              'total_paid': c.paid,
+              'invoice_count': c.count,
             })
         .toList();
   }
 
-  /// Top [limit] products by total units sold across all invoices.
+  /// Top [limit] products by total units sold across all invoices and
+  /// receipts.
   static Future<List<Map<String, dynamic>>> getTopProducts(
       {int limit = 5}) async {
     final db = await dbHelper.database;
@@ -1362,7 +1477,7 @@ class InvoiceService {
       'SELECT ii.product_name, COALESCE(SUM(ii.quantity), 0) as total_qty '
       'FROM invoice_items ii '
       'JOIN invoices i ON ii.invoice_id = i.id '
-      "WHERE i.type = 'Invoice' AND i.deleted_at IS NULL "
+      "WHERE i.type IN ('Invoice', 'Receipt') AND i.deleted_at IS NULL "
       "AND (i.status IS NULL OR i.status != 'declined') "
       "AND ii.product_name IS NOT NULL AND ii.product_name != '' "
       'GROUP BY ii.product_name '

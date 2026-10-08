@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:invoiceo/common/app_config.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/providers/app_config_provider.dart';
 import 'package:invoiceo/services/update_service.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
@@ -27,7 +28,8 @@ class AppInfoScreen extends ConsumerStatefulWidget {
   ConsumerState<AppInfoScreen> createState() => _AppInfoScreenState();
 }
 
-class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
+class _AppInfoScreenState extends ConsumerState<AppInfoScreen>
+    with ModernSectionActions {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
@@ -38,11 +40,15 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen> {
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? null
           : BrandColors.page,
-      appBar: AppBar(
-        title: Text(l10n.appInfoTitle),
-        elevation: 0,
-        centerTitle: false,
-      ),
+      // Modern: the top bar already shows "Software Info". The update
+      // buttons stay in the card below.
+      appBar: inModernTopBar
+          ? null
+          : AppBar(
+              title: Text(l10n.appInfoTitle),
+              elevation: 0,
+              centerTitle: false,
+            ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Center(

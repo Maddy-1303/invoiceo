@@ -111,6 +111,10 @@ class AppShortcuts {
       ('Ctrl + M', l10n.shortcutAddCustomItemDescription),
       ('Ctrl + O', l10n.shortcutPreviewPdfDescription),
       ('Ctrl + P', l10n.shortcutPrintPdfDescription),
+      ('F11', l10n.shortcutCreateAndPrintDescription),
+      ('Ctrl + N', l10n.shortcutCreatedNewInvoiceDescription),
+      ('Ctrl + R', l10n.shortcutCreatedNewReceiptDescription),
+      ('Ctrl + K', l10n.shortcutSearchDescription),
     ];
   }
 }

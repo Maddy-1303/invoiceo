@@ -3443,7 +3443,7 @@ class _InvoiceManagementScreenV2State
     final due = InvoiceCalculator.dateOnly(invoice.dueDate!);
     final isOverdue = InvoiceCalculator.isOverdue(
       dueDate: invoice.dueDate,
-      outstanding: invoice.outstandingBalance,
+      outstanding: invoice.balanceDue,
     );
     final isToday = due == today;
     final dueStr =

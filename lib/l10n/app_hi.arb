@@ -927,7 +927,7 @@
   "reportsTaxCollectedByRateTitle": "दर के अनुसार एकत्रित कर",
   "reportsTaxableAmountLabel": "कर योग्य राशि",
   "reportsGrossAmountLabel": "सकल",
-  "reportsTaxAccrualNote": "इस अवधि की तारीख वाले चालानों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।",
+  "reportsTaxAccrualNote": "इस अवधि की तारीख वाले चालानों और रसीदों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।",
   "reportsTaxCollectedLabel": "एकत्रित कर",
   "reportsTaxRateBucketsLabel": "कर दर समूह",
   "reportsTodayLabel": "आज",
@@ -1496,5 +1496,10 @@
   "userMgmtStatRegularUsers": "सामान्य उपयोगकर्ता",
   "userMgmtStatStandardAccess": "सामान्य पहुँच",
   "autoPrintAfterCreateTitle": "बनाने के बाद अपने-आप प्रिंट करें",
-  "autoPrintAfterCreateSubtitle": "इनवॉइस बनाने पर (बटन या Ctrl+S) वह प्रिंट भी होगा। Ctrl+P या F11 हमेशा बनाकर प्रिंट करता है। थर्मल रसीद सीधे सहेजे गए प्रिंटर पर जाती है; अन्य टेम्पलेट प्रिंट डायलॉग खोलते हैं। केवल Modern लेआउट में (सेटिंग्स > सुलभता में चुनें)।"
+  "autoPrintAfterCreateSubtitle": "इनवॉइस बनाने पर (बटन या Ctrl+S) वह प्रिंट भी होगा। Ctrl+P या F11 हमेशा बनाकर प्रिंट करता है। थर्मल रसीद सीधे सहेजे गए प्रिंटर पर जाती है; अन्य टेम्पलेट प्रिंट डायलॉग खोलते हैं। केवल Modern लेआउट में (सेटिंग्स > सुलभता में चुनें)।",
+  "shortcutSearchDescription": "मदद और सेटिंग्स में खोजें (Modern लेआउट; Mac पर Cmd + K)",
+  "shortcutCreatedNewInvoiceDescription": "बनाने के बाद: नया इनवॉइस शुरू करें",
+  "shortcutCreatedNewReceiptDescription": "बनाने के बाद: नई रसीद शुरू करें",
+  "shortcutCreateAndPrintDescription": "बनाएँ और प्रिंट करें (Ctrl + P जैसा)",
+  "pdfPreviewErrorMessage": "पूर्वावलोकन नहीं दिखा सके। इसके बजाय प्रिंट या डाउनलोड का उपयोग करें।"
 }

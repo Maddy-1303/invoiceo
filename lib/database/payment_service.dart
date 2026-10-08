@@ -80,7 +80,8 @@ class PaymentService {
 
   // ─────────────────────────────────────────────
   // Batch mark-as-paid: single DB transaction for N invoices.
-  // Skips invoices that are already paid within the standard money tolerance.
+  // Skips invoices that are already paid within the standard money tolerance,
+  // and receipts (paid in full when they are made).
   static Future<int> addPaymentBatch({
     required List<Invoice> invoices,
     required DateTime datePaid,
@@ -91,7 +92,7 @@ class PaymentService {
     int count = 0;
     await db.transaction((txn) async {
       for (final invoice in invoices) {
-        final amountPaid = invoice.outstandingBalance;
+        final amountPaid = invoice.balanceDue;
         if (amountPaid <= InvoiceCalculator.moneyEpsilon) continue;
 
         final suffixResult = await txn.rawQuery(
@@ -149,6 +150,8 @@ class PaymentService {
         final invoice = a.invoice;
         final amountPaid = a.amount;
         if (amountPaid <= InvoiceCalculator.moneyEpsilon) continue;
+        // A receipt is paid in full when it is made: it takes no payment.
+        if (invoice.isReceipt) continue;
 
         final sumResult = await txn.rawQuery(
           'SELECT COALESCE(SUM(amount_paid), 0.0) AS total FROM invoice_payments WHERE invoice_id = ?',

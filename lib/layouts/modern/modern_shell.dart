@@ -631,7 +631,7 @@ class ModernTopBar extends StatelessWidget {
           const SizedBox(width: 4),
         ],
         if (page != 0)
-          Expanded(child: _title(h, scheme))
+          Expanded(flex: 2, child: _title(h, scheme))
         else ...[
           Flexible(
             child: ConstrainedBox(
@@ -673,8 +673,22 @@ class ModernTopBar extends StatelessWidget {
           ),
           const Spacer(),
         ],
-        if (h != null)
-          for (final a in h.actions) ...[a, const SizedBox(width: 4)],
+        // The page's buttons shrink a little on a narrow window (Tamil
+        // labels, small screens) instead of pushing the menus off the edge.
+        if (h != null && h.actions.isNotEmpty)
+          Flexible(
+            flex: 3,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  for (final a in h.actions) ...[a, const SizedBox(width: 4)],
+                ]),
+              ),
+            ),
+          ),
         if (h?.createButton != null) ...[
           const SizedBox(width: 8),
           h!.createButton!,

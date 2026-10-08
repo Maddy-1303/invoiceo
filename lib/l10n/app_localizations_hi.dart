@@ -3427,7 +3427,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get reportsTaxAccrualNote =>
-      'इस अवधि की तारीख वाले चालानों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।';
+      'इस अवधि की तारीख वाले चालानों और रसीदों पर लगाया गया कर — प्रोद्भवन आधार, भुगतान से पहले।';
 
   @override
   String get reportsTaxRateBucketsLabel => 'कर दर समूह';
@@ -5497,4 +5497,24 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       'इनवॉइस बनाने पर (बटन या Ctrl+S) वह प्रिंट भी होगा। Ctrl+P या F11 हमेशा बनाकर प्रिंट करता है। थर्मल रसीद सीधे सहेजे गए प्रिंटर पर जाती है; अन्य टेम्पलेट प्रिंट डायलॉग खोलते हैं। केवल Modern लेआउट में (सेटिंग्स > सुलभता में चुनें)।';
+
+  @override
+  String get shortcutSearchDescription =>
+      'मदद और सेटिंग्स में खोजें (Modern लेआउट; Mac पर Cmd + K)';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription =>
+      'बनाने के बाद: नया इनवॉइस शुरू करें';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription =>
+      'बनाने के बाद: नई रसीद शुरू करें';
+
+  @override
+  String get shortcutCreateAndPrintDescription =>
+      'बनाएँ और प्रिंट करें (Ctrl + P जैसा)';
+
+  @override
+  String get pdfPreviewErrorMessage =>
+      'पूर्वावलोकन नहीं दिखा सके। इसके बजाय प्रिंट या डाउनलोड का उपयोग करें।';
 }

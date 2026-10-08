@@ -5693,7 +5693,7 @@ abstract class AppLocalizations {
   /// No description provided for @reportsTaxAccrualNote.
   ///
   /// In en, this message translates to:
-  /// **'Tax charged on invoices dated in this period — accrual basis, before payment.'**
+  /// **'Tax charged on invoices and receipts dated in this period — accrual basis, before payment.'**
   String get reportsTaxAccrualNote;
 
   /// No description provided for @reportsTaxRateBucketsLabel.
@@ -9259,6 +9259,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Creating an invoice (button or Ctrl+S) also prints it. Ctrl+P or F11 always creates and prints. A thermal receipt goes straight to the saved printer; other templates open the print dialog. Modern layout only (choose it in Settings > Accessibility).'**
   String get autoPrintAfterCreateSubtitle;
+
+  /// Keyboard shortcuts list (Settings > Accessibility, dashboard help)
+  ///
+  /// In en, this message translates to:
+  /// **'Search help and settings (Modern layout; Cmd + K on a Mac)'**
+  String get shortcutSearchDescription;
+
+  /// Keyboard shortcuts list (Settings > Accessibility, dashboard help)
+  ///
+  /// In en, this message translates to:
+  /// **'After creating: start a new invoice'**
+  String get shortcutCreatedNewInvoiceDescription;
+
+  /// Keyboard shortcuts list (Settings > Accessibility, dashboard help)
+  ///
+  /// In en, this message translates to:
+  /// **'After creating: start a new receipt'**
+  String get shortcutCreatedNewReceiptDescription;
+
+  /// Keyboard shortcuts list (Settings > Accessibility, dashboard help)
+  ///
+  /// In en, this message translates to:
+  /// **'Create and print (same as Ctrl + P)'**
+  String get shortcutCreateAndPrintDescription;
+
+  /// PDF preview dialog: shown when the preview cannot be drawn
+  ///
+  /// In en, this message translates to:
+  /// **'Could not show the preview. Use Print or Download instead.'**
+  String get pdfPreviewErrorMessage;
 }
 
 class _AppLocalizationsDelegate

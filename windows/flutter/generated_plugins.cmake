@@ -7,7 +7,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   printing
   screen_retriever_windows
   share_plus
-  syncfusion_pdfviewer_windows
   thermal_printer
   url_launcher_windows
   window_manager

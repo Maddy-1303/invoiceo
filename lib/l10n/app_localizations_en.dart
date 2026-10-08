@@ -3414,7 +3414,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsTaxAccrualNote =>
-      'Tax charged on invoices dated in this period — accrual basis, before payment.';
+      'Tax charged on invoices and receipts dated in this period — accrual basis, before payment.';
 
   @override
   String get reportsTaxRateBucketsLabel => 'Tax Rate Buckets';
@@ -5477,4 +5477,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get autoPrintAfterCreateSubtitle =>
       'Creating an invoice (button or Ctrl+S) also prints it. Ctrl+P or F11 always creates and prints. A thermal receipt goes straight to the saved printer; other templates open the print dialog. Modern layout only (choose it in Settings > Accessibility).';
+
+  @override
+  String get shortcutSearchDescription =>
+      'Search help and settings (Modern layout; Cmd + K on a Mac)';
+
+  @override
+  String get shortcutCreatedNewInvoiceDescription =>
+      'After creating: start a new invoice';
+
+  @override
+  String get shortcutCreatedNewReceiptDescription =>
+      'After creating: start a new receipt';
+
+  @override
+  String get shortcutCreateAndPrintDescription =>
+      'Create and print (same as Ctrl + P)';
+
+  @override
+  String get pdfPreviewErrorMessage =>
+      'Could not show the preview. Use Print or Download instead.';
 }

@@ -10,7 +10,6 @@
 #include <printing/printing_plugin.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
 #include <share_plus/share_plus_windows_plugin_c_api.h>
-#include <syncfusion_pdfviewer_windows/syncfusion_pdfviewer_windows_plugin.h>
 #include <thermal_printer/thermal_printer_plugin.h>
 #include <url_launcher_windows/url_launcher_windows.h>
 #include <window_manager/window_manager_plugin.h>
@@ -24,8 +23,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("ScreenRetrieverWindowsPluginCApi"));
   SharePlusWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("SharePlusWindowsPluginCApi"));
-  SyncfusionPdfviewerWindowsPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("SyncfusionPdfviewerWindowsPlugin"));
   ThermalPrinterPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ThermalPrinterPlugin"));
   UrlLauncherWindowsRegisterWithRegistrar(

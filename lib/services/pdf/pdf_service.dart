@@ -6,11 +6,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:invoiceo/l10n/app_localizations.dart';
 import 'package:open_file/open_file.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/models/company_info.dart';
@@ -794,8 +794,23 @@ class PDFService {
     return '$prefix-$invoiceNumber-$fullName-$date.pdf';
   }
 
+  /// Size of the first page of [pdf], or null when it has no pages.
+  /// Call it after save(): a thermal roll page gets its real height only then.
+  static PdfPageFormat? firstPageFormat(pw.Document pdf) {
+    final pages = pdf.document.pdfPageList.pages;
+    return pages.isEmpty ? null : pages.first.pageFormat;
+  }
+
+  /// Shows the PDF in a dialog, using printing's PdfPreview.
+  /// Pass [pageFormat] (the document's real page size) so small pages such
+  /// as A6 or a thermal roll are drawn sharp. Without it a full sheet is
+  /// assumed (A4, or Letter in the US).
   static Future<void> showCenteredPDFViewer(
-      BuildContext context, Uint8List pdfBytes, Invoice invoice) async {
+      BuildContext context, Uint8List pdfBytes, Invoice invoice,
+      {PdfPageFormat? pageFormat}) async {
+    // The PDF is already made, so every page format gets the same bytes.
+    // One callback for the whole dialog: a new one would draw the pages again.
+    Future<Uint8List> buildPdf(PdfPageFormat _) async => pdfBytes;
     return showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -845,11 +860,32 @@ class PDFService {
                 ],
               ),
               Expanded(
-                child: SfPdfViewer.memory(
-                  pdfBytes,
-                  pageLayoutMode: PdfPageLayoutMode.continuous,
-                  canShowPageLoadingIndicator: false,
-                  canShowScrollStatus: false,
+                // Pages fit the dialog width. Double-click a page to zoom.
+                // Print and Download are in the bar above, so PdfPreview's own
+                // action bar is hidden.
+                child: PdfPreview(
+                  build: buildPdf,
+                  initialPageFormat: pageFormat,
+                  useActions: false,
+                  canChangePageFormat: false,
+                  canChangeOrientation: false,
+                  canDebug: false,
+                  pdfFileName: buildPdfFilename(invoice),
+                  scrollViewDecoration: BoxDecoration(
+                    color: Theme.of(dialogContext)
+                        .colorScheme
+                        .surfaceContainerHighest,
+                  ),
+                  onError: (_, error) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        '${AppLocalizations.of(dialogContext)!.pdfPreviewErrorMessage}'
+                        '\n\n$error',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
