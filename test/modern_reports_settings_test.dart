@@ -164,11 +164,11 @@ void main() {
     // be gone). The rail label is also the top-bar title.
     const sections = <String, (String?, String?)>{
       'Companies': ('companyMgmtNewCompany', 'Manage Companies'),
-      'Company Info': ('companyInfoSave', 'Company Information'),
+      'Company Info': (null, 'Company Information'),
       'Backup': ('backupRefreshButton', 'Backup Management'),
       'Users': ('userMgmtAddUserButton', 'User Management'),
       'PDF Settings': ('pdfSettingsSave', null),
-      'Invoice Settings': ('invoiceSettingsSave', null),
+      'Invoice Settings': (null, null),
       'Product Details': ('productColumnsSave', null),
       'Customize': (null, null),
       'Accessibility': (null, null),

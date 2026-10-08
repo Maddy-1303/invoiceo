@@ -450,24 +450,36 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
           message: l10n.pdfSettingsResetToDefaultButton,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 200),
-            child: ModernTopBarButton.soft(
+            // The same look as the old page header (owner's choice).
+            child: OutlinedButton(
               key: const ValueKey('pdfSettingsReset'),
-              icon: Icons.restart_alt_rounded,
-              label: l10n.pdfSettingsResetToDefaultButton,
               onPressed: onReset,
+              child: Text(l10n.pdfSettingsResetToDefaultButton,
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           ),
         ),
       const SizedBox(width: 8),
-      ModernTopBarButton.primary(
+      FilledButton.icon(
         key: const ValueKey('pdfSettingsSave'),
-        icon: Icons.save_rounded,
-        label: _isSaving
+        onPressed: (_hasUnsavedChangeV2 && !_isSaving) ? _saveTemplate : null,
+        icon: _isSaving
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white))
+            : const Icon(Icons.save_rounded, size: 16),
+        label: Text(_isSaving
             ? l10n.createInvoiceSavingEllipsisLabel
             : small
                 ? l10n.actionSave
-                : l10n.pdfSettingsSaveSettingsButton,
-        onPressed: (_hasUnsavedChangeV2 && !_isSaving) ? _saveTemplate : null,
+                : l10n.pdfSettingsSaveSettingsButton),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.xsmall)),
+        ),
       ),
     ];
   }

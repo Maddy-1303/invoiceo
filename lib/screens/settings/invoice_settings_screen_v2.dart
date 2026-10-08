@@ -390,7 +390,6 @@ class _InvoiceSettingsScreenV2State
   Widget build(BuildContext context) {
     // Modern: no own title bar; Save goes to the top bar (not the side
     // rail or the bottom bar).
-    if (inModernTopBar) publishSectionActions(() => [_topBarSaveV2()]);
     return _buildV2(context);
   }
 
@@ -1902,17 +1901,6 @@ class _InvoiceSettingsScreenV2State
     );
   }
 
-  /// Save, for the Modern top bar. Off until the settings are loaded.
-  Widget _topBarSaveV2() {
-    final l10n = AppLocalizations.of(context)!;
-    return ModernTopBarButton.primary(
-      key: const ValueKey('invoiceSettingsSave'),
-      icon: Icons.save_rounded,
-      label:
-          _isSaving ? l10n.createInvoiceSavingEllipsisLabel : l10n.actionSave,
-      onPressed: (_isLoading || _isSaving) ? null : _saveSettings,
-    );
-  }
 
   Widget _navRailV2() {
     return SizedBox(
@@ -1984,9 +1972,7 @@ class _InvoiceSettingsScreenV2State
                 padding: const EdgeInsets.all(16),
                 child: _promoCardV2(),
               ),
-            // Modern: Save is in the top bar.
-            if (!inModernTopBar)
-              Padding(
+            Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: _saveButtonV2(),
               ),
@@ -2161,8 +2147,7 @@ class _InvoiceSettingsScreenV2State
                 ),
               ),
             ),
-            if (!inModernTopBar)
-              Container(
+            Container(
                 key: const ValueKey('invoiceSettingsSaveBar'),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainer,

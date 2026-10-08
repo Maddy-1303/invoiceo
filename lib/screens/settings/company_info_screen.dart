@@ -416,8 +416,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen>
               ));
 
     final themeMode = ref.watch(themeModeProvider);
-    // Modern: language, theme and Save go to the top bar (rebuilt after
-    // every build, so Save shows "Saving..." while it saves).
+    // Modern: language and theme go to the top bar. Save stays at the
+    // bottom of the logo panel, as before (owner's choice).
     final modern = inModernTopBar;
     if (modern) {
       publishSectionActions(() => [
@@ -426,15 +426,6 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen>
             const SizedBox(width: 8),
             _themeModeToggle(themeMode, l10n,
                 key: const ValueKey('companyInfoTheme')),
-            const SizedBox(width: 8),
-            ModernTopBarButton.primary(
-              key: const ValueKey('companyInfoSave'),
-              icon: Icons.save_rounded,
-              label: _isSaving
-                  ? l10n.createInvoiceSavingEllipsisLabel
-                  : l10n.actionSave,
-              onPressed: _isSaving ? null : _saveCompanyInfo,
-            ),
           ]);
     }
 
@@ -565,9 +556,8 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen>
                       ),
                     ),
                   ),
-                  // Save button pinned at bottom (in the top bar in Modern)
-                  if (!modern)
-                    Padding(
+                  // Save button pinned at bottom
+                  Padding(
                       padding: const EdgeInsets.all(16),
                       child: SizedBox(
                         width: double.infinity,
