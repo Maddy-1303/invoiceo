@@ -159,7 +159,7 @@ class TemplateListTile extends StatelessWidget {
                         fontSize: AppFontSize.xsmall,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      maxLines: 2,
+                      maxLines: 6,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (isDefault) ...[

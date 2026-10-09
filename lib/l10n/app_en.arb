@@ -440,6 +440,7 @@
   "dashboardRoleUser": "User",
   "dashboardSupportTooltip": "Support",
   "buyMeCoffeeLabel": "Buy me a coffee",
+  "appInfoDescription": "Invoiceo is a modern invoice and quotation management app for freelancers and small businesses.",
   "dashboardLogoutTooltip": "Logout",
   "dashboardTestBuildBadge": "TEST BUILD",
   "dashboardTestBadgeShort": "TEST",

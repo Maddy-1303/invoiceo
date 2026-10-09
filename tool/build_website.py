@@ -21,7 +21,7 @@ SITE = 'https://invoiceo.in'
 NAME = 'Invoiceo'
 BUSINESS = 'Madcreations'
 EMAIL = 'madhanprasat2002r@gmail.com'
-VERSION = '1.0.5'
+VERSION = '1.0.6'
 RELEASE_DATE = '9 October 2026'
 RELEASE_ISO = '2026-10-09'
 COFFEE = 'https://buymeacoffee.com/madcreations'
@@ -1143,6 +1143,15 @@ changelog_body = page_head('Updates', f'What’s new in {NAME}', 'Every release,
   <div class="wrap measure">
     <article class="release" id="v{VERSION}">
       <h2>Version {VERSION} {badge('Latest', 'brand')}</h2>
+      <p class="date">{RELEASE_DATE}</p>
+      <ul>
+        <li><b>Tamil Settings screens read better.</b> PDF Settings, Invoice Settings, Company Info and Software Info now show the full Tamil words: the Reset to default button, template descriptions, and the notes under the invoice settings boxes are no longer cut off.</li>
+        <li>Software Info shows the app description in Tamil, and the “Buy me a coffee” button reads clearly in Tamil.</li>
+        <li>Shorter, clearer Tamil wording for a few settings labels.</li>
+      </ul>
+    </article>
+    <article class="release" id="v1.0.5">
+      <h2>Version 1.0.5</h2>
       <p class="date">{RELEASE_DATE}</p>
       <ul>
         <li><b>Tamil screens read better.</b> Long Tamil labels are no longer cut off with “…”: the sidebar, page titles, dashboard cards and charts, the invoice, customer and product lists, and the Reports menu now show the full words.</li>

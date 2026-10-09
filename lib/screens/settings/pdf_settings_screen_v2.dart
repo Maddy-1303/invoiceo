@@ -493,7 +493,7 @@ class _PdfSettingsScreenV2State extends ConsumerState<PdfSettingsScreenV2>
         Tooltip(
           message: l10n.pdfSettingsResetToDefaultButton,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 200),
+            constraints: const BoxConstraints(maxWidth: 240),
             // The same look as the old page header (owner's choice).
             child: OutlinedButton(
               key: const ValueKey('pdfSettingsReset'),

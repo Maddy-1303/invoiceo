@@ -1,7 +1,7 @@
 name: invoiceo
 description: "Invoice generating desktop app built with Flutter"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-version: 1.0.5+6
+version: 1.0.6+7
 environment:
   sdk: '>=3.3.3 <4.0.0'
 

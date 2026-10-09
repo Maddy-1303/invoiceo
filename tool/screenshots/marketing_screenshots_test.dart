@@ -5,6 +5,9 @@
 // Output: ../invoiceo-website/assets/images/screens/*.png (override with
 // --dart-define=SCREENS_OUT=/some/folder). For the Tamil page add
 // --dart-define=SHOT_LOCALE=ta, which writes *-ta.png with the app in Tamil.
+// --dart-define=SHOT_SETTINGS=true also writes settings-01.png ... (every
+// Settings section, 1366 px wide and tall) for checking labels; those are not
+// for the website, so give them their own SCREENS_OUT.
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -47,6 +50,7 @@ const _outDefault = '../invoiceo-website/assets/images/screens';
 const _out = String.fromEnvironment('SCREENS_OUT', defaultValue: _outDefault);
 const _locale = String.fromEnvironment('SHOT_LOCALE');
 const _suffix = _locale == '' ? '' : '-$_locale';
+const _settings = bool.fromEnvironment('SHOT_SETTINGS');
 
 Future<void> _loadFont(String family, List<String> files,
     {String? dir}) async {
@@ -302,5 +306,39 @@ void main() {
     await shot(tester, 'products');
     await open(l10n.navReports);
     await shot(tester, 'reports');
+
+    if (_settings) {
+      // A common laptop width, and tall so most of each section shows.
+      tester.view.physicalSize = const Size(1366, 2400);
+      await settle(tester, 10);
+      await open(l10n.navSettings);
+      final sections = [
+        l10n.settingsNavCompaniesLabel, l10n.settingsNavCompanyInfoLabel,
+        l10n.settingsNavBackupLabel, l10n.settingsNavUsersLabel, l10n.pdfSettingsTitle,
+        l10n.invoiceSettingsAppBarTitle, l10n.settingsNavProductDetailsLabel,
+        l10n.settingsNavCustomizeLabel, l10n.settingsNavAccessibilityLabel,
+        l10n.settingsNavSoftwareInfoLabel,
+      ];
+      for (var i = 0; i < sections.length; i++) {
+        await tester.tap(find
+            .descendant(of: find.byType(NavigationRail), matching: find.text(sections[i]))
+            .first);
+        await settle(tester, 20);
+        await shot(tester, 'settings-${(i + 1).toString().padLeft(2, '0')}');
+        // Invoice Settings has its own sub-pages: settings-06b ... 06g.
+        if (sections[i] == l10n.invoiceSettingsAppBarTitle) {
+          final subs = [
+            l10n.invoiceSettingsSectionBranding, l10n.invoiceSettingsSectionTax,
+            l10n.invoiceSettingsSectionItems, l10n.invoiceSettingsSectionCustomer,
+            l10n.invoiceSettingsSectionColumns, l10n.customizationCustomFieldsTitle,
+          ];
+          for (var j = 0; j < subs.length; j++) {
+            await tester.tap(find.text(subs[j]).first);
+            await settle(tester, 20);
+            await shot(tester, 'settings-06${'bcdefg'[j]}');
+          }
+        }
+      }
+    }
   });
 }

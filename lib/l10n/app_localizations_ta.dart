@@ -736,6 +736,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get buyMeCoffeeLabel => 'எனக்கு ஒரு காபி வாங்கித் தாருங்கள்';
 
   @override
+  String get appInfoDescription =>
+      'Invoiceo, ஃப்ரீலான்சர்களுக்கும் சிறு வணிகங்களுக்குமான நவீன விலைப்பட்டியல், விலைப்புள்ளி மேலாண்மைச் செயலி.';
+
+  @override
   String get dashboardLogoutTooltip => 'வெளியேறு';
 
   @override
@@ -3924,10 +3928,10 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get invoiceSettingsStartingNumberLockedMessage =>
-      'விலைப்பட்டியல்கள் இருக்கும்போது விலைப்பட்டியல் தொடக்க எண்ணை மாற்ற முடியாது. அனைத்து விலைப்பட்டியல்கள்/விலைப்புள்ளிகளையும் (குப்பைத் தொட்டி உட்பட) நிரந்தரமாக நீக்கிவிட்டு மீண்டும் முயலவும்.';
+      'விலைப்பட்டியல்கள் இருக்கும்போது தொடக்க எண்ணை மாற்ற முடியாது. மாற்ற, எல்லா விலைப்பட்டியல்களையும் விலைப்புள்ளிகளையும் (குப்பைத் தொட்டி உட்பட) நிரந்தரமாக நீக்கவும்.';
 
   @override
-  String get invoiceSettingsQuantityColumnLabel => 'அளவு நெடுவரிசைத் தலைப்பு';
+  String get invoiceSettingsQuantityColumnLabel => 'அளவுத் தலைப்பு';
 
   @override
   String get invoiceSettingsQuantityColumnHint =>
@@ -4157,8 +4161,7 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get invoiceSettingsPromoTitle =>
-      'உங்கள் விலைப்பட்டியல்களில் கூடுதல் புலங்கள் தேவையா?';
+  String get invoiceSettingsPromoTitle => 'கூடுதல் புலங்கள் வேண்டுமா?';
 
   @override
   String get invoiceSettingsPromoBody =>
@@ -4175,7 +4178,7 @@ class AppLocalizationsTa extends AppLocalizations {
       'விலைப்பட்டியல், விலைப்புள்ளி மற்றும் ரசீது PDF வடிவமைப்புகளைத் தனிப்பயனாக்கவும்';
 
   @override
-  String get pdfSettingsResetToDefaultButton => 'இயல்புநிலைக்கு மீட்டமைக்கவும்';
+  String get pdfSettingsResetToDefaultButton => 'இயல்புநிலைக்கு மீட்டமை';
 
   @override
   String get pdfSettingsSaveSettingsButton => 'அமைப்புகளைச் சேமிக்கவும்';

@@ -408,16 +408,35 @@ class _CompanyInfoScreenState extends ConsumerState<CompanyInfoScreen>
                         size: 36, color: primaryColor),
                   ),
                   const SizedBox(height: 10),
-                  Text(l10n.companyInfoUploadLogoLabel,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: AppFontSize.small,
-                          fontWeight: FontWeight.w500)),
+                  // Centred, with a margin: the Tamil words take two lines.
+                  // Flexible, so in a small box the text is cut instead of
+                  // overflowing it.
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(l10n.companyInfoUploadLogoLabel,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: AppFontSize.small,
+                              fontWeight: FontWeight.w500)),
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(l10n.companyInfoClickToBrowseLabel,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: AppFontSize.xsmall)),
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(l10n.companyInfoClickToBrowseLabel,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: AppFontSize.xsmall)),
+                    ),
+                  ),
                 ],
               ));
 

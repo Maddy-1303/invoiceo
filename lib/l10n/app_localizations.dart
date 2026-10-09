@@ -1334,6 +1334,12 @@ abstract class AppLocalizations {
   /// **'Buy me a coffee'**
   String get buyMeCoffeeLabel;
 
+  /// No description provided for @appInfoDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoiceo is a modern invoice and quotation management app for freelancers and small businesses.'**
+  String get appInfoDescription;
+
   /// No description provided for @dashboardLogoutTooltip.
   ///
   /// In en, this message translates to:

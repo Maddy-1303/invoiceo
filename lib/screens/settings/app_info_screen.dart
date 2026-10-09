@@ -106,7 +106,10 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                cfg.description,
+                                // The standard edition's text, in the app's language.
+                                cfg.description == AppConfig.description
+                                    ? l10n.appInfoDescription
+                                    : cfg.description,
                                 style: TextStyle(
                                   fontSize: AppFontSize.small,
                                   color: Theme.of(context)
@@ -189,9 +192,12 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen>
                     ),
                     icon: SvgPicture.asset('assets/images/bmc_logo.svg',
                         height: 20),
+                    // The Cookie script font has Latin letters only; a
+                    // translated label (Tamil) uses the normal font.
                     label: Text(l10n.buyMeCoffeeLabel,
-                        style: const TextStyle(
-                            fontFamily: 'Cookie', fontSize: 22)),
+                        style: l10n.buyMeCoffeeLabel.codeUnits.every((c) => c < 128)
+                            ? const TextStyle(fontFamily: 'Cookie', fontSize: 22)
+                            : const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                     onPressed: () => launchUrl(
                       Uri.parse(AppConfig.buyMeCoffee),
                       mode: LaunchMode.externalApplication,

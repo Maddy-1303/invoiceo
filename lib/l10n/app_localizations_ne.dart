@@ -733,6 +733,10 @@ class AppLocalizationsNe extends AppLocalizations {
   String get buyMeCoffeeLabel => 'Buy me a coffee';
 
   @override
+  String get appInfoDescription =>
+      'Invoiceo is a modern invoice and quotation management app for freelancers and small businesses.';
+
+  @override
   String get dashboardLogoutTooltip => 'लगआउट';
 
   @override

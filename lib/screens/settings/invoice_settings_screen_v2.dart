@@ -449,6 +449,8 @@ class _InvoiceSettingsScreenV2State
       labelText: label,
       hintText: hint,
       helperText: helperText,
+      // Room for the longer (Tamil) notes instead of one cut-off line.
+      helperMaxLines: 3,
       prefixIcon: prefixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppBorderRadius.xsmall),
@@ -645,7 +647,7 @@ class _InvoiceSettingsScreenV2State
                     prefixIcon: const Icon(Icons.looks_one_outlined),
                     helperText: l10n.invoiceSettingsStartingNumberLockedMessage)
                 .copyWith(
-                    helperMaxLines: 4,
+                    helperMaxLines: 8,
                     suffixIcon: Icon(Icons.lock_outline,
                         size: 18, color: Colors.orange[700])),
           );
