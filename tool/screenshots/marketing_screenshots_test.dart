@@ -3,7 +3,8 @@
 // Indian mobile does, so they cannot reach a real person). Run:
 //   flutter test tool/screenshots/marketing_screenshots_test.dart
 // Output: ../invoiceo-website/assets/images/screens/*.png (override with
-// --dart-define=SCREENS_OUT=/some/folder).
+// --dart-define=SCREENS_OUT=/some/folder). For the Tamil page add
+// --dart-define=SHOT_LOCALE=ta, which writes *-ta.png with the app in Tamil.
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -44,12 +45,15 @@ import 'package:invoiceo/theme/app_theme.dart';
 
 const _outDefault = '../invoiceo-website/assets/images/screens';
 const _out = String.fromEnvironment('SCREENS_OUT', defaultValue: _outDefault);
+const _locale = String.fromEnvironment('SHOT_LOCALE');
+const _suffix = _locale == '' ? '' : '-$_locale';
 
-Future<void> _loadFont(String family, List<String> files) async {
-  final sdk = '${Platform.environment['HOME']}/development/flutter/bin/cache/artifacts/material_fonts';
+Future<void> _loadFont(String family, List<String> files,
+    {String? dir}) async {
+  dir ??= '${Platform.environment['HOME']}/development/flutter/bin/cache/artifacts/material_fonts';
   final loader = FontLoader(family);
   for (final f in files) {
-    final bytes = File('$sdk/$f').readAsBytesSync();
+    final bytes = File('$dir/$f').readAsBytesSync();
     loader.addFont(Future.value(ByteData.view(bytes.buffer)));
   }
   await loader.load();
@@ -78,6 +82,8 @@ void main() {
       'Roboto-Regular.ttf', 'Roboto-Medium.ttf', 'Roboto-Bold.ttf', 'Roboto-Black.ttf',
     ]);
     await _loadFont('MaterialIcons', ['MaterialIcons-Regular.otf']);
+    await _loadFont('NotoSansTamil', ['NotoSansTamil-Regular.ttf', 'NotoSansTamil-Bold.ttf'],
+        dir: 'assets/fonts');
     // The greeting's wave; a test has no system fonts to fall back on.
     final emoji = File('/System/Library/Fonts/Apple Color Emoji.ttc');
     if (emoji.existsSync()) {
@@ -102,10 +108,10 @@ void main() {
     await tester.runAsync(() async {
       final image = await boundary.toImage(pixelRatio: 1.5);
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      File('$_out/$name.png').writeAsBytesSync(data!.buffer.asUint8List());
+      File('$_out/$name$_suffix.png').writeAsBytesSync(data!.buffer.asUint8List());
     });
     // ignore: avoid_print
-    print('saved $_out/$name.png');
+    print('saved $_out/$name$_suffix.png');
   }
 
   Future<void> seed() async {
@@ -264,6 +270,7 @@ void main() {
                   .apply(fontFamilyFallback: const ['NotoSansTamil', 'ShotEmoji'])),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: _locale == '' ? null : const Locale(_locale),
           home: DashboardScreen(
               User(id: 'u1', username: 'Madhan', password: 'x', userType: 'admin')),
         ),
@@ -272,12 +279,14 @@ void main() {
     await settle(tester, 30);
     await shot(tester, 'dashboard');
 
+    // The sidebar keys carry the label in the app's language.
+    final l10n = lookupAppLocalizations(Locale(_locale == '' ? 'en' : _locale));
     Future<void> open(String nav) async {
       await tester.tap(find.byKey(ValueKey('modernNav_$nav')));
       await settle(tester, 20);
     }
 
-    await open('Invoices');
+    await open(l10n.navInvoices);
     await shot(tester, 'invoices');
 
     // The draft, opened on the Create Invoice screen.
@@ -287,11 +296,11 @@ void main() {
     await settle(tester, 30);
     await shot(tester, 'create-invoice');
 
-    await open('Customers');
+    await open(l10n.navCustomers);
     await shot(tester, 'customers');
-    await open('Products');
+    await open(l10n.navProducts);
     await shot(tester, 'products');
-    await open('Reports');
+    await open(l10n.navReports);
     await shot(tester, 'reports');
   });
 }

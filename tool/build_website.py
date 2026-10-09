@@ -37,6 +37,12 @@ FILES = {
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
          '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
          '  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&amp;display=swap">')
+# The Tamil page adds Noto Sans Tamil; Manrope still draws the Latin letters.
+FONTS_TA = FONTS.replace('wght@400..800&amp;', 'wght@400..800&amp;family=Noto+Sans+Tamil:wght@400..800&amp;')
+TA_MONTHS = ['ஜனவரி', 'பிப்ரவரி', 'மார்ச்', 'ஏப்ரல்', 'மே', 'ஜூன்', 'ஜூலை', 'ஆகஸ்ட்', 'செப்டம்பர்', 'அக்டோபர்', 'நவம்பர்', 'டிசம்பர்']
+RELEASE_DATE_TA = f'{int(RELEASE_ISO[8:])} {TA_MONTHS[int(RELEASE_ISO[5:7]) - 1]} {RELEASE_ISO[:4]}'
+# The home page in each language; they point at each other with hreflang.
+HOMES = {'en': 'index.html', 'ta': 'ta.html'}
 
 # Icons: Feather (MIT, © Cole Bemis) and platform marks from Simple Icons (CC0). See licenses.html.
 STROKE = {
@@ -179,15 +185,24 @@ def window(name, alt, cls='', lazy=True, sizes='(max-width: 720px) 100vw, (max-w
             f'<img src="{src}"{srcset} width="{SHOT_W}" height="{SHOT_H}" alt="{esc(alt)}"{load}></a></div>')
 
 
-def receipt(cls=''):
-    rows = [('App licence', '0.00'), ('Monthly plan', 'None'), ('Sign-up', 'Not needed'),
-            ('Internet', 'Not needed'), ('Paid add-ons', 'None')]
+RECEIPT = {
+    'en': {'rows': [('App licence', '0.00'), ('Monthly plan', 'None'), ('Sign-up', 'Not needed'),
+                    ('Internet', 'Not needed'), ('Paid add-ons', 'None')],
+           'title': f'What {NAME} costs you', 'total': 'Total', 'foot': 'Free forever · Open source (MIT)'},
+    'ta': {'rows': [('ஆப் உரிமம்', '0.00'), ('மாதக் கட்டணம்', 'இல்லை'), ('பதிவு', 'தேவையில்லை'),
+                    ('இன்டர்நெட்', 'தேவையில்லை'), ('கூடுதல் கட்டணம்', 'இல்லை')],
+           'title': f'{NAME}-க்கு நீங்கள் செலுத்துவது', 'total': 'மொத்தம்', 'foot': 'என்றும் இலவசம் · ஓப்பன் சோர்ஸ் (MIT)'},
+}
+
+
+def receipt(cls='', lang='en'):
+    t = RECEIPT[lang]
     zig = ''.join(f'L{x - 6} 12L{x - 12} 4' for x in range(276, 0, -12))
-    body = ''.join(f'<div class="receipt-row"><span>{a}</span><b>{b}</b></div>' for a, b in rows)
+    body = ''.join(f'<div class="receipt-row"><span>{a}</span><b>{b}</b></div>' for a, b in t['rows'])
     return (f'<div class="receipt{(" " + cls) if cls else ""}"><div class="receipt-paper">'
-            f'<p class="receipt-title">What {NAME} costs you</p><hr>{body}<hr>'
-            f'<div class="receipt-total"><span>Total</span><b>0.00</b></div>'
-            f'<p class="receipt-foot">Free forever · Open source (MIT)</p></div>'
+            f'<p class="receipt-title">{t["title"]}</p><hr>{body}<hr>'
+            f'<div class="receipt-total"><span>{t["total"]}</span><b>0.00</b></div>'
+            f'<p class="receipt-foot">{t["foot"]}</p></div>'
             f'<svg class="receipt-edge" viewBox="0 0 276 12" aria-hidden="true" focusable="false">'
             f'<path d="M0 0H276V4{zig}V0Z" fill="#fff"/></svg></div>')
 
@@ -232,9 +247,34 @@ PLATFORMS = [
                'in the folder you downloaded it to.',
                f'<b>AppImage</b> (other distributions): run <code>chmod +x {FILES["linuxAppImage"]}</code>, then open the file.']},
 ]
+# The same cards for the Tamil page. Button and menu names stay in English,
+# because that is what Windows and macOS show.
+PLATFORMS_TA = [
+    {**PLATFORMS[0], 'req': 'Windows 10, 11 · 64-bit', 'short': 'Windows 10, 11',
+     'buttons': [('Windows-க்கு டவுன்லோட்', FILES['windows'], 'windows')],
+     'steps': ['டவுன்லோட் ஆன ஃபைலைத் திறக்கவும்.',
+               '<b>“Windows protected your PC”</b> என்று வந்தால், <b>More info</b> அழுத்தி, பிறகு <b>Run anyway</b> அழுத்தவும். '
+               'இன்ஸ்டாலர் இன்னும் code-sign செய்யப்படாததால் இந்தச் செய்தி வருகிறது.',
+               f'Setup-ஐ முடிக்கவும். பிறகு Start மெனுவில் {NAME} இருக்கும்.']},
+    {**PLATFORMS[1], 'req': 'macOS 12 Monterey அல்லது அதற்குப் பிந்தையது', 'short': 'macOS 12 அல்லது பிந்தையது',
+     'buttons': [('macOS-க்கு டவுன்லோட்', FILES['mac'], 'mac')],
+     'steps': [f'.dmg ஃபைலைத் திறந்து {NAME}-ஐ Applications-க்குள் இழுத்து விடவும்.',
+               f'{NAME}-ஐத் திறக்கவும். ஆப்பைச் சரிபார்க்க முடியவில்லை என்று macOS சொன்னால் <b>Done</b> அழுத்தவும். '
+               'ஆப் இன்னும் Apple-ஆல் notarise செய்யப்படாததால் இது வருகிறது.',
+               f'<b>System Settings → Privacy &amp; Security</b> திறந்து, கீழே {NAME} பற்றிய செய்தியில் <b>Open Anyway</b> '
+               f'அழுத்தி உறுதிசெய்யவும். (macOS 14 அல்லது பழையதில், Applications-ல் {NAME} மேல் Control-click செய்து '
+               '<b>Open</b> தேர்ந்தெடுக்கலாம்.)',
+               'அதன் பிறகு வழக்கம்போல் திறக்கும்.']},
+    {**PLATFORMS[2], 'req': 'Ubuntu 22.04+, Debian 12+, Mint 21+ மற்றும் பிற', 'short': 'Ubuntu, Debian, Mint மற்றும் பிற',
+     'buttons': [('.deb டவுன்லோட்', FILES['linuxDeb'], 'linuxDeb'), ('AppImage டவுன்லோட்', FILES['linuxAppImage'], 'linuxAppImage')],
+     'steps': [f'<b>.deb</b> (Ubuntu 22.04+, Debian 12+, Linux Mint 21+): டவுன்லோட் ஆன ஃபோல்டரில் '
+               f'<code>sudo apt install ./{FILES["linuxDeb"]}</code> இயக்கவும்.',
+               f'<b>AppImage</b> (மற்ற Linux): <code>chmod +x {FILES["linuxAppImage"]}</code> இயக்கி, பிறகு ஃபைலைத் திறக்கவும்.']},
+]
+REC_LABEL = {'en': 'Recommended for you', 'ta': 'உங்கள் கணினிக்கு'}
 
 
-def dl_card(p, full=False, heading='h3'):
+def dl_card(p, full=False, heading='h3', lang='en'):
     buttons = []
     for i, (label, file, _) in enumerate(p['buttons']):
         if i == 0:
@@ -250,15 +290,16 @@ def dl_card(p, full=False, heading='h3'):
     rec = ' is-recommended' if p['key'] == 'windows' else ''
     return (f'<div class="dl-card{rec}" data-platform="{p["key"]}" data-req-short="{p["short"]}"'
             f'{(" id=" + chr(34) + p["anchor"] + chr(34)) if full else ""}>'
-            f'<div class="dl-card-top">{tile(p["icon"], "neutral")}{badge("Recommended for you", "brand", cls="rec-badge")}</div>'
+            f'<div class="dl-card-top">{tile(p["icon"], "neutral")}{badge(REC_LABEL[lang], "brand", cls="rec-badge")}</div>'
             f'<div><{heading}>{p["name"]}</{heading}><p class="dl-req">{p["req"]}</p></div>'
             f'<div class="dl-buttons">{"".join(buttons)}</div>'
             f'<p class="dl-file">{files}</p>'
             f'<div class="dl-note">{note}</div></div>')
 
 
-def dl_grid(full=False):
-    return '<div class="dl-grid">' + ''.join(dl_card(p, full) for p in PLATFORMS) + '</div>'
+def dl_grid(full=False, lang='en'):
+    cards = PLATFORMS_TA if lang == 'ta' else PLATFORMS
+    return '<div class="dl-grid">' + ''.join(dl_card(p, full, lang=lang) for p in cards) + '</div>'
 
 
 PHONE_NOTE = (f'<div class="notice hidden" data-mobile-note>{icon("smartphone")}<span>You’re on a phone. {NAME} runs on '
@@ -276,78 +317,113 @@ FIRST_STEPS = [
 ]
 
 
-def first_steps(level='h3'):
-    lis = ''.join(f'<li><span class="step-label">{tile(ic, "", "sm")}Step {i + 1}</span><{level} class="h4">{t}</{level}><p>{b}</p></li>'
-                  for i, (ic, t, b) in enumerate(FIRST_STEPS))
+def first_steps(level='h3', steps=FIRST_STEPS, word='Step'):
+    lis = ''.join(f'<li><span class="step-label">{tile(ic, "", "sm")}{word} {i + 1}</span><{level} class="h4">{t}</{level}><p>{b}</p></li>'
+                  for i, (ic, t, b) in enumerate(steps))
     return f'<ol class="steps-row">{lis}</ol>'
 
 
 # ─────────────────────────────── Page frame ────────────────────────────────
-def header(active, home=False, base=False):
+def header(active, home=False, base=False, lang='en'):
     pre = '' if home else 'index.html'
-    links = [('Features', f'{pre}#features', 'features'), ('How it works', f'{pre}#how-it-works', 'how'),
-             ('FAQ', 'faq.html', 'faq'), ('Contact', 'contact.html', 'contact')]
-    more = [('Screenshots', f'{pre}#screenshots', 'screenshots'), ('What’s new', 'changelog.html', 'changelog')]
+    if lang == 'ta':
+        links = [('வசதிகள்', '#features', 'features'), ('செயல்முறை', '#how-it-works', 'how'),
+                 ('கேள்விகள்', '#faq', 'faq'), ('தொடர்பு', 'contact.html', 'contact')]
+        more = [('ஸ்கிரீன்ஷாட்கள்', '#screenshots', 'screenshots'), ('புதியவை (English)', 'changelog.html', 'changelog')]
+        words = {'dl': 'இலவச டவுன்லோட்', 'skip': 'உள்ளடக்கத்துக்குச் செல்ல', 'home': f'{NAME} முகப்பு',
+                 'main': 'முதன்மை', 'menu': 'மெனு', 'main_menu': 'முதன்மை மெனு'}
+        switch = '<a class="lang-switch" href="index.html" hreflang="en" lang="en">English</a>'
+    else:
+        links = [('Features', f'{pre}#features', 'features'), ('How it works', f'{pre}#how-it-works', 'how'),
+                 ('FAQ', 'faq.html', 'faq'), ('Contact', 'contact.html', 'contact')]
+        more = [('Screenshots', f'{pre}#screenshots', 'screenshots'), ('What’s new', 'changelog.html', 'changelog')]
+        words = {'dl': 'Download free', 'skip': 'Skip to content', 'home': f'{NAME} home',
+                 'main': 'Main', 'menu': 'Menu', 'main_menu': 'Main menu'}
+        switch = '<a class="lang-switch" href="ta.html" hreflang="ta" lang="ta" title="தமிழில் படிக்க">தமிழ்</a>'
     cur = lambda key: ' aria-current="page"' if key == active else ''
     nav = ''.join(f'<a href="{h}"{cur(k)}>{t}</a>' for t, h, k in links)
     mobile = ''.join(f'<a href="{h}"{cur(k)}>{t}</a>' for t, h, k in links + more)
     dl_href = '#download' if home else 'download.html'
     # The 404 page has <base href="/">, where "#main" would mean the home page.
-    skip = '' if base else '<a class="skip-link" href="#main">Skip to content</a>\n'
+    skip = '' if base else f'<a class="skip-link" href="#main">{words["skip"]}</a>\n'
     return f'''{skip}<header class="site-header">
   <div class="wrap">
-    <a class="brand" href="index.html" aria-label="{NAME} home"><img src="assets/images/logo.png" alt="{NAME}" width="196" height="68"></a>
-    <nav class="nav" aria-label="Main">{nav}</nav>
+    <a class="brand" href="{HOMES[lang]}" aria-label="{words['home']}"><img src="assets/images/logo.png" alt="{NAME}" width="196" height="68"></a>
+    <nav class="nav" aria-label="{words['main']}">{nav}</nav>
     <div class="header-actions">
-      {btn('Download free', dl_href, 'primary', '', 'download', cls='header-cta', attrs=' aria-current="page"' if active == 'download' else '')}
-      <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="Menu">{icon('menu')}</button>
+      {switch}
+      {btn(words['dl'], dl_href, 'primary', '', 'download', cls='header-cta', attrs=' aria-current="page"' if active == 'download' else '')}
+      <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="{words['menu']}">{icon('menu')}</button>
     </div>
-    <nav class="mobile-nav" id="site-nav" aria-label="Main menu">{mobile}{btn('Download free', dl_href, 'primary', 'lg', 'download', block=True)}</nav>
+    <nav class="mobile-nav" id="site-nav" aria-label="{words['main_menu']}">{mobile}{btn(words['dl'], dl_href, 'primary', 'lg', 'download', block=True)}</nav>
   </div>
 </header>'''
 
 
-def footer(home=False):
+def footer(home=False, lang='en'):
     pre = '' if home else 'index.html'
     col = lambda title, items: (f'<div><h2>{title}</h2><ul>' + ''.join(f'<li{" data-block" if "data-" in a else ""}><a {a}>{t}</a></li>' for t, a in items)
                                 + '</ul></div>')
-    product = [('Features', f'href="{pre}#features"'), ('How it works', f'href="{pre}#how-it-works"'),
-               ('Screenshots', f'href="{pre}#screenshots"'), ('Download', 'href="download.html"'), ('What’s new', 'href="changelog.html"')]
-    helps = [('FAQ', 'href="faq.html"'), ('Contact', 'href="contact.html"'),
-             ('Support request', 'data-href="forms.support" data-hide-empty target="_blank" rel="noopener"'),
-             ('WhatsApp', 'data-whatsapp target="_blank" rel="noopener"'),
-             ('Feedback', 'data-href="forms.feedback" data-hide-empty target="_blank" rel="noopener"'),
-             ('Custom features (paid)', 'href="customization.html"')]
-    legal = [('Licenses', 'href="licenses.html"'), ('Privacy', 'href="privacy.html"'), ('Terms', 'href="terms.html"')]
+    support = 'data-href="forms.support" data-hide-empty target="_blank" rel="noopener"'
+    whatsapp = 'data-whatsapp target="_blank" rel="noopener"'
+    feedback = 'data-href="forms.feedback" data-hide-empty target="_blank" rel="noopener"'
+    if lang == 'ta':
+        cols = [('ஆப்', [('வசதிகள்', 'href="#features"'), ('செயல்முறை', 'href="#how-it-works"'),
+                         ('ஸ்கிரீன்ஷாட்கள்', 'href="#screenshots"'), ('டவுன்லோட்', 'href="#download"'),
+                         ('புதியவை (English)', 'href="changelog.html"')]),
+                ('உதவி', [('கேள்விகள் (English)', 'href="faq.html"'), ('தொடர்பு', 'href="contact.html"'),
+                          ('உதவி கோரிக்கை', support), ('WhatsApp', whatsapp), ('கருத்து', feedback),
+                          ('தனிப்பயன் வசதிகள் (கட்டணம்)', 'href="customization.html"')]),
+                ('சட்டம்', [('உரிமங்கள்', 'href="licenses.html"'), ('தனியுரிமை', 'href="privacy.html"'),
+                            ('விதிமுறைகள்', 'href="terms.html"')])]
+        tagline = 'Windows, macOS, Linux கணினிகளுக்கான இலவச, ஓப்பன் சோர்ஸ் பில்லிங் சாஃப்ட்வேர்.'
+        coffee = 'ஒரு காபி வாங்கித் தாருங்கள்'
+        credit = (f'© <span data-year>2026</span> {BUSINESS}. Invoiso-வை அடிப்படையாகக் கொண்டது, '
+                  '<a href="licenses.html">MIT License</a>, © 2025 ANOOP P.')
+    else:
+        cols = [('Product', [('Features', f'href="{pre}#features"'), ('How it works', f'href="{pre}#how-it-works"'),
+                             ('Screenshots', f'href="{pre}#screenshots"'), ('Download', 'href="download.html"'),
+                             ('What’s new', 'href="changelog.html"')]),
+                ('Help', [('FAQ', 'href="faq.html"'), ('Contact', 'href="contact.html"'), ('Support request', support),
+                          ('WhatsApp', whatsapp), ('Feedback', feedback), ('Custom features (paid)', 'href="customization.html"')]),
+                ('Legal', [('Licenses', 'href="licenses.html"'), ('Privacy', 'href="privacy.html"'), ('Terms', 'href="terms.html"')])]
+        tagline = 'Free, open-source billing software for Windows, macOS and Linux.'
+        coffee = 'Buy me a coffee'
+        credit = (f'© <span data-year>2026</span> {BUSINESS}. Built on Invoiso, released under the '
+                  '<a href="licenses.html">MIT License</a>, © 2025 ANOOP P.')
     return f'''<footer class="site-footer">
   <div class="wrap">
     <div class="foot">
       <div class="foot-brand">
         <img src="assets/images/logo.png" alt="{NAME}" width="196" height="68" loading="lazy">
-        <p>Free, open-source billing software for Windows, macOS and Linux.</p>
-        <a class="coffee" href="{COFFEE}" target="_blank" rel="noopener">{icon('coffee')}Buy me a coffee</a>
+        <p>{tagline}</p>
+        <a class="coffee" href="{COFFEE}" target="_blank" rel="noopener">{icon('coffee')}{coffee}</a>
       </div>
-      {col('Product', product)}
-      {col('Help', helps)}
-      {col('Legal', legal)}
+      {(chr(10) + '      ').join(col(t, items) for t, items in cols)}
     </div>
     <div class="foot-bottom">
-      <span>© <span data-year>2026</span> {BUSINESS}. Built on Invoiso, released under the <a href="licenses.html">MIT License</a>, © 2025 ANOOP P.</span>
+      <span>{credit}</span>
       <a href="mailto:{EMAIL}">{EMAIL}</a>
     </div>
   </div>
 </footer>'''
 
 
-def page(filename, title, description, active, body, jsonld=None, noindex=False):
-    home = filename == 'index.html'
-    canonical = SITE + '/' + ('' if home else filename)
+def page(filename, title, description, active, body, jsonld=None, noindex=False, lang='en'):
+    home = filename in HOMES.values()
+    canonical = SITE + '/' + ('' if filename == 'index.html' else filename)
     ld = ''
     if jsonld:
         ld = '\n  <script type="application/ld+json">\n' + json.dumps(jsonld, ensure_ascii=False, indent=2) + '\n  </script>'
     full_title = title if home else f'{title} — {NAME}'
+    # The two home pages name each other, so Google shows Tamil searchers the Tamil one.
+    alternates = ''
+    if home:
+        alternates = ''.join(f'\n  <link rel="alternate" hreflang="{code}" href="{SITE}/{"" if f == "index.html" else f}">'
+                             for code, f in HOMES.items())
+        alternates += f'\n  <link rel="alternate" hreflang="x-default" href="{SITE}/">'
     doc = f'''<!doctype html>
-<html lang="en">
+<html lang="{lang}">
 <head>
   <meta charset="utf-8">{chr(10) + '  <base href="/">' if noindex else ''}
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -355,9 +431,10 @@ def page(filename, title, description, active, body, jsonld=None, noindex=False)
   <meta name="theme-color" content="#ffffff">
   <title>{esc(full_title)}</title>
   <meta name="description" content="{esc(description)}">
-  {'<meta name="robots" content="noindex">' if noindex else f'<link rel="canonical" href="{canonical}">'}
+  {'<meta name="robots" content="noindex">' if noindex else f'<link rel="canonical" href="{canonical}">'}{alternates}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{NAME}">
+  <meta property="og:locale" content="{'ta_IN' if lang == 'ta' else 'en_IN'}">
   <meta property="og:title" content="{esc(full_title)}">
   <meta property="og:description" content="{esc(description)}">
   <meta property="og:url" content="{canonical}">
@@ -367,15 +444,15 @@ def page(filename, title, description, active, body, jsonld=None, noindex=False)
   <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
   <link rel="manifest" href="site.webmanifest">
-  {FONTS}
+  {FONTS_TA if lang == 'ta' else FONTS}
   <link rel="stylesheet" href="{asset('assets/css/site.css')}">{ld}
 </head>
 <body>
-{header(active, home=home, base=noindex)}
+{header(active, home=home, base=noindex, lang=lang)}
 <main id="main">
 {body}
 </main>
-{footer(home=home)}
+{footer(home=home, lang=lang)}
 <script src="{asset('assets/js/config.js')}"></script>
 <script src="{asset('assets/js/site.js')}"></script>
 </body>
@@ -625,6 +702,240 @@ page('index.html', f'{NAME} — Free offline billing and GST invoice software',
          'datePublished': RELEASE_ISO,
          'description': 'Free, open-source offline billing and GST invoice software for small businesses.',
          'url': SITE + '/',
+         'license': 'https://opensource.org/licenses/MIT',
+         'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'INR'},
+         'publisher': ORG,
+     })
+
+# ─────────────────────────────── Tamil home ────────────────────────────────
+# ta.html: the home page in Tamil, for shops that search in Tamil. Same facts
+# as the English page, no more. Screen names follow the app's Tamil labels
+# (lib/l10n/app_ta.arb); the screenshots show the app in Tamil when the
+# *-ta.png files exist (screenshot tool with --dart-define=SHOT_LOCALE=ta).
+def ta_shot(name):
+    return name + '-ta' if os.path.exists(os.path.join(SCREENS, name + '-ta.png')) else name
+
+
+ta_hero = f'''<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="badges">{badge('இலவசம் · ஓப்பன் சோர்ஸ்', 'brand', 'code')}{badge('Windows · macOS · Linux', 'neutral', 'monitor')}</div>
+      <h1 class="display" id="hero-title"><em>இலவச</em> பில்லிங் சாஃப்ட்வேர் — தமிழிலேயே</h1>
+      <p class="lead">உங்கள் கணினியிலேயே GST பில், கொட்டேஷன், ரசீது போடலாம். {NAME} ஒரு இலவச, ஓப்பன் சோர்ஸ் டெஸ்க்டாப் ஆப் — மாதக் கட்டணம் இல்லை, ஆன்லைன் கணக்கு தேவையில்லை, இன்டர்நெட் இல்லாமலும் வேலை செய்யும். உங்கள் கடைத் தகவல்கள் உங்கள் கணினியை விட்டு வெளியே போகாது.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href="#download" data-os-download><span data-os-icon>{icon('download')}</span><span data-os-label>இலவச டவுன்லோட்</span></a>
+        {btn('வசதிகளைப் பாருங்கள்', '#features', 'secondary', 'lg')}
+      </div>
+      <p class="hero-meta" data-hero-meta>இலவசம் · பதிப்பு <span data-version>{VERSION}</span> · Windows, macOS, Linux கணினிகளுக்கு</p>
+      {checks(['என்றும் இலவசம்', 'ஓப்பன் சோர்ஸ்', 'இன்டர்நெட் தேவையில்லை', 'பதிவு தேவையில்லை'], 'checks-inline')}
+    </div>
+    <div class="hero-visual">
+      {window(ta_shot('create-invoice'), f'தமிழில் {NAME}-ன் புதிய விலைப்பட்டியல் திரை: வாடிக்கையாளர் Kannan, நான்கு மளிகைப் பொருட்கள், GST, மொத்தம் Rs. 5,829.50', cls='hero-shot', lazy=False, sizes='(max-width: 1100px) 100vw, 700px')}
+      {receipt('hero-receipt', 'ta')}
+      <span class="hero-chip">{badge('தகவல்கள் உங்கள் கணினியிலேயே', 'teal', 'lock')}</span>
+    </div>
+  </div>
+</section>'''
+
+TA_FACTS = [('percent', 'GST &amp; UPI QR', 'CGST, SGST, IGST, HSN/SAC'), ('printer', 'A4 &amp; தெர்மல்', 'A4, A5, A6, 58/80 mm'),
+            ('globe', 'தமிழ் உட்பட 8 மொழிகள்', 'திரையிலும் பில்லிலும் தமிழ்'), ('database', 'பேக்கப் &amp; ரீஸ்டோர்', 'புதிய கணினிக்கு மாற்றலாம்'),
+            ('code', 'MIT License', 'ஓப்பன் சோர்ஸ் உரிமம்')]
+ta_facts = ('<div class="facts-strip"><ul class="wrap facts">'
+            + ''.join(f'<li class="fact">{tile(i, "teal", "md")}<div><b>{v}</b><span>{l}</span></div></li>' for i, v, l in TA_FACTS)
+            + '</ul></div>')
+
+TA_WHY = [('gift', 'என்றும் இலவசம்', 'சந்தா இல்லை, ட்ரையல் இல்லை, கட்டணப் பதிப்பும் இல்லை. எல்லா வசதிகளும் எப்போதும் இலவசம்.'),
+          ('wifi-off', 'இன்டர்நெட் இல்லாமலும்', 'நெட் இல்லாமலே பில் போடலாம், பிரிண்ட் எடுக்கலாம், ரிப்போர்ட் பார்க்கலாம். நெட் போனாலும் பில்லிங் நிற்காது.'),
+          ('lock', 'உங்கள் தகவல் உங்களிடமே', 'வாடிக்கையாளர்கள், பொருட்கள், பில்கள் எல்லாம் உங்கள் கணினியிலேயே சேமிக்கப்படும்; வேறு யாருடைய சர்வருக்கும் போகாது.'),
+          ('code', 'ஓப்பன் சோர்ஸ்', 'சோர்ஸ் கோடு MIT License-ல் பொதுவில் உள்ளது. ஆப் என்ன செய்கிறது என்பதை யார் வேண்டுமானாலும் சரிபார்க்கலாம்.'),
+          ('monitor', 'Windows, macOS, Linux', 'உங்களிடம் ஏற்கெனவே உள்ள கணினியிலேயே ஓடும்; எல்லாவற்றிலும் அதே வசதிகள்.'),
+          ('repeat', 'எதிலும் கட்டிப்போடாது', 'எப்போது வேண்டுமானாலும் பேக்கப் எடுக்கலாம், வேறு கணினியில் ரீஸ்டோர் செய்யலாம், பட்டியல்களை CSV அல்லது PDF-ஆக எடுக்கலாம்.')]
+ta_why = section(section_head(f'ஏன் {NAME}?', 'மாதக் கட்டணம் இல்லாத பில்லிங் சாஃப்ட்வேர்',
+                              'ஒரு சிறு கடைக்குப் பில் போடத் தேவையான எல்லாமே இதில் உண்டு — அதுவும் உங்கள் சொந்தக் கணினியிலேயே.', 'why-title')
+                 + '<div class="grid-auto mt-4">' + ''.join(f'<div class="card">{tile(i)}<h3>{t}</h3><p>{d}</p></div>' for i, t, d in TA_WHY) + '</div>',
+                 'why', 'section-flush', 'why-title')
+
+TA_HOW = [('01', 'கடை விவரங்கள்', 'கடைப் பெயர், லோகோ, GSTIN, வங்கி விவரம், UPI ID — ஒரு முறை சேர்த்தால் போதும்.'),
+          ('02', 'வாடிக்கையாளர்கள், பொருட்கள்', 'CSV ஃபைலில் இருந்து பட்டியலை ஏற்றலாம், அல்லது பில் போடும்போதே சேர்க்கலாம். பார்கோடு ஸ்கேனரும் வேலை செய்யும்.'),
+          ('03', 'பில் போடுங்கள்', 'வாடிக்கையாளரைத் தேர்ந்தெடுத்து, பொருட்களைத் தேடுங்கள் அல்லது ஸ்கேன் செய்யுங்கள். வரியும் மொத்தமும் தானாகக் கணக்கிடப்படும்.'),
+          ('04', 'பிரிண்ட் அல்லது PDF', 'A4 அல்லது தெர்மல் பிரிண்டரில் பிரிண்ட் எடுக்கலாம்; அல்லது PDF-ஆகச் சேமித்து வாடிக்கையாளருக்கு அனுப்பலாம்.'),
+          ('05', 'பணம் வசூல்', 'முழுத் தொகை அல்லது பகுதித் தொகையைப் பதிவு செய்யலாம், ரசீது பிரிண்ட் எடுக்கலாம், யார் இன்னும் தர வேண்டும் என்று பார்க்கலாம்.')]
+ta_how = section('<div class="flow"><div class="flow-copy">'
+                 + section_head('செயல்முறை', 'ஐந்தே படிகளில் — செட்டப் முதல் பணம் வசூல் வரை',
+                                'கடையில் வழக்கமாகப் பில் போடும் அதே முறைதான் — இன்னும் வேகமாக, ஒழுங்காக.', 'how-title', left=True)
+                 + '<ol class="steps">' + ''.join(f'<li class="step"><span class="step-num">{n}</span><div><h3>{t}</h3><p>{b}</p></div></li>' for n, t, b in TA_HOW) + '</ol></div>'
+                 + '<div>' + window(ta_shot('invoices'), f'தமிழில் {NAME}-ன் விலைப்பட்டியல்கள் பட்டியல்: செலுத்தியவை, செலுத்தாதவை, பகுதியாகச் செலுத்தியவை, நிலுவைத் தொகையுடன்',
+                                    sizes='(max-width: 1100px) 100vw, 700px') + '</div></div>',
+                 'how-it-works', 'section-subtle', 'how-title')
+
+TA_GROUPS = [
+    ('file', 'பில்லிங்', ['ஆறு பில் டிசைன்கள், கூடவே தெர்மல் ரசீது வடிவம்', 'A4, A5, A6, 58/80 mm-ல் பிரிண்ட் அல்லது PDF',
+                          'உங்கள் prefix-உடன் தானியங்கி பில் எண்', 'தள்ளுபடி, வரி, கூடுதல் கட்டணங்கள்',
+                          'பில்லில் உங்களுக்கு வேண்டிய கூடுதல் விவரங்கள்', 'முடிக்காத பில்லை வரைவாக (draft) சேமிக்கலாம்'], 'span-2'),
+    ('briefcase', 'கடை நிர்வாகம்', ['கொட்டேஷனை ஒரே கிளிக்கில் பில்லாக மாற்றலாம்', 'முழு அல்லது பகுதிப் பணம் வசூல், ரசீதுடன்',
+                                     'நிலுவைத் தொகை உள்ள வாடிக்கையாளர்கள்', 'பொருட்கள், சேவைகள், இருப்பு (stock), batch, expiry',
+                                     'விற்பனை, வரி, நிலுவை, தினசரி, இருப்பு ரிப்போர்ட்கள்', 'பட்டியல்களை CSV-ஆக ஏற்றலாம், எடுக்கலாம்'], 'span-2'),
+    ('percent', 'இந்தியா &amp; GST', ['ஒவ்வொரு பில்லிலும் உங்கள் GSTIN, வாடிக்கையாளரின் GSTIN', 'ஒவ்வொரு பொருளுக்கும் HSN/SAC குறியீடு',
+                                      'CGST + SGST அல்லது IGST தானாகக் கணக்கீடு', 'Tax Invoice அல்லது Bill of Supply தலைப்பு',
+                                      'உங்கள் UPI QR குறியீடு பில்லிலேயே'], 'span-2'),
+    ('hard-drive', 'உங்கள் கணினியிலேயே, பாதுகாப்பாக', ['இன்டர்நெட் இல்லாமலும் வேலை செய்யும்', 'தகவல்கள் உங்கள் கணினியிலேயே',
+                                                        'ஒரே கிளிக்கில் பேக்கப், ரீஸ்டோர்', 'ஒரே கணினியில் பல நிறுவனங்கள்',
+                                                        'ஊழியர்களுக்குத் தனி லாகின் (admin அல்லது user)', 'ஆன்லைன் கணக்கு தேவையில்லை'], 'span-3'),
+    ('globe', 'தமிழும் மற்ற மொழிகளும்', ['தமிழ், English, இந்தி உட்பட 8 மொழிகள்', 'தமிழ் எழுத்துகள் PDF-லும் ரசீதிலும் சரியாக அச்சாகும்',
+                                         'உங்கள் நாணயத்தை (currency) தேர்ந்தெடுக்கலாம்', 'USB பார்கோடு ஸ்கேனர்',
+                                         'ஒவ்வொரு விற்பனைக்குப் பிறகும் தெர்மல் ரசீது தானாகப் பிரிண்ட் ஆகும்'], 'span-3'),
+]
+ta_features = section(section_head('வசதிகள்', 'ஒரு சிறு கடைக்குத் தேவையான எல்லா பில்லிங் வசதிகளும்',
+                                   'நீங்கள் வேலை செய்யும் முறைப்படி அடுக்கப்பட்டுள்ளன — எல்லாமே இலவசம்.', 'feat-title')
+                      + '<div class="bento mt-4">' + ''.join(f'<div class="group-card {c}"><div class="group-card-head">{tile(i)}<h3>{t}</h3></div>{checks(items)}</div>'
+                                                             for i, t, items, c in TA_GROUPS) + '</div>',
+                      'features', '', 'feat-title')
+
+TA_SHOTS = {'dashboard': ('முகப்புப் பலகை', 'வசூலான பணம், நிலுவை, மாத விற்பனை, பில் நிலை, சமீபத்திய பில்கள்.'),
+            'create-invoice': ('புதிய விலைப்பட்டியல்', 'வாடிக்கையாளர், பொருட்கள், GST, மொத்தம் — எல்லாம் ஒரே திரையில்.'),
+            'invoices': ('விலைப்பட்டியல்கள்', 'எது செலுத்தப்பட்டது, எது நிலுவை என்று பார்க்கலாம்; எந்தப் பில்லையும் விரைவாகத் தேடலாம்.'),
+            'customers': ('வாடிக்கையாளர்கள்', 'போன் எண், GSTIN, ஒவ்வொருவரும் தர வேண்டிய தொகை.'),
+            'products': ('பொருட்கள்', 'விலை, HSN, வரி, இருப்பு — குறைந்த இருப்பு உடனே தெரியும்.'),
+            'reports': ('அறிக்கைகள்', 'மாதவாரியாக பில் தொகை, வசூல், நிலுவை.')}
+TA_DOCS = {'invoice-a4': ('அச்சிட்ட பில் (A4)', 'Classic டிசைனில் ஒரு GST பில் — வாடிக்கையாளர் கையில் கிடைப்பது போலவே.',
+                          f'{NAME} அச்சிட்ட மாதிரி A4 GST பில்: Sri Murugan Traders, Kannan Stores-க்கு ஆறு பொருட்கள், CGST, SGST உடன், மொத்தம் Rs. 7019.10'),
+           'receipt-80mm': ('தெர்மல் ரசீது (80 mm)', 'தமிழ்ப் பொருள் பெயர்களுடன், சரியாக அச்சான கவுண்டர் ரசீது.',
+                            'மூன்று தமிழ்ப் பொருள் பெயர்களுடன் மாதிரி 80 mm தெர்மல் ரசீது, முழுதும் செலுத்தப்பட்டது, மொத்தம் Rs. 1036.60')}
+ta_shots = section(section_head('ஸ்கிரீன்ஷாட்கள்', 'இன்ஸ்டால் செய்யும் முன்பே எல்லாத் திரைகளையும் பாருங்கள்',
+                                f'தமிழில் இயங்கும் {NAME}-ன் உண்மையான திரைகளும் அது அச்சிட்ட பில்களும், ஒரு மாதிரிக் கடையின் தகவல்களுடன்.', 'shots-title')
+                   + '<div class="shots mt-4">'
+                   + ''.join(f'<figure class="shot{" shot-wide" if i == 0 and doc_cards else ""}">{window(ta_shot(n), f"தமிழில் {NAME}-ன் {TA_SHOTS[n][0]} திரை")}'
+                             f'<figcaption><b>{TA_SHOTS[n][0]}</b><span>{TA_SHOTS[n][1]}</span></figcaption></figure>' for i, (n, _, _) in enumerate(screen_cards))
+                   + ''.join(f'<figure class="shot">{paper(n, cls, TA_DOCS[n][2])}<figcaption><b>{TA_DOCS[n][0]}</b><span>{TA_DOCS[n][1]}</span></figcaption></figure>'
+                             for n, cls, _, _, _ in doc_cards)
+                   + '</div>',
+                   'screenshots', 'section-subtle', 'shots-title')
+
+TA_WHO = [('shopping-bag', 'மளிகை, சில்லறைக் கடைகள்', 'பார்கோடு ஸ்கேனிங், தெர்மல் ரசீதுடன் வேகமான கவுண்டர் பில்லிங்.'),
+          ('package', 'மருந்தகங்கள், மெடிக்கல் ஷாப்கள்', 'பொருட்களுக்கு batch எண், expiry தேதி; இருப்பு குறைந்தால் எச்சரிக்கை.'),
+          ('truck', 'வியாபாரிகள், மொத்த விற்பனையாளர்கள்', 'HSN குறியீடுகளுடன் GST பில், இருப்பு நிலை, வாடிக்கையாளர் நிலுவை.'),
+          ('user', 'ஃப்ரீலான்சர்கள், ஆலோசகர்கள்', 'தெளிவான PDF கொட்டேஷன், பில்; யார் பணம் தந்தார்கள் என்று தெளிவாகத் தெரியும்.'),
+          ('tool', 'சர்வீஸ், ரிப்பேர் கடைகள்', 'பாகங்கள், கூலிக்கு விரைவான பில்; பகுதிப் பணம், ரசீது.'),
+          ('briefcase', 'எந்தச் சிறு வணிகமும்', 'ஒரே கணினியில் பல நிறுவனங்கள், ஊழியர் லாகின்கள் — எல்லாம் இலவசம்.')]
+ta_who = section(section_head('யாருக்கு?', 'சிறு வணிகங்கள் வேலை செய்யும் முறைக்கே ஏற்றது', hid='who-title')
+                 + '<div class="grid-auto-wide mt-4">' + ''.join(f'<div class="usecase">{tile(i, "neutral")}<div><h3>{t}</h3><p>{d}</p></div></div>' for i, t, d in TA_WHO) + '</div>',
+                 'who', '', 'who-title')
+
+TA_INDIA = ['GSTIN, HSN/SAC, CGST + SGST அல்லது IGST', 'பில்லில் UPI QR குறியீடு', 'இயல்பாக ரூபாயில் தொகை', 'திரையிலும் பில்லிலும் தமிழ், இந்தி']
+TA_TAMIL = ['மெனு, பட்டன்கள், பெரும்பாலான திரைகள் தமிழில்', 'பொருள், வாடிக்கையாளர் பெயர்களைத் தமிழில் சேமிக்கலாம்',
+            'தமிழ்ப் பெயர்கள் PDF-லும் தெர்மல் ரசீதிலும் சரியாக அச்சாகும்', 'எப்போது வேண்டுமானாலும் English-க்கு மாற்றலாம்']
+ta_tamil = section(section_head('தமிழில்', 'தமிழிலேயே பயன்படுத்துங்கள், தமிழிலேயே பிரிண்ட் எடுங்கள்',
+                                f'{NAME} இந்தியாவில், இந்திய பில்லிங் விதிகளுக்காக உருவாக்கப்பட்டது. ஆப்பின் மொழியைத் தமிழாக மாற்றினால் போதும்.', 'lg-title')
+                   + '<div class="split split-stretch mt-4">'
+                   + f'<div class="group-card is-subtle"><div class="group-card-head">{tile("globe")}<h3>தமிழில் பில்லிங்</h3></div>{checks(TA_TAMIL)}'
+                   + f'<div class="stack" style="gap:10px"><p class="chips-label">ஆப் மொழிகள்</p><div class="chips">{langs}</div></div></div>'
+                   + f'<div class="group-card is-subtle"><div class="group-card-head">{tile("percent")}<h3>இந்தியாவுக்காக</h3></div>{checks(TA_INDIA)}</div>'
+                   + '</div>', 'tamil', '', 'lg-title')
+
+ta_privacy = f'''<section class="section section-night on-dark" id="privacy" aria-labelledby="priv-title">
+  <div class="wrap split">
+    <div>
+      {section_head('தனியுரிமை', 'உங்கள் வணிகத் தகவல் உங்களுக்கே சொந்தம்.', f'{NAME} உங்கள் வணிகத் தகவல்களை உங்கள் கணினியிலேயே வைத்திருக்கும். வாடிக்கையாளர்கள், விலைகள், விற்பனை பற்றிய எதுவும் எங்களுக்கோ வேறு யாருக்குமோ அனுப்பப்படுவதில்லை.', 'priv-title', left=True)}
+      {checks(['இன்டர்நெட் இல்லாமலும் வேலை செய்யும்', 'உங்கள் கணினியிலேயே சேமிப்பு', 'கணக்கும் இல்லை, சந்தாவும் இல்லை', 'நீங்கள் விரும்பும்போது பேக்கப்'], 'checks-grid mt-3')}
+      <p class="mt-3 small"><a href="privacy.html" style="color: var(--night-accent)">தனியுரிமைக் கொள்கையைப் படிக்க (English)</a></p>
+    </div>
+    <div class="vault">
+      <div class="vault-head">{tile('monitor', 'night')}<div><b>உங்கள் கணினி</b><span>{NAME} சேமிக்கும் எல்லாம் இங்கேதான்</span></div></div>
+      <ul class="vault-items">{''.join(f'<li>{icon(i)}{t}</li>' for i, t in [('file', 'பில்கள்'), ('users', 'வாடிக்கையாளர்கள்'), ('package', 'பொருட்கள்'), ('database', 'பேக்கப்கள்')])}</ul>
+      <hr>
+      <p class="vault-foot">{icon('cloud-off')}<span><b>உங்கள் வணிகத் தகவல் ஒருபோதும் அப்லோட் ஆகாது.</b> {NAME}-க்கு கிளவுடும் இல்லை, லாகின் செய்ய ஆன்லைன் கணக்கும் இல்லை.</span></p>
+    </div>
+  </div>
+</section>'''
+
+ta_free = section(
+    '<div class="split"><div>'
+    + section_head('ஓப்பன் சோர்ஸ்', 'எல்லோரும் பார்க்கும்படி உருவாக்கப்பட்டது',
+                   f'{NAME}-ன் சோர்ஸ் கோடு MIT License-ல் பொதுவில் உள்ளது. நாங்கள் சொல்வதை நம்ப வேண்டியதில்லை — நீங்களே சரிபார்க்கலாம்.', 'os-title', left=True)
+    + checks(['உங்கள் தகவலை ஆப் எப்படிக் கையாள்கிறது என்று நேரடியாகப் படிக்கலாம்', 'MIT License-ல் இலவசமாகப் பயன்படுத்தலாம், மாற்றலாம்',
+              'எத்தனை கணினிகளில் வேண்டுமானாலும் இலவசமாகப் பயன்படுத்தலாம்'], 'mt-3')
+    + '</div><div class="stack">'
+    + f'<div class="card card-note"><h3 class="h4">இது எப்படி இலவசம்?</h3><p>{NAME}-ஐ {BUSINESS} உருவாக்குகிறது; இது ANOOP P உருவாக்கிய, MIT உரிமம் பெற்ற '
+      'Invoiso-வை அடிப்படையாகக் கொண்டது. கட்டணப் பதிப்பு எதுவும் இல்லை. தனி வசதி தேவைப்படும் வணிகங்களுக்கான '
+      f'<a href="customization.html">கட்டண customization</a> சேவையும், <a href="{COFFEE}" target="_blank" rel="noopener">நன்கொடைகளும்</a> இதன் வளர்ச்சிக்கு உதவுகின்றன.</p></div>'
+    + f'<div class="repo-card"><div class="group-card-head">{tile("code")}<h3 class="h4">MIT License</h3></div>'
+    + '<p>உரிம விவரங்கள் <a href="licenses.html">Licenses பக்கத்தில்</a> (English) உள்ளன.</p>'
+    + f'<div class="badges">{badge("ஓப்பன் சோர்ஸ்", "neutral", "code")}{badge("சமீபத்திய பதிப்பு <span data-version>" + VERSION + "</span>", "neutral", "download")}</div></div>'
+    + '</div></div>', 'open-source', '', 'os-title')
+
+TA_TRUST = ('<div class="dl-trust">' + ''.join(badge(t, 'teal', 'check') for t in
+                                              ['என்றும் இலவசம்', 'கிரெடிட் கார்டு தேவையில்லை', 'சந்தா இல்லை', 'ஓப்பன் சோர்ஸ்']) + '</div>')
+TA_PHONE_NOTE = (f'<div class="notice hidden" data-mobile-note>{icon("smartphone")}<span>நீங்கள் போனில் பார்க்கிறீர்கள். {NAME} '
+                 'Windows, macOS, Linux கணினிகளில் இயங்கும் ஆப். டவுன்லோட் செய்ய உங்கள் கணினியில் <b>invoiceo.in/ta.html</b> திறக்கவும்.</span></div>')
+TA_FIRST_STEPS = [
+    ('download', 'டவுன்லோட்', 'மேலே உங்கள் கணினியைத் தேர்ந்தெடுங்கள்.'),
+    ('package', 'இன்ஸ்டால்', 'ஃபைலைத் திறந்து வழிமுறைகளைப் பின்பற்றுங்கள்.'),
+    ('user', 'லாகின், செட்டப்', 'எப்படி லாகின் செய்வது என்று முதல் திரையே காட்டும். பிறகு உங்கள் கடை விவரங்களைச் சேர்க்கவும்.'),
+    ('file', 'முதல் பில்', 'வாடிக்கையாளரையும் பொருட்களையும் சேர்த்து, பில்லை உருவாக்குங்கள்.'),
+    ('printer', 'பிரிண்ட் அல்லது PDF', 'A4 அல்லது தெர்மல் பிரிண்டரில் பிரிண்ட் எடுக்கலாம், அல்லது PDF-ஆகச் சேமிக்கலாம்.'),
+]
+ta_download = section(
+    section_head('டவுன்லோட்', 'இன்றே இலவசமாகப் பில் போடத் தொடங்குங்கள்',
+                 f'{NAME} <span data-version>{VERSION}</span> · வெளியீடு {RELEASE_DATE_TA} · <a href="changelog.html">புதியவை (English)</a>', 'dl-title')
+    + f'<div class="mt-2">{TA_TRUST}</div><div class="mt-2">{TA_PHONE_NOTE}</div>'
+    + f'<div class="mt-3">{dl_grid(full=True, lang="ta")}</div>'
+    + f'<div class="mt-2"><p class="center small muted">டவுன்லோடைச் சரிபார்க்க: <a href="{DL}SHA256SUMS.txt">SHA-256 checksums</a></p></div>'
+    + '<h3 class="h3 center" style="margin: 72px 0 20px">சில நிமிடங்களில் தொடங்கலாம்</h3>'
+    + first_steps('h4', TA_FIRST_STEPS, 'படி'),
+    'download', 'section-subtle', 'dl-title')
+
+TA_FAQ = [
+    (f'{NAME} உண்மையிலேயே இலவசமா?', 'ஆம். எல்லா வசதிகளும் இலவசம் — ட்ரையல், சந்தா, கட்டணப் பதிப்பு எதுவும் இல்லை. எத்தனை கணினிகளில் வேண்டுமானாலும் இன்ஸ்டால் செய்யலாம்.', True),
+    ('தமிழில் பயன்படுத்தலாமா?', 'ஆம். ஆப்பைத் தமிழில் பயன்படுத்தலாம்; தமிழ்ப் பெயர்கள் PDF-லும் தெர்மல் ரசீதிலும் சரியாக அச்சாகும். English, இந்தி உட்பட மொத்தம் 8 மொழிகள் உண்டு.', True),
+    ('இன்டர்நெட் இல்லாமல் வேலை செய்யுமா?', 'ஆம். டவுன்லோட் செய்ய மட்டும் இன்டர்நெட் தேவை. பில், பிரிண்ட், ரிப்போர்ட் எல்லாம் இன்டர்நெட் இல்லாமலே வேலை செய்யும்.', True),
+    ('ஆன்லைன் கணக்கு தொடங்க வேண்டுமா?', 'இல்லை. ஆப்பிலேயே உங்கள் கணினிக்கான லாகின் உண்டு; ஒவ்வொருவருக்கும் தனி பாஸ்வேர்டு வைக்கலாம்.', True),
+    ('என் தகவல்கள் எங்கே சேமிக்கப்படும்?', f'உங்கள் கணினியிலேயே, {NAME}-ன் data ஃபோல்டரில். பாதுகாப்புக்கு <b>அமைப்புகள் → காப்புப்பிரதி</b> மூலம் அடிக்கடி பேக்கப் எடுங்கள்.', False),
+    ('GST, UPI வசதி உண்டா?', 'ஆம் — GSTIN, HSN/SAC, CGST + SGST அல்லது IGST, பில்லில் உங்கள் UPI QR குறியீடு.', False),
+    ('எந்தக் கணினிகளில் ஓடும்?', 'Windows 10, 11 (64-bit), macOS 12 அல்லது பிந்தையது, Linux (.deb அல்லது AppImage). போன் ஆப் இல்லை.', False),
+    ('புதிய கணினிக்கு மாற முடியுமா?', f'ஆம். பழைய கணினியில் பேக்கப் எடுத்து, புதிய கணினியில் {NAME}-ஐ இன்ஸ்டால் செய்து, அந்த பேக்கப்பை ரீஸ்டோர் செய்யுங்கள்.', False),
+    ('சிறு கடைக்கு ஏற்றதா?', 'ஆம் — பார்கோடு ஸ்கேனிங், தெர்மல் ரசீது, இருப்பு கண்காணிப்பு, தினசரி விற்பனை ரிப்போர்ட் எல்லாம் உண்டு.', False),
+    ('இது எப்படி இலவசம்?', 'கட்டணப் பதிப்பு இல்லை. தேவைப்படுவோருக்கான கட்டண <a href="customization.html">customization</a> சேவையும் நன்கொடைகளும் வளர்ச்சிக்கு உதவுகின்றன.', False),
+    ('இன்ஸ்டால் செய்யும்போது Windows ஏன் எச்சரிக்கிறது?', 'இன்ஸ்டாலர் இன்னும் code-sign செய்யப்படவில்லை. <b>More info</b>, பிறகு <b>Run anyway</b> அழுத்துங்கள்.', False),
+    ('என் கடைக்கென்று தனி வசதி செய்து தர முடியுமா?', 'ஆம், கட்டண சேவையாக — ஒவ்வொரு கோரிக்கைக்கும் தனியாக விலை சொல்வோம். <a href="customization.html">Customization பக்கத்தில்</a> கேளுங்கள், அல்லது WhatsApp-ல் தொடர்பு கொள்ளுங்கள்.', False),
+]
+ta_faq = section(
+    section_head('கேள்விகள்', 'டவுன்லோட் செய்யும் முன் கேட்கப்படும் கேள்விகள்', hid='faq-title')
+    + '<div class="faq-grid mt-4">' + ''.join('<div class="faq-col">' + ''.join(faq_item(q, a, o) for q, a, o in col) + '</div>'
+                                             for col in (TA_FAQ[0::2], TA_FAQ[1::2])) + '</div>'
+    + '<p class="center mt-3">இன்னும் சந்தேகமா? <span data-block><a data-whatsapp target="_blank" rel="noopener">WhatsApp-ல் கேளுங்கள்</a>, </span>'
+      '<a href="faq.html">எல்லாப் பதில்களையும் படியுங்கள் (English)</a> அல்லது <a href="contact.html">எங்களைத் தொடர்பு கொள்ளுங்கள்</a>.</p>',
+    'faq', '', 'faq-title')
+
+ta_cta = f'''<section class="cta-section" aria-labelledby="cta-title">
+  <div class="wrap">
+    <div class="cta-band">
+      <h2 id="cta-title">எளிய பில்லிங். மாதக் கட்டணம் இல்லை.</h2>
+      <p class="lead">{NAME}-ஐ டவுன்லோட் செய்து, இன்றே உங்கள் முதல் பில்லைப் போடுங்கள்.</p>
+      <div class="cta-row">
+        {btn(f'{NAME} டவுன்லோட் — என்றும் இலவசம்', '#download', 'inverse', 'lg', 'download')}
+        {btn('தொடர்பு கொள்ள', 'contact.html', 'on-dark', 'lg', 'message')}
+      </div>
+    </div>
+  </div>
+</section>'''
+
+page('ta.html', f'இலவச பில்லிங் சாஃப்ட்வேர் தமிழில் — GST பில், ஆஃப்லைன் | {NAME}',
+     f'{NAME} — கடைகளுக்கான இலவச பில்லிங் சாஃப்ட்வேர். தமிழிலேயே GST பில், கொட்டேஷன், ரசீது போடலாம். '
+     'இன்டர்நெட் இல்லாமலும் வேலை செய்யும். Windows, Mac, Linux-க்கு இலவச டவுன்லோட்.',
+     'home', '\n\n'.join([ta_hero, ta_facts, ta_why, ta_how, ta_features, ta_shots, ta_who, ta_tamil, ta_privacy, ta_free,
+                          ta_download, ta_faq, ta_cta]),
+     lang='ta',
+     jsonld={
+         '@context': 'https://schema.org',
+         '@type': 'SoftwareApplication',
+         'name': NAME,
+         'inLanguage': 'ta',
+         'applicationCategory': 'BusinessApplication',
+         'operatingSystem': 'Windows, macOS, Linux',
+         'softwareVersion': VERSION,
+         'datePublished': RELEASE_ISO,
+         'description': 'சிறு கடைகளுக்கான இலவச, ஓப்பன் சோர்ஸ், ஆஃப்லைன் பில்லிங் மற்றும் GST பில் சாஃப்ட்வேர்.',
+         'url': SITE + '/ta.html',
          'license': 'https://opensource.org/licenses/MIT',
          'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'INR'},
          'publisher': ORG,
@@ -1030,7 +1341,7 @@ page('404.html', 'Page not found', f'This page could not be found on the {NAME} 
 print('pages written')
 
 # ───────────────────────── sitemap / robots / llms / manifest ──────────────
-pages = ['', 'download.html', 'customization.html', 'faq.html', 'changelog.html', 'contact.html',
+pages = ['', 'ta.html', 'download.html', 'customization.html', 'faq.html', 'changelog.html', 'contact.html',
          'privacy.html', 'terms.html', 'licenses.html']
 with open(os.path.join(OUT, 'sitemap.xml'), 'w') as f:
     f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
@@ -1049,6 +1360,7 @@ with open(os.path.join(OUT, 'llms.txt'), 'w') as f:
 ## Pages
 
 - [Home]({SITE}/): what {NAME} does
+- [Home in Tamil]({SITE}/ta.html): the same page in Tamil (தமிழ்)
 - [Download]({SITE}/download.html): installers for Windows, macOS and Linux, with install steps
 - [Customization]({SITE}/customization.html): paid custom features, quoted per request
 - [FAQ]({SITE}/faq.html): price, open source, offline use, data storage, GST, printers, languages
