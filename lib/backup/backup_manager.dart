@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:invoiceo/common/app_config.dart';
 import 'package:invoiceo/database/company_registry_service.dart';
 import 'package:invoiceo/database/database_helper.dart';
@@ -181,7 +182,9 @@ class BackupManager {
       }
 
       if (isDatabase) {
-        await _restoreFromDatabaseBackup(backupPath, preRestorePath);
+        // Not while the automatic backup copies the file.
+        await DatabaseHelper.withFileLock(
+            () => _restoreFromDatabaseBackup(backupPath, preRestorePath));
       } else {
         await _restoreFromJsonBackup(backupPath);
       }
@@ -342,7 +345,9 @@ class BackupManager {
           fileName: fileName,
           filePath: file.path,
           size: stat.size,
-          createdAt: stat.modified,
+          // A copied database keeps its own modified time, so the time in
+          // the name is when the backup was made.
+          createdAt: BackupInfo.timeFromFileName(fileName) ?? stat.modified,
           type: fileName.endsWith(_backupExtension)
               ? BackupType.database
               : BackupType.json,
@@ -458,28 +463,7 @@ class BackupManager {
       final extension = backupPath.split('.').last;
 
       if (extension == _backupExtension.replaceAll('.', '')) {
-        // Must really be an Invoiceo database: an empty or foreign file
-        // would otherwise replace the live data and look like a success.
-        final head = await file.openRead(0, 16).fold<List<int>>(
-            <int>[], (a, b) => a..addAll(b));
-        if (head.length < 16 ||
-            String.fromCharCodes(head.take(15)) != 'SQLite format 3') {
-          return false;
-        }
-        final tempDb = await openDatabase(backupPath,
-            readOnly: true, singleInstance: false);
-        try {
-          final check = await tempDb.rawQuery('PRAGMA quick_check');
-          if (check.isEmpty || check.first.values.first != 'ok') return false;
-          final tables = (await tempDb.rawQuery(
-                  "SELECT name FROM sqlite_master WHERE type = 'table'"))
-              .map((r) => r['name'] as String)
-              .toSet();
-          const needed = ['invoices', 'customers', 'products', 'settings', 'company_info'];
-          return needed.every(tables.contains);
-        } finally {
-          await tempDb.close();
-        }
+        return await _isInvoiceoDatabase(file);
       } else if (extension == _jsonExtension.replaceAll('.', '')) {
         final content = await file.readAsString();
         jsonDecode(content);
@@ -490,6 +474,194 @@ class BackupManager {
     } catch (e) {
       return false;
     }
+  }
+
+  // Must really be an Invoiceo database: an empty or foreign file would
+  // otherwise replace the live data and look like a success.
+  Future<bool> _isInvoiceoDatabase(File file) async {
+    final head = await file
+        .openRead(0, 16)
+        .fold<List<int>>(<int>[], (a, b) => a..addAll(b));
+    if (head.length < 16 ||
+        String.fromCharCodes(head.take(15)) != 'SQLite format 3') {
+      return false;
+    }
+    final tempDb =
+        await openDatabase(file.path, readOnly: true, singleInstance: false);
+    try {
+      final check = await tempDb.rawQuery('PRAGMA quick_check');
+      if (check.isEmpty || check.first.values.first != 'ok') return false;
+      final tables = (await tempDb
+              .rawQuery("SELECT name FROM sqlite_master WHERE type = 'table'"))
+          .map((r) => r['name'] as String)
+          .toSet();
+      const needed = ['invoices', 'customers', 'products', 'settings', 'company_info'];
+      return needed.every(tables.contains);
+    } finally {
+      await tempDb.close();
+    }
+  }
+
+  // ── Automatic backup (see lib/backup/auto_backup_service.dart) ──────────
+
+  static const autoBackupPrefix = 'invoiceo_auto_';
+
+  /// Short id of this computer + company, part of every automatic backup's
+  /// name. Pruning matches it exactly, so it only ever deletes this
+  /// computer's own automatic copies of this company, even when several
+  /// companies or computers share one cloud folder.
+  static String autoBackupTag(String installationId, String companyId) =>
+      sha1.convert(utf8.encode('$installationId/$companyId')).toString().substring(0, 8);
+
+  /// `<company name>-<tag>`: letters and digits of the name (any script),
+  /// with no `_`, so the name can be split again.
+  static String autoBackupSlug(String companyName, String tag) {
+    var name = companyName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\p{L}\p{M}\p{N}]+', unicode: true), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    final runes = name.runes.toList();
+    if (runes.length > 40) {
+      name = String.fromCharCodes(runes.take(40)).replaceAll(RegExp(r'-+$'), '');
+    }
+    return '${name.isEmpty ? 'company' : name}-$tag';
+  }
+
+  /// `invoiceo_auto_<slug>_<yyyyMMdd-HHmmss>.invoicedb` (local time, plain
+  /// digits in every language).
+  static String autoBackupFileName(String slug, DateTime time) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    final stamp = '${time.year.toString().padLeft(4, '0')}${two(time.month)}'
+        '${two(time.day)}-${two(time.hour)}${two(time.minute)}${two(time.second)}';
+    return '$autoBackupPrefix${slug}_$stamp$_backupExtension';
+  }
+
+  /// True only for an automatic backup file of [tag] (any company name, as
+  /// the company may have been renamed since).
+  static bool isAutoBackupFileName(String fileName, String tag) =>
+      RegExp('^$autoBackupPrefix' r'[^_/\\]*-' '${RegExp.escape(tag)}'
+              r'_\d{8}-\d{6}\.invoicedb$')
+          .hasMatch(fileName);
+
+  // yyyyMMdd-HHmmss of an automatic backup file name, for sorting.
+  static String _autoBackupStamp(String fileName) => fileName.substring(
+      fileName.length - _backupExtension.length - 15,
+      fileName.length - _backupExtension.length);
+
+  /// Copies the active company's database for the automatic backup into
+  /// [folder] (null = the app's own backup folder) and returns the new
+  /// file's path. A chosen folder must already exist (it is never created:
+  /// a missing Google Drive / OneDrive folder must not become a plain local
+  /// one). The copy is made locally first while nothing writes to the
+  /// database, checked, then put in the folder under a temporary name and
+  /// renamed, so a cloud folder never uploads half a file.
+  /// Throws [AutoBackupException].
+  Future<String> createAutomaticBackup({
+    required String companyId,
+    required String companySlug,
+    String? folder,
+    DateTime? time,
+  }) async {
+    final String dir;
+    if (folder == null) {
+      dir = await _getBackupDirectory(companyId);
+    } else {
+      try {
+        if (!await Directory(folder).exists()) {
+          throw AutoBackupException(AutoBackupErrorCode.folderMissing, folder);
+        }
+      } on FileSystemException catch (e) {
+        throw AutoBackupException.fromFileSystem(e);
+      }
+      dir = folder;
+    }
+
+    final tempDir = await ensureDirectory((await getTemporaryDirectory()).path);
+    final snapshot = File(join(tempDir.path,
+        'invoiceo_auto_${DateTime.now().microsecondsSinceEpoch}.tmp'));
+    try {
+      await DatabaseHelper.withFileLock(() async {
+        // The company may have been switched since the caller looked.
+        final active =
+            await CompanyRegistryService.getActiveCompanyId() ?? defaultCompanyId;
+        if (active != companyId) {
+          throw AutoBackupException(AutoBackupErrorCode.companyChanged, active);
+        }
+        final db = await DatabaseHelper().database;
+        final dbPath = DatabaseHelper.path!;
+        // Holding a transaction keeps every write out until the copy is done.
+        await db.transaction((txn) async {
+          await txn.rawQuery('SELECT count(*) FROM sqlite_master');
+          await File(dbPath).copy(snapshot.path);
+        });
+      });
+      if (!await _isInvoiceoDatabase(snapshot)) {
+        throw AutoBackupException(AutoBackupErrorCode.invalidCopy, snapshot.path);
+      }
+
+      var at = time ?? DateTime.now();
+      var target = join(dir, autoBackupFileName(companySlug, at));
+      // Two backups in the same second: the next second's name.
+      while (await File(target).exists() || await File('$target.tmp').exists()) {
+        at = at.add(const Duration(seconds: 1));
+        target = join(dir, autoBackupFileName(companySlug, at));
+      }
+      final partial = File('$target.tmp');
+      try {
+        await snapshot.copy(partial.path);
+        await partial.rename(target);
+      } on FileSystemException catch (e) {
+        try {
+          if (await partial.exists()) await partial.delete();
+        } catch (_) {}
+        throw AutoBackupException.fromFileSystem(e);
+      }
+      return target;
+    } finally {
+      try {
+        if (await snapshot.exists()) await snapshot.delete();
+      } catch (_) {}
+    }
+  }
+
+  /// Deletes older automatic backups of [tag] in [folder] (null = the app's
+  /// own backup folder of [companyId]), keeping the newest [keep]. Only
+  /// files named exactly as [createAutomaticBackup] names them (and its own
+  /// left-over `.tmp` files) are touched; nothing else in the folder is.
+  /// Returns the deleted paths.
+  Future<List<String>> pruneAutomaticBackups({
+    required String companyId,
+    required String tag,
+    String? folder,
+    required int keep,
+  }) async {
+    final dir = Directory(folder ?? await _getBackupDirectory(companyId));
+    if (!await dir.exists()) return const [];
+    final ours = <File>[];
+    final leftovers = <File>[];
+    await for (final entity in dir.list(followLinks: false)) {
+      if (entity is! File) continue;
+      final name = basename(entity.path);
+      if (isAutoBackupFileName(name, tag)) {
+        ours.add(entity);
+      } else if (name.endsWith('.tmp') &&
+          isAutoBackupFileName(name.substring(0, name.length - 4), tag)) {
+        leftovers.add(entity);
+      }
+    }
+    // Newest first, by the time in the name.
+    ours.sort((a, b) => _autoBackupStamp(basename(b.path))
+        .compareTo(_autoBackupStamp(basename(a.path))));
+    final deleted = <String>[];
+    for (final file in [...ours.skip(keep < 1 ? 1 : keep), ...leftovers]) {
+      try {
+        await file.delete();
+        deleted.add(file.path);
+      } catch (_) {
+        // Tried again after the next backup.
+      }
+    }
+    return deleted;
   }
 
   // App-managed store for a company's rolling automatic backups. Lives
@@ -533,4 +705,55 @@ class BackupManager {
     final docs = await getApplicationDocumentsDirectory();
     return ensureDirectory(docs.path);
   }
+}
+
+/// Why an automatic backup could not be made.
+enum AutoBackupErrorCode {
+  /// The chosen folder does not exist (moved, deleted, drive not connected).
+  folderMissing,
+
+  /// The folder exists but the app may not write there.
+  folderNotWritable,
+
+  /// macOS: the saved permission for the folder no longer works.
+  accessLost,
+
+  /// The copy was not a valid database.
+  invalidCopy,
+
+  /// The active company changed while the backup started (not an error:
+  /// nothing is recorded).
+  companyChanged,
+
+  /// Anything else; the detail says what.
+  failed,
+}
+
+class AutoBackupException implements Exception {
+  AutoBackupException(this.code, [this.detail = '']);
+
+  /// Sorts a file error into folder missing / not writable / other.
+  factory AutoBackupException.fromFileSystem(FileSystemException e) {
+    final os = e.osError?.errorCode;
+    // e.g. "Cannot copy file to '<target>' (No space left on device)".
+    final detail = e.osError?.message.isNotEmpty == true
+        ? '${e.message} (${e.osError!.message})'
+        : e.toString();
+    // Windows: 2/3 not found, 5 access denied, 19 write protected.
+    // Others: 2 ENOENT, 1 EPERM, 13 EACCES, 30 EROFS.
+    final missing = Platform.isWindows ? const {2, 3} : const {2};
+    final denied = Platform.isWindows ? const {5, 19} : const {1, 13, 30};
+    final code = missing.contains(os)
+        ? AutoBackupErrorCode.folderMissing
+        : denied.contains(os)
+            ? AutoBackupErrorCode.folderNotWritable
+            : AutoBackupErrorCode.failed;
+    return AutoBackupException(code, detail);
+  }
+
+  final AutoBackupErrorCode code;
+  final String detail;
+
+  @override
+  String toString() => 'AutoBackupException(${code.name}): $detail';
 }

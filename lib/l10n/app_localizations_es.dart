@@ -4507,30 +4507,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appInfoCheckNowButton => 'Comprobar ahora';
 
   @override
+  String get appInfoUsageStatsTitle => 'ESTADÍSTICAS DE USO';
+
+  @override
+  String get appInfoUsageStatsLabel => 'Enviar estadísticas de uso anónimas';
+
+  @override
+  String get appInfoUsageStatsSubtitle =>
+      'Un identificador aleatorio, la versión de la app, tu sistema operativo y si se ha creado una factura. Nunca tus clientes, productos, facturas ni importes.';
+
+  @override
   String get backupManagementTitle => 'Gestión de copias de seguridad';
 
   @override
-  String get backupCreateDbButton => 'Crear copia de la BD';
+  String get backupCreateDbButton => 'Crear copia de seguridad';
 
   @override
-  String get backupExportJsonButton => 'Exportar JSON';
+  String get backupExportJsonButton => 'Exportar como JSON';
 
   @override
-  String get backupImportButton => 'Importar copia de seguridad';
+  String get backupImportButton => 'Importar / restaurar';
 
   @override
-  String get backupNoBackupsFoundMessage =>
-      'No se encontraron copias de seguridad';
-
-  @override
-  String backupSizeLabel(String size) {
-    return 'Tamaño: $size';
-  }
-
-  @override
-  String backupCreatedLabel(String date) {
-    return 'Creada: $date';
-  }
+  String get backupNoBackupsFoundMessage => 'Aún no hay copias de seguridad';
 
   @override
   String backupLoadErrorMessage(String error) {
@@ -5624,4 +5623,129 @@ class AppLocalizationsEs extends AppLocalizations {
   String invoiceMgmtAlreadyConvertedBody(String number) {
     return 'El presupuesto $number ya es una factura. Para crear otra igual, usa Duplicar.';
   }
+
+  @override
+  String get autoBackupTitle => 'Copia de seguridad automática';
+
+  @override
+  String get autoBackupSwitchLabel => 'Hacer copias automáticamente';
+
+  @override
+  String get autoBackupSwitchSubtitle =>
+      'Mientras la aplicación está abierta, se guarda sola una copia de los datos de esta empresa.';
+
+  @override
+  String get autoBackupFrequencyLabel => 'Frecuencia';
+
+  @override
+  String get autoBackupEveryDay => 'Cada día';
+
+  @override
+  String get autoBackupEveryWeek => 'Cada semana';
+
+  @override
+  String get autoBackupKeepLabel => 'Copias que conservar';
+
+  @override
+  String get autoBackupKeepHint =>
+      'Solo se eliminan las copias automáticas antiguas de esta empresa. Los demás archivos de la carpeta nunca se tocan.';
+
+  @override
+  String get autoBackupFolderLabel => 'Guardar en';
+
+  @override
+  String get autoBackupAppFolder => 'Carpeta de copias de la aplicación';
+
+  @override
+  String get autoBackupChooseFolderButton => 'Elegir carpeta';
+
+  @override
+  String get autoBackupUseAppFolderButton => 'Usar la carpeta de la aplicación';
+
+  @override
+  String get autoBackupFolderTip =>
+      'Para guardar también una copia en la nube, elige una carpeta dentro de Google Drive o OneDrive.';
+
+  @override
+  String get autoBackupNowButton => 'Hacer copia ahora';
+
+  @override
+  String autoBackupLastFailed(String reason) {
+    return 'La última copia automática falló: $reason. Vuelve a elegir la carpeta.';
+  }
+
+  @override
+  String get autoBackupNoneYet => 'Todavía no hay copias automáticas.';
+
+  @override
+  String get autoBackupReasonFolderMissing => 'no se encontró la carpeta';
+
+  @override
+  String get autoBackupReasonNotWritable =>
+      'la aplicación no puede guardar archivos en la carpeta';
+
+  @override
+  String get autoBackupReasonAccessLost =>
+      'la aplicación ya no tiene permiso para usar la carpeta';
+
+  @override
+  String get autoBackupReasonInvalidCopy => 'no se pudo comprobar la copia';
+
+  @override
+  String autoBackupBannerMessage(String reason) {
+    return 'La copia de seguridad automática falló: $reason.';
+  }
+
+  @override
+  String get autoBackupBannerAction => 'Abrir configuración de copias';
+
+  @override
+  String get autoBackupLocalOnlyBadge => 'Solo en este equipo';
+
+  @override
+  String get autoBackupChangeFolderButton => 'Cambiar carpeta';
+
+  @override
+  String autoBackupLastBackup(String date) {
+    return 'Última copia: $date';
+  }
+
+  @override
+  String backupTimeToday(String time) {
+    return 'Hoy, $time';
+  }
+
+  @override
+  String backupTimeYesterday(String time) {
+    return 'Ayer, $time';
+  }
+
+  @override
+  String get backupManualTitle => 'Copia manual';
+
+  @override
+  String get backupManualSubtitle =>
+      'Crea una copia ahora, exporta los datos como JSON o restaura desde un archivo de copia.';
+
+  @override
+  String backupSavedTitle(int count) {
+    return 'Copias guardadas ($count)';
+  }
+
+  @override
+  String get backupSavedSubtitle =>
+      'Guardadas en la carpeta de copias de la aplicación en este equipo.';
+
+  @override
+  String get backupEmptySubtitle =>
+      'Crea una copia arriba o activa la copia automática.';
+
+  @override
+  String get backupKindBeforeRestore => 'Antes de restaurar';
+
+  @override
+  String get backupKindJson => 'Exportación JSON';
+
+  @override
+  String get backupFormatDatabase => 'Base de datos';
 }

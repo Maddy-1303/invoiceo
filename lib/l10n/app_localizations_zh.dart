@@ -4265,29 +4265,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appInfoCheckNowButton => '立即检查';
 
   @override
+  String get appInfoUsageStatsTitle => '使用统计';
+
+  @override
+  String get appInfoUsageStatsLabel => '发送匿名使用统计';
+
+  @override
+  String get appInfoUsageStatsSubtitle =>
+      '一个随机 ID、应用版本、您的操作系统，以及是否已创建发票。绝不发送您的客户、产品、发票或金额。';
+
+  @override
   String get backupManagementTitle => '备份管理';
 
   @override
-  String get backupCreateDbButton => '创建数据库备份';
+  String get backupCreateDbButton => '创建备份';
 
   @override
-  String get backupExportJsonButton => '导出 JSON';
+  String get backupExportJsonButton => '导出为 JSON';
 
   @override
-  String get backupImportButton => '导入备份';
+  String get backupImportButton => '导入 / 恢复';
 
   @override
-  String get backupNoBackupsFoundMessage => '未找到备份';
-
-  @override
-  String backupSizeLabel(String size) {
-    return '大小：$size';
-  }
-
-  @override
-  String backupCreatedLabel(String date) {
-    return '创建时间：$date';
-  }
+  String get backupNoBackupsFoundMessage => '还没有备份';
 
   @override
   String backupLoadErrorMessage(String error) {
@@ -5298,4 +5298,122 @@ class AppLocalizationsZh extends AppLocalizations {
   String invoiceMgmtAlreadyConvertedBody(String number) {
     return '报价单 $number 已转为发票。如需再开一张类似发票，请使用“复制”。';
   }
+
+  @override
+  String get autoBackupTitle => '自动备份';
+
+  @override
+  String get autoBackupSwitchLabel => '自动进行备份';
+
+  @override
+  String get autoBackupSwitchSubtitle => '应用打开期间，会自动保存此公司数据的副本。';
+
+  @override
+  String get autoBackupFrequencyLabel => '频率';
+
+  @override
+  String get autoBackupEveryDay => '每天';
+
+  @override
+  String get autoBackupEveryWeek => '每周';
+
+  @override
+  String get autoBackupKeepLabel => '保留副本数';
+
+  @override
+  String get autoBackupKeepHint => '只会删除此公司较旧的自动副本，文件夹中的其他文件绝不会被改动。';
+
+  @override
+  String get autoBackupFolderLabel => '保存到';
+
+  @override
+  String get autoBackupAppFolder => '应用自带的备份文件夹';
+
+  @override
+  String get autoBackupChooseFolderButton => '选择文件夹';
+
+  @override
+  String get autoBackupUseAppFolderButton => '使用应用文件夹';
+
+  @override
+  String get autoBackupFolderTip =>
+      '如需在云端也保留一份副本，请选择 Google Drive 或 OneDrive 中的文件夹。';
+
+  @override
+  String get autoBackupNowButton => '立即备份';
+
+  @override
+  String autoBackupLastFailed(String reason) {
+    return '上次自动备份失败：$reason。请重新选择文件夹。';
+  }
+
+  @override
+  String get autoBackupNoneYet => '尚无自动备份。';
+
+  @override
+  String get autoBackupReasonFolderMissing => '找不到该文件夹';
+
+  @override
+  String get autoBackupReasonNotWritable => '应用无法在该文件夹中保存文件';
+
+  @override
+  String get autoBackupReasonAccessLost => '应用已无权使用该文件夹';
+
+  @override
+  String get autoBackupReasonInvalidCopy => '无法检查副本';
+
+  @override
+  String autoBackupBannerMessage(String reason) {
+    return '自动备份失败：$reason。';
+  }
+
+  @override
+  String get autoBackupBannerAction => '打开备份设置';
+
+  @override
+  String get autoBackupLocalOnlyBadge => '仅限本机';
+
+  @override
+  String get autoBackupChangeFolderButton => '更改文件夹';
+
+  @override
+  String autoBackupLastBackup(String date) {
+    return '上次备份：$date';
+  }
+
+  @override
+  String backupTimeToday(String time) {
+    return '今天 $time';
+  }
+
+  @override
+  String backupTimeYesterday(String time) {
+    return '昨天 $time';
+  }
+
+  @override
+  String get backupManualTitle => '手动备份';
+
+  @override
+  String get backupManualSubtitle => '立即创建备份、将数据导出为 JSON，或从备份文件恢复。';
+
+  @override
+  String backupSavedTitle(int count) {
+    return '已保存的备份（$count）';
+  }
+
+  @override
+  String get backupSavedSubtitle => '保存在本机上应用自己的备份文件夹中。';
+
+  @override
+  String get backupEmptySubtitle => '请在上方创建备份，或开启自动备份。';
+
+  @override
+  String get backupKindBeforeRestore => '恢复前';
+
+  @override
+  String get backupKindJson => 'JSON 导出';
+
+  @override
+  String get backupFormatDatabase => '数据库';
 }

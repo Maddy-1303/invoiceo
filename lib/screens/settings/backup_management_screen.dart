@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:invoiceo/backup/backup_manager.dart';
 import 'package:invoiceo/common/common.dart';
 import 'package:invoiceo/database/company_registry_service.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
 import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/models/backup_info.dart';
+import 'package:invoiceo/screens/settings/auto_backup_card.dart';
+import 'package:invoiceo/screens/settings/backup_ui.dart';
 import 'package:invoiceo/widgets/restart_required_dialog.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 
@@ -28,8 +29,10 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
     _loadBackups();
   }
 
-  Future<void> _loadBackups() async {
-    if (mounted) setState(() => _isLoading = true);
+  // [quiet]: refresh the list without the full-page spinner (after an
+  // automatic "Back up now").
+  Future<void> _loadBackups({bool quiet = false}) async {
+    if (mounted && !quiet) setState(() => _isLoading = true);
 
     try {
       final companyId =
@@ -219,148 +222,269 @@ class _BackupManagementScreenState extends State<BackupManagementScreen>
                 ),
               ],
             ),
+      // One scrolling page: the automatic backup card, manual backup, then
+      // the saved backups (a short window scrolls instead of overflowing).
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Action buttons
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 900),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 16),
-                      child: Row(
-                        spacing: 16,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () =>
-                                  _createBackup(BackupType.database),
-                              icon: const Icon(Icons.backup),
-                              label: Text(l10n.backupCreateDbButton),
-                            ),
-                          ),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _createBackup(BackupType.json),
-                              icon: const Icon(Icons.download),
-                              label: Text(l10n.backupExportJsonButton),
-                            ),
-                          ),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _importBackup,
-                              icon: const Icon(Icons.upload),
-                              label: Text(l10n.backupImportButton),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+          : LayoutBuilder(builder: (context, constraints) {
+              final pad = constraints.maxWidth >= 700 ? 24.0 : 16.0;
+              return ListView(
+                padding: EdgeInsets.fromLTRB(pad, 20, pad, 28),
+                children: [
+                  _narrow(AutoBackupCard(
+                      onBackupMade: () => _loadBackups(quiet: true))),
+                  const SizedBox(height: 16),
+                  _narrow(_manualBackup(l10n)),
+                  const SizedBox(height: 16),
+                  _narrow(_savedBackups(l10n)),
+                ],
+              );
+            }),
+    );
+  }
 
-                const Divider(),
+  Widget _narrow(Widget child) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: child,
+        ),
+      );
 
-                // Backup list
-                Expanded(
-                  child: _backups.isEmpty
-                      ? Center(
-                          child: Text(
-                            l10n.backupNoBackupsFoundMessage,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        )
-                      : Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 900),
-                            child: ListView.builder(
-                              itemCount: _backups.length,
-                              itemBuilder: (context, index) {
-                                final backup = _backups[index];
-                                return _buildBackupTile(backup);
-                              },
-                            ),
-                          ),
-                        ),
-                ),
-              ],
+  // Create backup / Export as JSON / Import / restore.
+  Widget _manualBackup(AppLocalizations l10n) {
+    final style = OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 40),
+        padding: backupButtonPadding,
+        shape: backupButtonShape);
+    return Container(
+      key: const ValueKey('backupManualCard'),
+      decoration: backupCardDecoration(context),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BackupSectionHeader(
+            icon: Icons.save_outlined,
+            color: backupManualColor,
+            title: l10n.backupManualTitle,
+            subtitle: l10n.backupManualSubtitle,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.icon(
+                key: const ValueKey('backupCreateButton'),
+                onPressed: () => _createBackup(BackupType.database),
+                icon: const Icon(Icons.backup_outlined, size: 18),
+                label: Text(l10n.backupCreateDbButton),
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: backupButtonPadding,
+                    shape: backupButtonShape),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('backupExportJsonButton'),
+                onPressed: () => _createBackup(BackupType.json),
+                icon: const Icon(Icons.data_object, size: 18),
+                label: Text(l10n.backupExportJsonButton),
+                style: style,
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('backupImportButton'),
+                onPressed: _importBackup,
+                icon: const Icon(Icons.upload_file_outlined, size: 18),
+                label: Text(l10n.backupImportButton),
+                style: style,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // "Saved backups (n)" with Refresh, then one row per backup file.
+  Widget _savedBackups(AppLocalizations l10n) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: const ValueKey('backupSavedCard'),
+      decoration: backupCardDecoration(context),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 12, 16),
+            child: BackupSectionHeader(
+              icon: Icons.inventory_2_outlined,
+              color: BrandColors.slate,
+              title: l10n.backupSavedTitle(_backups.length),
+              titleKey: const ValueKey('backupSavedTitle'),
+              subtitle: l10n.backupSavedSubtitle,
+              trailing: IconButton(
+                key: const ValueKey('backupListRefresh'),
+                tooltip: l10n.actionRefresh,
+                onPressed: _isLoading ? null : _loadBackups,
+                icon: const Icon(Icons.refresh),
+              ),
             ),
+          ),
+          Divider(height: 1, color: scheme.outlineVariant),
+          if (_backups.isEmpty)
+            _emptyState(l10n)
+          else
+            for (var i = 0; i < _backups.length; i++) ...[
+              if (i > 0)
+                Divider(
+                    height: 1,
+                    indent: 74,
+                    color: scheme.outlineVariant.withValues(alpha: 0.6)),
+              _buildBackupTile(_backups[i]),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _emptyState(AppLocalizations l10n) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      key: const ValueKey('backupEmptyState'),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Column(
+        children: [
+          Icon(Icons.inventory_2_outlined,
+              size: 56, color: scheme.outlineVariant),
+          const SizedBox(height: 12),
+          Text(
+            l10n.backupNoBackupsFoundMessage,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.backupEmptySubtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBackupTile(BackupInfo backup) {
     final l10n = AppLocalizations.of(context)!;
-    final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
+    final scheme = Theme.of(context).colorScheme;
+    final kind = backup.kind;
+    final color = backupKindColor(kind);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor:
-              backup.type == BackupType.database ? BrandColors.accent : Colors.green,
-          child: Icon(
-            backup.type == BackupType.database ? Icons.storage : Icons.code,
-            color: Colors.white,
+    return Padding(
+      key: ValueKey('backupRow_${backup.fileName}'),
+      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
+      child: Row(
+        children: [
+          BackupIconCircle(backupKindIcon(kind), color),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // The badge goes under a long title instead of cutting it.
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      backupKindLabel(l10n, kind),
+                      style: const TextStyle(
+                          fontSize: 14.5, fontWeight: FontWeight.w700),
+                    ),
+                    BackupBadge(
+                        backup.type == BackupType.json
+                            ? 'JSON'
+                            : l10n.backupFormatDatabase,
+                        color),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${backupTimeText(l10n, backup.createdAt)}  ·  '
+                  '${backup.formattedSize}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: scheme.onSurface),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  backup.fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
           ),
-        ),
-        title: Text(backup.fileName),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.backupSizeLabel(backup.formattedSize)),
-            Text(l10n.backupCreatedLabel(dateFormat.format(backup.createdAt))),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'restore':
-                _restoreBackup(backup);
-                break;
-              case 'download':
-                _downloadBackup(backup);
-                break;
-              case 'share':
-                _shareBackup(backup);
-                break;
-              case 'delete':
-                _deleteBackup(backup);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'restore',
-              child: ListTile(
-                leading: const Icon(Icons.restore),
-                title: Text(l10n.actionRestore),
+          const SizedBox(width: 4),
+          PopupMenuButton<String>(
+            tooltip: l10n.invoiceMgmtMoreActionsTooltip,
+            icon: const Icon(Icons.more_vert, size: 20),
+            onSelected: (value) {
+              switch (value) {
+                case 'restore':
+                  _restoreBackup(backup);
+                  break;
+                case 'download':
+                  _downloadBackup(backup);
+                  break;
+                case 'share':
+                  _shareBackup(backup);
+                  break;
+                case 'delete':
+                  _deleteBackup(backup);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'restore',
+                child: ListTile(
+                  leading: const Icon(Icons.restore),
+                  title: Text(l10n.actionRestore),
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: 'download',
-              child: ListTile(
-                leading: const Icon(Icons.download),
-                title: Text(l10n.createInvoiceDownloadLabel),
+              PopupMenuItem(
+                value: 'download',
+                child: ListTile(
+                  leading: const Icon(Icons.download),
+                  title: Text(l10n.createInvoiceDownloadLabel),
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: 'share',
-              child: ListTile(
-                leading: const Icon(Icons.share),
-                title: Text(l10n.actionShare),
+              PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  leading: const Icon(Icons.share),
+                  title: Text(l10n.actionShare),
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: 'delete',
-              child: ListTile(
-                leading: const Icon(Icons.delete),
-                title: Text(l10n.actionDelete),
+              PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete, color: scheme.error),
+                  title: Text(l10n.actionDelete,
+                      style: TextStyle(color: scheme.error)),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -4545,29 +4545,30 @@ class AppLocalizationsTa extends AppLocalizations {
   String get appInfoCheckNowButton => 'இப்போது சரிபார்க்கவும்';
 
   @override
+  String get appInfoUsageStatsTitle => 'பயன்பாட்டுப் புள்ளிவிவரங்கள்';
+
+  @override
+  String get appInfoUsageStatsLabel =>
+      'அநாமதேய பயன்பாட்டுப் புள்ளிவிவரங்களை அனுப்பு';
+
+  @override
+  String get appInfoUsageStatsSubtitle =>
+      'ஒரு சீரற்ற அடையாள எண், ஆப் பதிப்பு, உங்கள் இயக்க முறைமை, ஒரு விலைப்பட்டியல் உருவாக்கப்பட்டதா என்பது மட்டும். உங்கள் வாடிக்கையாளர்கள், பொருட்கள், விலைப்பட்டியல்கள் அல்லது தொகைகள் ஒருபோதும் அனுப்பப்படாது.';
+
+  @override
   String get backupManagementTitle => 'காப்புப்பிரதி மேலாண்மை';
 
   @override
-  String get backupCreateDbButton => 'தரவுத்தளக் காப்புப்பிரதியை உருவாக்கவும்';
+  String get backupCreateDbButton => 'காப்புப்பிரதி எடுக்கவும்';
 
   @override
-  String get backupExportJsonButton => 'JSON-ஐ ஏற்றுமதி செய்யவும்';
+  String get backupExportJsonButton => 'JSON ஆக ஏற்றுமதி செய்யவும்';
 
   @override
-  String get backupImportButton => 'காப்புப்பிரதியை இறக்குமதி செய்யவும்';
+  String get backupImportButton => 'இறக்குமதி / மீட்டெடு';
 
   @override
-  String get backupNoBackupsFoundMessage => 'காப்புப்பிரதிகள் எதுவும் இல்லை';
-
-  @override
-  String backupSizeLabel(String size) {
-    return 'அளவு: $size';
-  }
-
-  @override
-  String backupCreatedLabel(String date) {
-    return 'உருவாக்கப்பட்டது: $date';
-  }
+  String get backupNoBackupsFoundMessage => 'இதுவரை காப்புப்பிரதிகள் இல்லை';
 
   @override
   String backupLoadErrorMessage(String error) {
@@ -5669,4 +5670,132 @@ class AppLocalizationsTa extends AppLocalizations {
   String invoiceMgmtAlreadyConvertedBody(String number) {
     return 'விலைப்புள்ளி $number ஏற்கனவே விலைப்பட்டியலாக மாற்றப்பட்டது. இதுபோல் இன்னொரு விலைப்பட்டியல் செய்ய, நகலெடு என்பதைப் பயன்படுத்தவும்.';
   }
+
+  @override
+  String get autoBackupTitle => 'தானியங்கி காப்புப்பிரதி';
+
+  @override
+  String get autoBackupSwitchLabel => 'தானாகக் காப்புப்பிரதி எடுக்கவும்';
+
+  @override
+  String get autoBackupSwitchSubtitle =>
+      'செயலி திறந்திருக்கும்போது, இந்த நிறுவனத்தின் தரவின் நகல் தானாகவே சேமிக்கப்படும்.';
+
+  @override
+  String get autoBackupFrequencyLabel => 'எவ்வளவு அடிக்கடி';
+
+  @override
+  String get autoBackupEveryDay => 'தினமும்';
+
+  @override
+  String get autoBackupEveryWeek => 'வாரம் ஒருமுறை';
+
+  @override
+  String get autoBackupKeepLabel => 'வைத்திருக்கும் நகல்கள்';
+
+  @override
+  String get autoBackupKeepHint =>
+      'இந்த நிறுவனத்தின் பழைய தானியங்கி நகல்கள் மட்டுமே நீக்கப்படும். கோப்புறையில் உள்ள மற்ற கோப்புகள் ஒருபோதும் தொடப்படாது.';
+
+  @override
+  String get autoBackupFolderLabel => 'சேமிக்கும் இடம்';
+
+  @override
+  String get autoBackupAppFolder =>
+      'செயலியின் சொந்தக் காப்புப்பிரதிக் கோப்புறை';
+
+  @override
+  String get autoBackupChooseFolderButton => 'கோப்புறையைத் தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get autoBackupUseAppFolderButton =>
+      'செயலியின் கோப்புறையைப் பயன்படுத்தவும்';
+
+  @override
+  String get autoBackupFolderTip =>
+      'கிளவுடிலும் ஒரு நகல் இருக்க, Google Drive அல்லது OneDrive-க்குள் உள்ள ஒரு கோப்புறையைத் தேர்ந்தெடுக்கவும்.';
+
+  @override
+  String get autoBackupNowButton => 'இப்போதே காப்புப்பிரதி எடுக்கவும்';
+
+  @override
+  String autoBackupLastFailed(String reason) {
+    return 'கடைசி தானியங்கி காப்புப்பிரதி தோல்வியடைந்தது: $reason. கோப்புறையை மீண்டும் தேர்ந்தெடுக்கவும்.';
+  }
+
+  @override
+  String get autoBackupNoneYet =>
+      'இதுவரை தானியங்கி காப்புப்பிரதி எதுவும் இல்லை.';
+
+  @override
+  String get autoBackupReasonFolderMissing => 'கோப்புறை கிடைக்கவில்லை';
+
+  @override
+  String get autoBackupReasonNotWritable =>
+      'கோப்புறையில் கோப்புகளைச் சேமிக்கச் செயலியால் முடியவில்லை';
+
+  @override
+  String get autoBackupReasonAccessLost =>
+      'கோப்புறையைப் பயன்படுத்தச் செயலிக்கு இனி அனுமதி இல்லை';
+
+  @override
+  String get autoBackupReasonInvalidCopy => 'நகலைச் சரிபார்க்க முடியவில்லை';
+
+  @override
+  String autoBackupBannerMessage(String reason) {
+    return 'தானியங்கி காப்புப்பிரதி தோல்வியடைந்தது: $reason.';
+  }
+
+  @override
+  String get autoBackupBannerAction => 'காப்புப்பிரதி அமைப்புகளைத் திறக்கவும்';
+
+  @override
+  String get autoBackupLocalOnlyBadge => 'இந்தக் கணினியில் மட்டும்';
+
+  @override
+  String get autoBackupChangeFolderButton => 'கோப்புறையை மாற்றவும்';
+
+  @override
+  String autoBackupLastBackup(String date) {
+    return 'கடைசி காப்புப்பிரதி: $date';
+  }
+
+  @override
+  String backupTimeToday(String time) {
+    return 'இன்று, $time';
+  }
+
+  @override
+  String backupTimeYesterday(String time) {
+    return 'நேற்று, $time';
+  }
+
+  @override
+  String get backupManualTitle => 'கைமுறைக் காப்புப்பிரதி';
+
+  @override
+  String get backupManualSubtitle =>
+      'இப்போதே காப்புப்பிரதி எடுக்கவும், தரவை JSON ஆக ஏற்றுமதி செய்யவும் அல்லது காப்புப்பிரதிக் கோப்பிலிருந்து மீட்டெடுக்கவும்.';
+
+  @override
+  String backupSavedTitle(int count) {
+    return 'சேமித்த காப்புப்பிரதிகள் ($count)';
+  }
+
+  @override
+  String get backupSavedSubtitle =>
+      'இந்தக் கணினியில் உள்ள செயலியின் சொந்தக் காப்புப்பிரதிக் கோப்புறையில் வைக்கப்பட்டுள்ளன.';
+
+  @override
+  String get backupEmptySubtitle =>
+      'மேலே காப்புப்பிரதி எடுக்கவும், அல்லது தானியங்கி காப்புப்பிரதியை இயக்கவும்.';
+
+  @override
+  String get backupKindBeforeRestore => 'மீட்டெடுப்பதற்கு முன்';
+
+  @override
+  String get backupKindJson => 'JSON ஏற்றுமதி';
+
+  @override
+  String get backupFormatDatabase => 'தரவுத்தளம்';
 }

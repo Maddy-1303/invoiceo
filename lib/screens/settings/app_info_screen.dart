@@ -8,6 +8,7 @@ import 'package:invoiceo/l10n/app_localizations.dart';
 import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/providers/app_config_provider.dart';
 import 'package:invoiceo/services/update_service.dart';
+import 'package:invoiceo/services/usage_stats_service.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 
 class AppInfoScreen extends ConsumerStatefulWidget {
@@ -30,6 +31,16 @@ class AppInfoScreen extends ConsumerStatefulWidget {
 
 class _AppInfoScreenState extends ConsumerState<AppInfoScreen>
     with ModernSectionActions {
+  bool? _usageStatsOn;
+
+  @override
+  void initState() {
+    super.initState();
+    UsageStatsService.isEnabled().then((on) {
+      if (mounted) setState(() => _usageStatsOn = on);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
@@ -192,6 +203,11 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen>
 
                 // ── Update card ──────────────────────────────────────────
                 if (cfg.enableUpdateCheck) _buildUpdateCard(),
+
+                if (!AppConfig.kIsCloud && _usageStatsOn != null) ...[
+                  const SizedBox(height: 20),
+                  _buildUsageStatsCard(),
+                ],
 
                 const SizedBox(height: 32),
 
@@ -434,6 +450,70 @@ class _AppInfoScreenState extends ConsumerState<AppInfoScreen>
                       ),
                     ],
                   ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// On by default; turning it off stops all usage counts (UsageStatsService).
+  Widget _buildUsageStatsCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppBorderRadius.medium),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.appInfoUsageStatsTitle,
+              style: TextStyle(
+                fontSize: AppFontSize.xsmall,
+                fontWeight: FontWeight.w700,
+                color: muted,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: Color(0xFFF5F5F5)),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.insights_outlined, size: 18, color: muted),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.appInfoUsageStatsLabel,
+                          style: const TextStyle(
+                              fontSize: AppFontSize.medium,
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 3),
+                      Text(l10n.appInfoUsageStatsSubtitle,
+                          style: TextStyle(
+                              fontSize: AppFontSize.xsmall, color: muted)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Switch(
+                  key: const ValueKey('usageStatsSwitch'),
+                  value: _usageStatsOn ?? true,
+                  onChanged: (on) async {
+                    setState(() => _usageStatsOn = on);
+                    await UsageStatsService.setEnabled(on);
+                  },
                 ),
               ],
             ),

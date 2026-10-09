@@ -7460,47 +7460,53 @@ abstract class AppLocalizations {
   /// **'Check Now'**
   String get appInfoCheckNowButton;
 
+  /// No description provided for @appInfoUsageStatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'USAGE STATISTICS'**
+  String get appInfoUsageStatsTitle;
+
+  /// No description provided for @appInfoUsageStatsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Send anonymous usage statistics'**
+  String get appInfoUsageStatsLabel;
+
+  /// No description provided for @appInfoUsageStatsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A random ID, the app version, your operating system and whether an invoice has been made. Never your customers, products, invoices or amounts.'**
+  String get appInfoUsageStatsSubtitle;
+
   /// No description provided for @backupManagementTitle.
   ///
   /// In en, this message translates to:
   /// **'Backup Management'**
   String get backupManagementTitle;
 
-  /// No description provided for @backupCreateDbButton.
+  /// Settings > Backup > Manual backup: makes a full backup of the database now
   ///
   /// In en, this message translates to:
-  /// **'Create DB Backup'**
+  /// **'Create backup'**
   String get backupCreateDbButton;
 
-  /// No description provided for @backupExportJsonButton.
+  /// Settings > Backup > Manual backup: saves the data as a JSON file
   ///
   /// In en, this message translates to:
-  /// **'Export JSON'**
+  /// **'Export as JSON'**
   String get backupExportJsonButton;
 
-  /// No description provided for @backupImportButton.
+  /// Settings > Backup > Manual backup: picks a backup file and restores it (asks first)
   ///
   /// In en, this message translates to:
-  /// **'Import Backup'**
+  /// **'Import / restore'**
   String get backupImportButton;
 
-  /// No description provided for @backupNoBackupsFoundMessage.
+  /// Settings > Backup: the saved backups list is empty
   ///
   /// In en, this message translates to:
-  /// **'No backups found'**
+  /// **'No backups yet'**
   String get backupNoBackupsFoundMessage;
-
-  /// No description provided for @backupSizeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Size: {size}'**
-  String backupSizeLabel(String size);
-
-  /// No description provided for @backupCreatedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Created: {date}'**
-  String backupCreatedLabel(String date);
 
   /// No description provided for @backupLoadErrorMessage.
   ///
@@ -9331,6 +9337,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quotation {number} is already an invoice. To make another invoice like it, use Duplicate.'**
   String invoiceMgmtAlreadyConvertedBody(String number);
+
+  /// Settings > Backup: title of the automatic backup card
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic backup'**
+  String get autoBackupTitle;
+
+  /// Automatic backup card: the on/off switch
+  ///
+  /// In en, this message translates to:
+  /// **'Back up automatically'**
+  String get autoBackupSwitchLabel;
+
+  /// Automatic backup card: under the on/off switch
+  ///
+  /// In en, this message translates to:
+  /// **'While the app is open, a copy of this company\'s data is saved on its own.'**
+  String get autoBackupSwitchSubtitle;
+
+  /// Automatic backup card: label of the daily / weekly choice
+  ///
+  /// In en, this message translates to:
+  /// **'How often'**
+  String get autoBackupFrequencyLabel;
+
+  /// Automatic backup card: back up once a day
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get autoBackupEveryDay;
+
+  /// Automatic backup card: back up once a week
+  ///
+  /// In en, this message translates to:
+  /// **'Every week'**
+  String get autoBackupEveryWeek;
+
+  /// Automatic backup card: label of the 5 / 10 / 30 choice
+  ///
+  /// In en, this message translates to:
+  /// **'Copies to keep'**
+  String get autoBackupKeepLabel;
+
+  /// Automatic backup card: what keeping the last copies deletes
+  ///
+  /// In en, this message translates to:
+  /// **'Only older automatic copies of this company are deleted. Other files in the folder are never touched.'**
+  String get autoBackupKeepHint;
+
+  /// Automatic backup card: label of the folder the copies go to
+  ///
+  /// In en, this message translates to:
+  /// **'Save to'**
+  String get autoBackupFolderLabel;
+
+  /// Automatic backup card: shown instead of a path when no folder was chosen
+  ///
+  /// In en, this message translates to:
+  /// **'App\'s own backup folder'**
+  String get autoBackupAppFolder;
+
+  /// Automatic backup card: button that opens the folder picker (also its title)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose folder'**
+  String get autoBackupChooseFolderButton;
+
+  /// Automatic backup card: go back to the app's own backup folder
+  ///
+  /// In en, this message translates to:
+  /// **'Use app folder'**
+  String get autoBackupUseAppFolderButton;
+
+  /// Automatic backup card: hint under the folder, shown only when the folder is not in Google Drive, OneDrive, iCloud or Dropbox
+  ///
+  /// In en, this message translates to:
+  /// **'To keep a copy in the cloud too, choose a folder inside Google Drive or OneDrive.'**
+  String get autoBackupFolderTip;
+
+  /// Automatic backup card: makes an automatic backup straight away
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now'**
+  String get autoBackupNowButton;
+
+  /// Automatic backup card: status (in red) after a failed backup; {reason} is one of the autoBackupReason texts
+  ///
+  /// In en, this message translates to:
+  /// **'Last automatic backup failed: {reason}. Choose the folder again.'**
+  String autoBackupLastFailed(String reason);
+
+  /// Automatic backup card: status before the first automatic backup
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic backup yet.'**
+  String get autoBackupNoneYet;
+
+  /// Automatic backup failure reason, inside a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'the folder was not found'**
+  String get autoBackupReasonFolderMissing;
+
+  /// Automatic backup failure reason, inside a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'the app cannot save files in the folder'**
+  String get autoBackupReasonNotWritable;
+
+  /// Automatic backup failure reason (macOS), inside a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'the app no longer has permission to use the folder'**
+  String get autoBackupReasonAccessLost;
+
+  /// Automatic backup failure reason, inside a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'the copy could not be checked'**
+  String get autoBackupReasonInvalidCopy;
+
+  /// Dashboard warning when the last automatic backup failed
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic backup failed: {reason}.'**
+  String autoBackupBannerMessage(String reason);
+
+  /// Dashboard warning: button that opens Settings > Backup
+  ///
+  /// In en, this message translates to:
+  /// **'Open Backup settings'**
+  String get autoBackupBannerAction;
+
+  /// Automatic backup card: badge on a folder that is not in a cloud service (the copies stay on this computer)
+  ///
+  /// In en, this message translates to:
+  /// **'This computer only'**
+  String get autoBackupLocalOnlyBadge;
+
+  /// Automatic backup card: button next to the folder that opens the folder picker
+  ///
+  /// In en, this message translates to:
+  /// **'Change folder'**
+  String get autoBackupChangeFolderButton;
+
+  /// Automatic backup card: status after a good backup; {date} is e.g. "Today, 13:03"
+  ///
+  /// In en, this message translates to:
+  /// **'Last backup: {date}'**
+  String autoBackupLastBackup(String date);
+
+  /// Settings > Backup: when a backup was made today; {time} is e.g. 13:03
+  ///
+  /// In en, this message translates to:
+  /// **'Today, {time}'**
+  String backupTimeToday(String time);
+
+  /// Settings > Backup: when a backup was made yesterday; {time} is e.g. 09:10
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday, {time}'**
+  String backupTimeYesterday(String time);
+
+  /// Settings > Backup: title of the manual backup section, and the name of a backup made with Create backup
+  ///
+  /// In en, this message translates to:
+  /// **'Manual backup'**
+  String get backupManualTitle;
+
+  /// Settings > Backup: under the manual backup title
+  ///
+  /// In en, this message translates to:
+  /// **'Make a backup now, export the data as JSON, or restore from a backup file.'**
+  String get backupManualSubtitle;
+
+  /// Settings > Backup: title of the list of backups; {count} is how many
+  ///
+  /// In en, this message translates to:
+  /// **'Saved backups ({count})'**
+  String backupSavedTitle(int count);
+
+  /// Settings > Backup: under the saved backups title
+  ///
+  /// In en, this message translates to:
+  /// **'Kept in the app\'s own backup folder on this computer.'**
+  String get backupSavedSubtitle;
+
+  /// Settings > Backup: under "No backups yet"
+  ///
+  /// In en, this message translates to:
+  /// **'Create a backup above, or turn on automatic backup.'**
+  String get backupEmptySubtitle;
+
+  /// Settings > Backup list: a copy of the data made just before a restore, so the restore can be undone
+  ///
+  /// In en, this message translates to:
+  /// **'Before restore'**
+  String get backupKindBeforeRestore;
+
+  /// Settings > Backup list: a file made with Export as JSON
+  ///
+  /// In en, this message translates to:
+  /// **'JSON export'**
+  String get backupKindJson;
+
+  /// Settings > Backup list: small badge on a full database backup file (.invoicedb)
+  ///
+  /// In en, this message translates to:
+  /// **'Database'**
+  String get backupFormatDatabase;
 }
 
 class _AppLocalizationsDelegate

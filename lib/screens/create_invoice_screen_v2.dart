@@ -26,6 +26,7 @@ import 'package:invoiceo/services/pdf_service.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/utils/formatters.dart';
 import 'package:invoiceo/utils/scanner_capture.dart';
+import 'package:invoiceo/services/usage_stats_service.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 
 class InvoiceFormGuard {
@@ -1425,6 +1426,7 @@ class _CreateInvoiceScreenV2State extends ConsumerState<CreateInvoiceScreenV2> {
       );
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      unawaited(UsageStatsService.onDocumentCreated(invoice.type));
 
       if (!mounted) return true;
       setState(() {

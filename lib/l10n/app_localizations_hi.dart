@@ -4442,29 +4442,29 @@ class AppLocalizationsHi extends AppLocalizations {
   String get appInfoCheckNowButton => 'अभी जाँचें';
 
   @override
+  String get appInfoUsageStatsTitle => 'उपयोग आँकड़े';
+
+  @override
+  String get appInfoUsageStatsLabel => 'गुमनाम उपयोग आँकड़े भेजें';
+
+  @override
+  String get appInfoUsageStatsSubtitle =>
+      'एक रैंडम आईडी, ऐप संस्करण, आपका ऑपरेटिंग सिस्टम और क्या कोई इनवॉइस बनाया गया है। आपके ग्राहक, उत्पाद, इनवॉइस या राशियाँ कभी नहीं भेजी जातीं।';
+
+  @override
   String get backupManagementTitle => 'बैकअप प्रबंधन';
 
   @override
-  String get backupCreateDbButton => 'DB बैकअप बनाएं';
+  String get backupCreateDbButton => 'बैकअप बनाएं';
 
   @override
-  String get backupExportJsonButton => 'JSON निर्यात करें';
+  String get backupExportJsonButton => 'JSON के रूप में निर्यात करें';
 
   @override
-  String get backupImportButton => 'बैकअप आयात करें';
+  String get backupImportButton => 'आयात / पुनर्स्थापित करें';
 
   @override
-  String get backupNoBackupsFoundMessage => 'कोई बैकअप नहीं मिला';
-
-  @override
-  String backupSizeLabel(String size) {
-    return 'आकार: $size';
-  }
-
-  @override
-  String backupCreatedLabel(String date) {
-    return 'बनाया गया: $date';
-  }
+  String get backupNoBackupsFoundMessage => 'अभी तक कोई बैकअप नहीं';
 
   @override
   String backupLoadErrorMessage(String error) {
@@ -5544,4 +5544,129 @@ class AppLocalizationsHi extends AppLocalizations {
   String invoiceMgmtAlreadyConvertedBody(String number) {
     return 'कोटेशन $number पहले ही इनवॉइस बन चुका है। इसके जैसा दूसरा इनवॉइस बनाने के लिए डुप्लिकेट का उपयोग करें।';
   }
+
+  @override
+  String get autoBackupTitle => 'स्वचालित बैकअप';
+
+  @override
+  String get autoBackupSwitchLabel => 'अपने-आप बैकअप लें';
+
+  @override
+  String get autoBackupSwitchSubtitle =>
+      'ऐप खुला रहने पर इस कंपनी के डेटा की एक कॉपी अपने-आप सहेजी जाती है।';
+
+  @override
+  String get autoBackupFrequencyLabel => 'कितनी बार';
+
+  @override
+  String get autoBackupEveryDay => 'हर दिन';
+
+  @override
+  String get autoBackupEveryWeek => 'हर सप्ताह';
+
+  @override
+  String get autoBackupKeepLabel => 'रखी जाने वाली कॉपियाँ';
+
+  @override
+  String get autoBackupKeepHint =>
+      'केवल इस कंपनी की पुरानी स्वचालित कॉपियाँ हटाई जाती हैं। फ़ोल्डर की अन्य फ़ाइलों को कभी नहीं छुआ जाता।';
+
+  @override
+  String get autoBackupFolderLabel => 'कहाँ सहेजें';
+
+  @override
+  String get autoBackupAppFolder => 'ऐप का अपना बैकअप फ़ोल्डर';
+
+  @override
+  String get autoBackupChooseFolderButton => 'फ़ोल्डर चुनें';
+
+  @override
+  String get autoBackupUseAppFolderButton => 'ऐप फ़ोल्डर उपयोग करें';
+
+  @override
+  String get autoBackupFolderTip =>
+      'क्लाउड में भी एक कॉपी रखने के लिए, Google Drive या OneDrive के अंदर का कोई फ़ोल्डर चुनें।';
+
+  @override
+  String get autoBackupNowButton => 'अभी बैकअप लें';
+
+  @override
+  String autoBackupLastFailed(String reason) {
+    return 'अंतिम स्वचालित बैकअप विफल रहा: $reason। फ़ोल्डर फिर से चुनें।';
+  }
+
+  @override
+  String get autoBackupNoneYet => 'अभी तक कोई स्वचालित बैकअप नहीं।';
+
+  @override
+  String get autoBackupReasonFolderMissing => 'फ़ोल्डर नहीं मिला';
+
+  @override
+  String get autoBackupReasonNotWritable =>
+      'ऐप फ़ोल्डर में फ़ाइलें सहेज नहीं सकता';
+
+  @override
+  String get autoBackupReasonAccessLost =>
+      'ऐप को अब फ़ोल्डर उपयोग करने की अनुमति नहीं है';
+
+  @override
+  String get autoBackupReasonInvalidCopy => 'कॉपी की जाँच नहीं हो सकी';
+
+  @override
+  String autoBackupBannerMessage(String reason) {
+    return 'स्वचालित बैकअप विफल रहा: $reason।';
+  }
+
+  @override
+  String get autoBackupBannerAction => 'बैकअप सेटिंग्स खोलें';
+
+  @override
+  String get autoBackupLocalOnlyBadge => 'केवल इस कंप्यूटर पर';
+
+  @override
+  String get autoBackupChangeFolderButton => 'फ़ोल्डर बदलें';
+
+  @override
+  String autoBackupLastBackup(String date) {
+    return 'अंतिम बैकअप: $date';
+  }
+
+  @override
+  String backupTimeToday(String time) {
+    return 'आज, $time';
+  }
+
+  @override
+  String backupTimeYesterday(String time) {
+    return 'कल, $time';
+  }
+
+  @override
+  String get backupManualTitle => 'मैन्युअल बैकअप';
+
+  @override
+  String get backupManualSubtitle =>
+      'अभी बैकअप बनाएं, डेटा को JSON के रूप में निर्यात करें, या किसी बैकअप फ़ाइल से पुनर्स्थापित करें।';
+
+  @override
+  String backupSavedTitle(int count) {
+    return 'सहेजे गए बैकअप ($count)';
+  }
+
+  @override
+  String get backupSavedSubtitle =>
+      'इस कंप्यूटर पर ऐप के अपने बैकअप फ़ोल्डर में रखे गए हैं।';
+
+  @override
+  String get backupEmptySubtitle =>
+      'ऊपर बैकअप बनाएं, या स्वचालित बैकअप चालू करें।';
+
+  @override
+  String get backupKindBeforeRestore => 'पुनर्स्थापना से पहले';
+
+  @override
+  String get backupKindJson => 'JSON निर्यात';
+
+  @override
+  String get backupFormatDatabase => 'डेटाबेस';
 }

@@ -4514,29 +4514,30 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appInfoCheckNowButton => 'Vérifier maintenant';
 
   @override
+  String get appInfoUsageStatsTitle => 'STATISTIQUES D’UTILISATION';
+
+  @override
+  String get appInfoUsageStatsLabel =>
+      'Envoyer des statistiques d’utilisation anonymes';
+
+  @override
+  String get appInfoUsageStatsSubtitle =>
+      'Un identifiant aléatoire, la version de l’app, votre système d’exploitation et si une facture a été créée. Jamais vos clients, produits, factures ou montants.';
+
+  @override
   String get backupManagementTitle => 'Gestion des sauvegardes';
 
   @override
-  String get backupCreateDbButton => 'Créer une sauvegarde BD';
+  String get backupCreateDbButton => 'Créer une sauvegarde';
 
   @override
   String get backupExportJsonButton => 'Exporter en JSON';
 
   @override
-  String get backupImportButton => 'Importer une sauvegarde';
+  String get backupImportButton => 'Importer / restaurer';
 
   @override
-  String get backupNoBackupsFoundMessage => 'Aucune sauvegarde trouvée';
-
-  @override
-  String backupSizeLabel(String size) {
-    return 'Taille : $size';
-  }
-
-  @override
-  String backupCreatedLabel(String date) {
-    return 'Créée : $date';
-  }
+  String get backupNoBackupsFoundMessage => 'Aucune sauvegarde pour l\'instant';
 
   @override
   String backupLoadErrorMessage(String error) {
@@ -5630,4 +5631,132 @@ class AppLocalizationsFr extends AppLocalizations {
   String invoiceMgmtAlreadyConvertedBody(String number) {
     return 'Le devis $number est déjà une facture. Pour en créer une autre semblable, utilisez Dupliquer.';
   }
+
+  @override
+  String get autoBackupTitle => 'Sauvegarde automatique';
+
+  @override
+  String get autoBackupSwitchLabel => 'Sauvegarder automatiquement';
+
+  @override
+  String get autoBackupSwitchSubtitle =>
+      'Pendant que l\'application est ouverte, une copie des données de cette entreprise est enregistrée toute seule.';
+
+  @override
+  String get autoBackupFrequencyLabel => 'Fréquence';
+
+  @override
+  String get autoBackupEveryDay => 'Tous les jours';
+
+  @override
+  String get autoBackupEveryWeek => 'Toutes les semaines';
+
+  @override
+  String get autoBackupKeepLabel => 'Copies à conserver';
+
+  @override
+  String get autoBackupKeepHint =>
+      'Seules les anciennes copies automatiques de cette entreprise sont supprimées. Les autres fichiers du dossier ne sont jamais touchés.';
+
+  @override
+  String get autoBackupFolderLabel => 'Enregistrer dans';
+
+  @override
+  String get autoBackupAppFolder => 'Dossier de sauvegarde de l\'application';
+
+  @override
+  String get autoBackupChooseFolderButton => 'Choisir un dossier';
+
+  @override
+  String get autoBackupUseAppFolderButton =>
+      'Utiliser le dossier de l\'application';
+
+  @override
+  String get autoBackupFolderTip =>
+      'Pour garder aussi une copie dans le cloud, choisissez un dossier dans Google Drive ou OneDrive.';
+
+  @override
+  String get autoBackupNowButton => 'Sauvegarder maintenant';
+
+  @override
+  String autoBackupLastFailed(String reason) {
+    return 'La dernière sauvegarde automatique a échoué : $reason. Choisissez à nouveau le dossier.';
+  }
+
+  @override
+  String get autoBackupNoneYet =>
+      'Aucune sauvegarde automatique pour l\'instant.';
+
+  @override
+  String get autoBackupReasonFolderMissing => 'le dossier est introuvable';
+
+  @override
+  String get autoBackupReasonNotWritable =>
+      'l\'application ne peut pas enregistrer de fichiers dans le dossier';
+
+  @override
+  String get autoBackupReasonAccessLost =>
+      'l\'application n\'a plus l\'autorisation d\'utiliser le dossier';
+
+  @override
+  String get autoBackupReasonInvalidCopy =>
+      'la copie n\'a pas pu être vérifiée';
+
+  @override
+  String autoBackupBannerMessage(String reason) {
+    return 'La sauvegarde automatique a échoué : $reason.';
+  }
+
+  @override
+  String get autoBackupBannerAction => 'Ouvrir les paramètres de sauvegarde';
+
+  @override
+  String get autoBackupLocalOnlyBadge => 'Cet ordinateur uniquement';
+
+  @override
+  String get autoBackupChangeFolderButton => 'Changer de dossier';
+
+  @override
+  String autoBackupLastBackup(String date) {
+    return 'Dernière sauvegarde : $date';
+  }
+
+  @override
+  String backupTimeToday(String time) {
+    return 'Aujourd\'hui, $time';
+  }
+
+  @override
+  String backupTimeYesterday(String time) {
+    return 'Hier, $time';
+  }
+
+  @override
+  String get backupManualTitle => 'Sauvegarde manuelle';
+
+  @override
+  String get backupManualSubtitle =>
+      'Créez une sauvegarde maintenant, exportez les données en JSON ou restaurez à partir d\'un fichier de sauvegarde.';
+
+  @override
+  String backupSavedTitle(int count) {
+    return 'Sauvegardes enregistrées ($count)';
+  }
+
+  @override
+  String get backupSavedSubtitle =>
+      'Conservées dans le dossier de sauvegarde de l\'application sur cet ordinateur.';
+
+  @override
+  String get backupEmptySubtitle =>
+      'Créez une sauvegarde ci-dessus ou activez la sauvegarde automatique.';
+
+  @override
+  String get backupKindBeforeRestore => 'Avant restauration';
+
+  @override
+  String get backupKindJson => 'Export JSON';
+
+  @override
+  String get backupFormatDatabase => 'Base de données';
 }

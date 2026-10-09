@@ -42,6 +42,7 @@ import 'package:invoiceo/utils/scanner_capture.dart';
 import 'package:invoiceo/screens/create_invoice_screen_v2.dart' show InvoiceFormGuard;
 import 'package:invoiceo/theme/brand_colors.dart';
 import 'package:invoiceo/models/invoice_draft.dart';
+import 'package:invoiceo/services/usage_stats_service.dart';
 
 class CreateInvoiceScreenModern extends ConsumerStatefulWidget {
   final Invoice? invoiceToEdit;
@@ -1738,6 +1739,7 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
       final invoice = _invoiceFromForm(id: invoiceId, number: invoiceNumber);
 
       await ref.read(invoiceRepositoryProvider).insertInvoice(invoice);
+      unawaited(UsageStatsService.onDocumentCreated(invoice.type));
       final draftId = _draftId;
       if (draftId != null) {
         await ref.read(invoiceDraftRepositoryProvider).deleteDraft(draftId);

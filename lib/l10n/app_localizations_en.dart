@@ -4428,29 +4428,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appInfoCheckNowButton => 'Check Now';
 
   @override
+  String get appInfoUsageStatsTitle => 'USAGE STATISTICS';
+
+  @override
+  String get appInfoUsageStatsLabel => 'Send anonymous usage statistics';
+
+  @override
+  String get appInfoUsageStatsSubtitle =>
+      'A random ID, the app version, your operating system and whether an invoice has been made. Never your customers, products, invoices or amounts.';
+
+  @override
   String get backupManagementTitle => 'Backup Management';
 
   @override
-  String get backupCreateDbButton => 'Create DB Backup';
+  String get backupCreateDbButton => 'Create backup';
 
   @override
-  String get backupExportJsonButton => 'Export JSON';
+  String get backupExportJsonButton => 'Export as JSON';
 
   @override
-  String get backupImportButton => 'Import Backup';
+  String get backupImportButton => 'Import / restore';
 
   @override
-  String get backupNoBackupsFoundMessage => 'No backups found';
-
-  @override
-  String backupSizeLabel(String size) {
-    return 'Size: $size';
-  }
-
-  @override
-  String backupCreatedLabel(String date) {
-    return 'Created: $date';
-  }
+  String get backupNoBackupsFoundMessage => 'No backups yet';
 
   @override
   String backupLoadErrorMessage(String error) {
@@ -5524,4 +5524,129 @@ class AppLocalizationsEn extends AppLocalizations {
   String invoiceMgmtAlreadyConvertedBody(String number) {
     return 'Quotation $number is already an invoice. To make another invoice like it, use Duplicate.';
   }
+
+  @override
+  String get autoBackupTitle => 'Automatic backup';
+
+  @override
+  String get autoBackupSwitchLabel => 'Back up automatically';
+
+  @override
+  String get autoBackupSwitchSubtitle =>
+      'While the app is open, a copy of this company\'s data is saved on its own.';
+
+  @override
+  String get autoBackupFrequencyLabel => 'How often';
+
+  @override
+  String get autoBackupEveryDay => 'Every day';
+
+  @override
+  String get autoBackupEveryWeek => 'Every week';
+
+  @override
+  String get autoBackupKeepLabel => 'Copies to keep';
+
+  @override
+  String get autoBackupKeepHint =>
+      'Only older automatic copies of this company are deleted. Other files in the folder are never touched.';
+
+  @override
+  String get autoBackupFolderLabel => 'Save to';
+
+  @override
+  String get autoBackupAppFolder => 'App\'s own backup folder';
+
+  @override
+  String get autoBackupChooseFolderButton => 'Choose folder';
+
+  @override
+  String get autoBackupUseAppFolderButton => 'Use app folder';
+
+  @override
+  String get autoBackupFolderTip =>
+      'To keep a copy in the cloud too, choose a folder inside Google Drive or OneDrive.';
+
+  @override
+  String get autoBackupNowButton => 'Back up now';
+
+  @override
+  String autoBackupLastFailed(String reason) {
+    return 'Last automatic backup failed: $reason. Choose the folder again.';
+  }
+
+  @override
+  String get autoBackupNoneYet => 'No automatic backup yet.';
+
+  @override
+  String get autoBackupReasonFolderMissing => 'the folder was not found';
+
+  @override
+  String get autoBackupReasonNotWritable =>
+      'the app cannot save files in the folder';
+
+  @override
+  String get autoBackupReasonAccessLost =>
+      'the app no longer has permission to use the folder';
+
+  @override
+  String get autoBackupReasonInvalidCopy => 'the copy could not be checked';
+
+  @override
+  String autoBackupBannerMessage(String reason) {
+    return 'Automatic backup failed: $reason.';
+  }
+
+  @override
+  String get autoBackupBannerAction => 'Open Backup settings';
+
+  @override
+  String get autoBackupLocalOnlyBadge => 'This computer only';
+
+  @override
+  String get autoBackupChangeFolderButton => 'Change folder';
+
+  @override
+  String autoBackupLastBackup(String date) {
+    return 'Last backup: $date';
+  }
+
+  @override
+  String backupTimeToday(String time) {
+    return 'Today, $time';
+  }
+
+  @override
+  String backupTimeYesterday(String time) {
+    return 'Yesterday, $time';
+  }
+
+  @override
+  String get backupManualTitle => 'Manual backup';
+
+  @override
+  String get backupManualSubtitle =>
+      'Make a backup now, export the data as JSON, or restore from a backup file.';
+
+  @override
+  String backupSavedTitle(int count) {
+    return 'Saved backups ($count)';
+  }
+
+  @override
+  String get backupSavedSubtitle =>
+      'Kept in the app\'s own backup folder on this computer.';
+
+  @override
+  String get backupEmptySubtitle =>
+      'Create a backup above, or turn on automatic backup.';
+
+  @override
+  String get backupKindBeforeRestore => 'Before restore';
+
+  @override
+  String get backupKindJson => 'JSON export';
+
+  @override
+  String get backupFormatDatabase => 'Database';
 }

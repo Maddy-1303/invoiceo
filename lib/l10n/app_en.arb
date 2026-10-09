@@ -2583,26 +2583,25 @@
   "appInfoCurrentVersionLabel": "Current Version",
   "appInfoLatestVersionLabel": "Latest Version",
   "appInfoCheckNowButton": "Check Now",
+  "appInfoUsageStatsTitle": "USAGE STATISTICS",
+  "appInfoUsageStatsLabel": "Send anonymous usage statistics",
+  "appInfoUsageStatsSubtitle": "A random ID, the app version, your operating system and whether an invoice has been made. Never your customers, products, invoices or amounts.",
   "backupManagementTitle": "Backup Management",
-  "backupCreateDbButton": "Create DB Backup",
-  "backupExportJsonButton": "Export JSON",
-  "backupImportButton": "Import Backup",
-  "backupNoBackupsFoundMessage": "No backups found",
-  "backupSizeLabel": "Size: {size}",
-  "@backupSizeLabel": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
+  "backupCreateDbButton": "Create backup",
+  "@backupCreateDbButton": {
+    "description": "Settings > Backup > Manual backup: makes a full backup of the database now"
   },
-  "backupCreatedLabel": "Created: {date}",
-  "@backupCreatedLabel": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
+  "backupExportJsonButton": "Export as JSON",
+  "@backupExportJsonButton": {
+    "description": "Settings > Backup > Manual backup: saves the data as a JSON file"
+  },
+  "backupImportButton": "Import / restore",
+  "@backupImportButton": {
+    "description": "Settings > Backup > Manual backup: picks a backup file and restores it (asks first)"
+  },
+  "backupNoBackupsFoundMessage": "No backups yet",
+  "@backupNoBackupsFoundMessage": {
+    "description": "Settings > Backup: the saved backups list is empty"
   },
   "backupLoadErrorMessage": "Failed to load backups: {error}",
   "@backupLoadErrorMessage": {
@@ -3519,5 +3518,175 @@
         "type": "String"
       }
     }
+  },
+  "autoBackupTitle": "Automatic backup",
+  "@autoBackupTitle": {
+    "description": "Settings > Backup: title of the automatic backup card"
+  },
+  "autoBackupSwitchLabel": "Back up automatically",
+  "@autoBackupSwitchLabel": {
+    "description": "Automatic backup card: the on/off switch"
+  },
+  "autoBackupSwitchSubtitle": "While the app is open, a copy of this company's data is saved on its own.",
+  "@autoBackupSwitchSubtitle": {
+    "description": "Automatic backup card: under the on/off switch"
+  },
+  "autoBackupFrequencyLabel": "How often",
+  "@autoBackupFrequencyLabel": {
+    "description": "Automatic backup card: label of the daily / weekly choice"
+  },
+  "autoBackupEveryDay": "Every day",
+  "@autoBackupEveryDay": {
+    "description": "Automatic backup card: back up once a day"
+  },
+  "autoBackupEveryWeek": "Every week",
+  "@autoBackupEveryWeek": {
+    "description": "Automatic backup card: back up once a week"
+  },
+  "autoBackupKeepLabel": "Copies to keep",
+  "@autoBackupKeepLabel": {
+    "description": "Automatic backup card: label of the 5 / 10 / 30 choice"
+  },
+  "autoBackupKeepHint": "Only older automatic copies of this company are deleted. Other files in the folder are never touched.",
+  "@autoBackupKeepHint": {
+    "description": "Automatic backup card: what keeping the last copies deletes"
+  },
+  "autoBackupFolderLabel": "Save to",
+  "@autoBackupFolderLabel": {
+    "description": "Automatic backup card: label of the folder the copies go to"
+  },
+  "autoBackupAppFolder": "App's own backup folder",
+  "@autoBackupAppFolder": {
+    "description": "Automatic backup card: shown instead of a path when no folder was chosen"
+  },
+  "autoBackupChooseFolderButton": "Choose folder",
+  "@autoBackupChooseFolderButton": {
+    "description": "Automatic backup card: button that opens the folder picker (also its title)"
+  },
+  "autoBackupUseAppFolderButton": "Use app folder",
+  "@autoBackupUseAppFolderButton": {
+    "description": "Automatic backup card: go back to the app's own backup folder"
+  },
+  "autoBackupFolderTip": "To keep a copy in the cloud too, choose a folder inside Google Drive or OneDrive.",
+  "@autoBackupFolderTip": {
+    "description": "Automatic backup card: hint under the folder, shown only when the folder is not in Google Drive, OneDrive, iCloud or Dropbox"
+  },
+  "autoBackupNowButton": "Back up now",
+  "@autoBackupNowButton": {
+    "description": "Automatic backup card: makes an automatic backup straight away"
+  },
+  "autoBackupLastFailed": "Last automatic backup failed: {reason}. Choose the folder again.",
+  "@autoBackupLastFailed": {
+    "description": "Automatic backup card: status (in red) after a failed backup; {reason} is one of the autoBackupReason texts",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "autoBackupNoneYet": "No automatic backup yet.",
+  "@autoBackupNoneYet": {
+    "description": "Automatic backup card: status before the first automatic backup"
+  },
+  "autoBackupReasonFolderMissing": "the folder was not found",
+  "@autoBackupReasonFolderMissing": {
+    "description": "Automatic backup failure reason, inside a sentence"
+  },
+  "autoBackupReasonNotWritable": "the app cannot save files in the folder",
+  "@autoBackupReasonNotWritable": {
+    "description": "Automatic backup failure reason, inside a sentence"
+  },
+  "autoBackupReasonAccessLost": "the app no longer has permission to use the folder",
+  "@autoBackupReasonAccessLost": {
+    "description": "Automatic backup failure reason (macOS), inside a sentence"
+  },
+  "autoBackupReasonInvalidCopy": "the copy could not be checked",
+  "@autoBackupReasonInvalidCopy": {
+    "description": "Automatic backup failure reason, inside a sentence"
+  },
+  "autoBackupBannerMessage": "Automatic backup failed: {reason}.",
+  "@autoBackupBannerMessage": {
+    "description": "Dashboard warning when the last automatic backup failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "autoBackupBannerAction": "Open Backup settings",
+  "@autoBackupBannerAction": {
+    "description": "Dashboard warning: button that opens Settings > Backup"
+  },
+  "autoBackupLocalOnlyBadge": "This computer only",
+  "@autoBackupLocalOnlyBadge": {
+    "description": "Automatic backup card: badge on a folder that is not in a cloud service (the copies stay on this computer)"
+  },
+  "autoBackupChangeFolderButton": "Change folder",
+  "@autoBackupChangeFolderButton": {
+    "description": "Automatic backup card: button next to the folder that opens the folder picker"
+  },
+  "autoBackupLastBackup": "Last backup: {date}",
+  "@autoBackupLastBackup": {
+    "description": "Automatic backup card: status after a good backup; {date} is e.g. \"Today, 13:03\"",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "backupTimeToday": "Today, {time}",
+  "@backupTimeToday": {
+    "description": "Settings > Backup: when a backup was made today; {time} is e.g. 13:03",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupTimeYesterday": "Yesterday, {time}",
+  "@backupTimeYesterday": {
+    "description": "Settings > Backup: when a backup was made yesterday; {time} is e.g. 09:10",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupManualTitle": "Manual backup",
+  "@backupManualTitle": {
+    "description": "Settings > Backup: title of the manual backup section, and the name of a backup made with Create backup"
+  },
+  "backupManualSubtitle": "Make a backup now, export the data as JSON, or restore from a backup file.",
+  "@backupManualSubtitle": {
+    "description": "Settings > Backup: under the manual backup title"
+  },
+  "backupSavedTitle": "Saved backups ({count})",
+  "@backupSavedTitle": {
+    "description": "Settings > Backup: title of the list of backups; {count} is how many",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupSavedSubtitle": "Kept in the app's own backup folder on this computer.",
+  "@backupSavedSubtitle": {
+    "description": "Settings > Backup: under the saved backups title"
+  },
+  "backupEmptySubtitle": "Create a backup above, or turn on automatic backup.",
+  "@backupEmptySubtitle": {
+    "description": "Settings > Backup: under \"No backups yet\""
+  },
+  "backupKindBeforeRestore": "Before restore",
+  "@backupKindBeforeRestore": {
+    "description": "Settings > Backup list: a copy of the data made just before a restore, so the restore can be undone"
+  },
+  "backupKindJson": "JSON export",
+  "@backupKindJson": {
+    "description": "Settings > Backup list: a file made with Export as JSON"
+  },
+  "backupFormatDatabase": "Database",
+  "@backupFormatDatabase": {
+    "description": "Settings > Backup list: small badge on a full database backup file (.invoicedb)"
   }
 }

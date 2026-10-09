@@ -24,6 +24,7 @@ import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/services/invoice_pdf_services.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 import 'package:invoiceo/utils/formatters.dart';
+import 'package:invoiceo/widgets/auto_backup_warning_banner.dart';
 
 // ── Small pure helpers (tested in test/modern_dashboard_test.dart) ──────────
 
@@ -145,6 +146,7 @@ class ModernDashboard extends ConsumerStatefulWidget {
     required this.onOpenPage,
     required this.onAddCustomer,
     required this.onAddProduct,
+    this.onOpenBackupSettings,
   });
 
   final User user;
@@ -159,6 +161,10 @@ class ModernDashboard extends ConsumerStatefulWidget {
   final void Function(int page) onOpenPage;
   final VoidCallback onAddCustomer;
   final VoidCallback onAddProduct;
+
+  /// Opens Settings > Backup, from the automatic backup warning (null = the
+  /// warning has no button).
+  final VoidCallback? onOpenBackupSettings;
 
   @override
   ConsumerState<ModernDashboard> createState() => _ModernDashboardState();
@@ -276,6 +282,11 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Shown only when automatic backup is on and failed.
+                AutoBackupWarningBanner(
+                  onOpenSettings: widget.onOpenBackupSettings,
+                  margin: const EdgeInsets.only(bottom: 16),
+                ),
                 _header(),
                 const SizedBox(height: 20),
                 _kpiCards(c.maxWidth - 48),

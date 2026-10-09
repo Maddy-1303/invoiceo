@@ -1053,8 +1053,6 @@
   "backupExportJsonButton": "JSON ཕྱིར་འདྲེན།",
   "backupImportButton": "ཉར་ཚགས་ནང་འདྲེན།",
   "backupNoBackupsFoundMessage": "ཉར་ཚགས་མ་རྙེད།",
-  "backupSizeLabel": "ཆེ་ཆུང་། {size}",
-  "backupCreatedLabel": "བཟོས་དུས། {date}",
   "backupLoadErrorMessage": "ཉར་ཚགས་འདེད་འཐེན་མ་གྲུབ། {error}",
   "backupCreatedSuccessMessage": "ཉར་ཚགས་ལེགས་པར་བཟོས་སོང་།",
   "backupCreateErrorMessage": "ཉར་ཚགས་བཟོ་བ་མ་གྲུབ། {error}",

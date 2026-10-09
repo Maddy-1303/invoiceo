@@ -1371,7 +1371,16 @@ void main() {
       await settle(tester);
       await tapDialog(tester, en.actionOk);
       expect(find.textContaining('.json'), findsOneWidget);
-      expect(find.byType(ListTile), findsNWidgets(2));
+      // One row per backup, named by kind.
+      expect(
+          find.byWidgetPredicate((w) =>
+              w.key is ValueKey<String> &&
+              (w.key as ValueKey<String>).value.startsWith('backupRow_')),
+          findsNWidgets(2));
+      expect(find.text(en.backupSavedTitle(2)), findsOneWidget);
+      expect(find.text(en.backupManualTitle), findsNWidgets(2),
+          reason: 'the section title and the database backup row');
+      expect(find.text(en.backupKindJson), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

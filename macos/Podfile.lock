@@ -2,6 +2,8 @@ PODS:
   - file_picker (0.0.1):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
+  - macos_secure_bookmarks (0.3.0):
+    - FlutterMacOS
   - network_info_plus (0.0.1):
     - FlutterMacOS
   - open_file_mac (1.0.3):
@@ -29,6 +31,7 @@ PODS:
 DEPENDENCIES:
   - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
+  - macos_secure_bookmarks (from `Flutter/ephemeral/.symlinks/plugins/macos_secure_bookmarks/macos`)
   - network_info_plus (from `Flutter/ephemeral/.symlinks/plugins/network_info_plus/macos`)
   - open_file_mac (from `Flutter/ephemeral/.symlinks/plugins/open_file_mac/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
@@ -45,6 +48,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
+  macos_secure_bookmarks:
+    :path: Flutter/ephemeral/.symlinks/plugins/macos_secure_bookmarks/macos
   network_info_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/network_info_plus/macos
   open_file_mac:
@@ -69,6 +74,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
+  macos_secure_bookmarks: a119afc08f39eca7f81772a2a2baf10155b2a78c
   network_info_plus: e4d4efcc88f6cabc6e19147ffc223c371d191ab6
   open_file_mac: 76f06c8597551249bdb5e8fd8827a98eae0f4585
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564

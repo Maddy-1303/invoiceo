@@ -190,8 +190,12 @@ class CompanyRegistryService {
     if (profile == null) {
       throw ArgumentError('Unknown company id: $id');
     }
-    await DatabaseHelper().switchToFile(profile.dbFileName);
-    await prefs.setString(_activeCompanyIdPrefsKey, id);
+    // Waits for an automatic backup copy in progress, so it never reads a
+    // file while it is being swapped.
+    await DatabaseHelper.withFileLock(() async {
+      await DatabaseHelper().switchToFile(profile.dbFileName);
+      await prefs.setString(_activeCompanyIdPrefsKey, id);
+    });
   }
 
   /// The active company's own file name, for pointing `DatabaseHelper` at

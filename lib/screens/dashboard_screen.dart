@@ -1,17 +1,21 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:invoiceo/screens/auth/change_password_screen.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:invoiceo/l10n/app_localizations.dart';
+import 'package:invoiceo/widgets/auto_backup_warning_banner.dart';
 import 'package:invoiceo/widgets/discovery_banner.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:invoiceo/backup/auto_backup_service.dart';
 import 'package:invoiceo/common/constants.dart';
 import 'package:invoiceo/providers/app_config_provider.dart';
 import 'package:invoiceo/providers/repositories.dart';
 import 'package:invoiceo/services/update_service.dart';
+import 'package:invoiceo/services/usage_stats_service.dart';
 import 'package:invoiceo/widgets/update_dialog.dart';
 import 'package:invoiceo/domain/invoice_calculator.dart';
 import 'package:invoiceo/domain/customer_identity.dart';
@@ -118,6 +122,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String? _convertSourceQuotationId;
   bool _hasUpdate = false;
   int? _accessibilityJumpToken;
+  // Opens Settings on Backup (the automatic backup warning); cleared when
+  // Settings is left, so the next visit opens as usual.
+  int? _backupJumpToken;
+  int _backupJumps = 0;
+  // Automatic backup of the active company while this screen is open.
+  final AutoBackupService _autoBackup = AutoBackupService();
   final InvoiceFormGuard _invoiceFormGuard = InvoiceFormGuard();
   final FocusNode _shortcutsFocusNode = FocusNode();
 
@@ -133,6 +143,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (ref.read(appEditionConfigProvider).enableUpdateCheck) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
     }
+    unawaited(UsageStatsService.onAppOpen());
+    // Not in the cloud edition (it has no Backup section).
+    if (!ref.read(appEditionConfigProvider).isCloud) _autoBackup.start();
     // Tab 1 (Create Invoice) owns its own autofocus/shortcuts — only claim
     // focus here for the other tabs, so it doesn't get stolen away and
     // block the Create Invoice screen's own Ctrl shortcuts from working.
@@ -177,10 +190,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
     if (confirmed != true || !mounted) return;
 
+    // No automatic backup for the company being left.
+    _autoBackup.stop();
     try {
       await CompanyRegistryService.switchToCompany(company.id);
     } catch (e) {
       if (!mounted) return;
+      if (!ref.read(appEditionConfigProvider).isCloud) _autoBackup.start();
       _showErrorDialog(l10n.companyMgmtSwitchErrorMessage(e.toString()));
       return;
     }
@@ -269,6 +285,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   void dispose() {
+    _autoBackup.stop();
     SessionManager.dispose();
     _shortcutsFocusNode.dispose();
     _modernHeader.dispose();
@@ -279,6 +296,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // An unsaved invoice asks first (save, draft, discard or stay).
     if (_selectedIndex == 1 && !await _canLeaveInvoiceForm()) return;
     if (!mounted) return;
+    _autoBackup.stop();
     await ref.read(authRepositoryProvider).logoutAndSessionReset();
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -388,8 +406,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           () => DashboardHome(
               onEditInvoice: editInvoice,
               onCloneInvoice: cloneInvoice,
+              onOpenBackupSettings: _backupSettingsAction(),
               user: _currentUser),
           modern: () => ModernDashboard(
+            onOpenBackupSettings: _backupSettingsAction(),
             user: _currentUser,
             onEditInvoice: editInvoice,
             onCloneInvoice: cloneInvoice,
@@ -475,12 +495,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               key: _settingsKey,
               currentUser: _currentUser,
               openAccessibilityToken: _accessibilityJumpToken,
+              openBackupToken: _backupJumpToken,
             ));
       default:
         return Center(
             child:
                 Text(AppLocalizations.of(context)!.dashboardUnknownTabLabel));
     }
+  }
+
+  /// The automatic backup warning's button: Settings > Backup. Only for an
+  /// admin (others cannot open that section) outside the cloud edition.
+  VoidCallback? _backupSettingsAction() {
+    if (!_currentUser.isAdmin() || ref.read(appEditionConfigProvider).isCloud) {
+      return null;
+    }
+    return () {
+      setState(() => _backupJumpToken = ++_backupJumps);
+      _selectTab(8);
+    };
   }
 
   void editInvoice(Invoice invoice) {
@@ -604,6 +637,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (!mounted) return;
     setState(() {
       _selectedIndex = index;
+      if (index != 8) _backupJumpToken = null;
       if (index != 1) {
         invoiceToEdit = null;
         _invoiceToClone = null;
@@ -1649,10 +1683,14 @@ class DashboardHome extends ConsumerStatefulWidget {
   final Function(Invoice) onEditInvoice;
   final Function(Invoice, String) onCloneInvoice;
   final User user;
+  // Opens Settings > Backup from the automatic backup warning (null = no
+  // button).
+  final VoidCallback? onOpenBackupSettings;
   const DashboardHome({
     required this.onEditInvoice,
     required this.onCloneInvoice,
     required this.user,
+    this.onOpenBackupSettings,
     super.key,
   });
 
@@ -1952,9 +1990,20 @@ class _DashboardHomeState extends ConsumerState<DashboardHome> {
           const SizedBox(width: 8),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildContent(),
+      body: Column(
+        children: [
+          // Shown only when automatic backup is on and failed (every layout).
+          AutoBackupWarningBanner(
+            onOpenSettings: widget.onOpenBackupSettings,
+            margin: const EdgeInsets.fromLTRB(28, 12, 28, 0),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildContent(),
+          ),
+        ],
+      ),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -21,6 +23,31 @@ class DatabaseHelper {
   /// Placeholder company name seeded by `_createDB`. Onboarding shows an
   /// empty name field while the saved name still equals it.
   static const seedCompanyName = 'Your Company Name';
+
+  static bool _fileBusy = false;
+  static final _fileWaiters = <Completer<void>>[];
+
+  /// Runs [task] when no other task on the database file runs (a company
+  /// switch, a restore, the automatic backup's copy), one after another, so
+  /// a copy never reads a file that is being closed or replaced.
+  static Future<T> withFileLock<T>(Future<T> Function() task) async {
+    if (_fileBusy) {
+      final turn = Completer<void>();
+      _fileWaiters.add(turn);
+      await turn.future;
+    }
+    _fileBusy = true;
+    try {
+      return await task();
+    } finally {
+      // Straight to the next waiter (still busy), or free.
+      if (_fileWaiters.isEmpty) {
+        _fileBusy = false;
+      } else {
+        _fileWaiters.removeAt(0).complete();
+      }
+    }
+  }
 
   /// Startup only, before anything has opened a connection yet — just points
   /// at the right file for the first `_initDB()` call. No close/reopen, so

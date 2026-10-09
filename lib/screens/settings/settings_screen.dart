@@ -27,8 +27,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
   // Bump this (e.g. a counter) each time the caller wants to force-navigate
   // to the Accessibility tab, even if this screen is already mounted.
   final Object? openAccessibilityToken;
+  // The same for the Backup tab (the dashboard's automatic backup warning).
+  final Object? openBackupToken;
   const SettingsScreen(
-      {super.key, required this.currentUser, this.openAccessibilityToken});
+      {super.key,
+      required this.currentUser,
+      this.openAccessibilityToken,
+      this.openBackupToken});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -54,6 +59,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   int _selectedIndex = 0;
   int? _highlightCustomIndex;
   Object? _handledAccessibilityToken;
+  Object? _handledBackupToken;
 
   // Modern: the open section's buttons (Save, Reset...), shown in the top
   // bar next to its title. Cleared whenever another section opens.
@@ -78,6 +84,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       _loadCachedUpdateInfo();
     }
     _maybeJumpToAccessibility();
+    _maybeJumpToBackup();
   }
 
   @override
@@ -85,6 +92,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     super.didUpdateWidget(oldWidget);
     if (widget.openAccessibilityToken != oldWidget.openAccessibilityToken) {
       setState(_maybeJumpToAccessibility);
+    }
+    if (widget.openBackupToken != oldWidget.openBackupToken) {
+      setState(_maybeJumpToBackup);
     }
   }
 
@@ -119,6 +129,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     _handledAccessibilityToken = widget.openAccessibilityToken;
     final cfg = ref.read(appEditionConfigProvider);
     _selectedIndex = _railOrder(cfg).indexOf(_idAccessibility);
+  }
+
+  void _maybeJumpToBackup() {
+    if (widget.openBackupToken == null ||
+        widget.openBackupToken == _handledBackupToken) {
+      return;
+    }
+    _handledBackupToken = widget.openBackupToken;
+    final index = _railOrder(ref.read(appEditionConfigProvider)).indexOf(_idBackup);
+    if (index >= 0) _selectedIndex = index;
   }
 
   Future<void> _loadCachedUpdateInfo() async {

@@ -21,7 +21,7 @@ SITE = 'https://invoiceo.in'
 NAME = 'Invoiceo'
 BUSINESS = 'Madcreations'
 EMAIL = 'madhanprasat2002r@gmail.com'
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 RELEASE_DATE = '9 October 2026'
 RELEASE_ISO = '2026-10-09'
 COFFEE = 'https://buymeacoffee.com/madcreations'
@@ -538,7 +538,7 @@ local_global = section(section_head('Local and global', 'Built for local busines
 privacy = f'''<section class="section section-night on-dark" id="privacy" aria-labelledby="priv-title">
   <div class="wrap split">
     <div>
-      {section_head('Privacy', 'Your business data belongs to you.', f'{NAME} keeps everything on your computer. Nothing about your customers, prices or sales is sent to us or anyone else.', 'priv-title', left=True)}
+      {section_head('Privacy', 'Your business data belongs to you.', f'{NAME} keeps your business data on your computer. Nothing about your customers, prices or sales is sent to us or anyone else.', 'priv-title', left=True)}
       {checks(['Works without internet', 'Saved on your computer', 'No account, no subscription', 'Backups when you choose'], 'checks-grid mt-3')}
       <p class="mt-3 small"><a href="privacy.html" style="color: var(--night-accent)">Read the privacy policy</a></p>
     </div>
@@ -546,7 +546,7 @@ privacy = f'''<section class="section section-night on-dark" id="privacy" aria-l
       <div class="vault-head">{tile('monitor', 'night')}<div><b>Your computer</b><span>Everything {NAME} stores lives here</span></div></div>
       <ul class="vault-items">{''.join(f'<li>{icon(i)}{t}</li>' for i, t in [('file', 'Invoices'), ('users', 'Customers'), ('package', 'Products'), ('database', 'Backups')])}</ul>
       <hr>
-      <p class="vault-foot">{icon('cloud-off')}<span><b>Nothing is uploaded.</b> There is no {NAME} cloud and no account to sign in to.</span></p>
+      <p class="vault-foot">{icon('cloud-off')}<span><b>Your business data is never uploaded.</b> There is no {NAME} cloud and no account to sign in to.</span></p>
     </div>
   </div>
 </section>'''
@@ -730,6 +730,9 @@ FAQ_GROUPS = [
         ('Where is my data stored?',
          ['Everything you enter is saved on your own computer, in the app’s data folder. Your customers, products and invoices are not sent to us.',
           'Because the data is on your computer, keeping it safe is in your hands: use <b>Settings → Backup</b> in the app regularly.']),
+        ('Does Invoiceo collect any data?',
+         ['Only a few anonymous usage counts, so we know how many people use the app: when it is first opened, once a day while it is used, and once when the first invoice is made. Each count carries a random ID, the app version and the operating system, nothing else.',
+          'Your customers, products, invoices, amounts and company details are never sent. You can turn the counts off in <b>Settings → Software Info</b>. See the <a href="privacy.html">privacy policy</a>.']),
     ]),
     ('Billing and printing', [
         ('Can I use Invoiceo for GST billing?',
@@ -830,6 +833,17 @@ changelog_body = page_head('Updates', f'What’s new in {NAME}', 'Every release,
     <article class="release" id="v{VERSION}">
       <h2>Version {VERSION} {badge('Latest', 'brand')}</h2>
       <p class="date">{RELEASE_DATE}</p>
+      <ul>
+        <li><b>Automatic backup.</b> Turn it on in Settings → Backup: every day or every week, while the app is open, a copy of your company’s data is saved by itself. Choose a folder inside Google Drive or OneDrive and the copies reach the cloud automatically.</li>
+        <li>Keep the last 5, 10 or 30 automatic copies; older automatic copies are removed, and nothing else in the folder is touched.</li>
+        <li>A clearer Backup page: saved backups show what they are (automatic, manual, before restore, JSON) with the right date and time.</li>
+        <li>A warning on the dashboard if an automatic backup could not be saved, for example when the Drive folder is not available.</li>
+        <li>A setting in Settings → Software Info for anonymous usage counts (see the privacy policy).</li>
+      </ul>
+    </article>
+    <article class="release" id="v1.0.2">
+      <h2>Version 1.0.2</h2>
+      <p class="date">{RELEASE_DATE}</p>
       <p>The app is the same as version 1.0.1: there are no new features or fixes in this release. If you already have 1.0.1, you don’t need to update.</p>
     </article>
     <article class="release" id="v1.0.1">
@@ -881,7 +895,8 @@ privacy_body = page_head('Legal', 'Privacy policy', f'Last updated: {RELEASE_DAT
     <h2>The {NAME} app</h2>
     <ul>
       <li><b>Your business data stays on your computer.</b> The customers, products, invoices, payments, settings and backups you create are stored on the computer where {NAME} is installed. We do not receive a copy.</li>
-      <li><b>The app sends nothing to us.</b> It has no usage tracking or analytics and does not send your business data anywhere. Once a day, when you are online, it asks GitHub whether a newer version of {NAME} exists; that is an ordinary web request, so GitHub sees your IP address. Otherwise it goes online only when you click a link that opens your web browser.</li>
+      <li><b>Anonymous usage counts.</b> So that we know how many people use {NAME}, the app (from version 1.0.3) sends us a short message when it is first opened, once a day while it is used, and once when the first invoice is created. Each message carries only a random ID made for this purpose, the app version and the operating system (Windows, macOS or Linux). It never includes your customers, products, invoices, amounts or company details. The messages go to a small server we run on Cloudflare, which does not store IP addresses; Cloudflare’s handling is described in the <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Privacy Policy</a>. You can turn this off in the app under <b>Settings → Software Info</b>.</li>
+      <li><b>Update check.</b> Once a day, when you are online, the app asks GitHub whether a newer version of {NAME} exists; that is an ordinary web request, so GitHub sees your IP address. Apart from this and the usage counts, the app goes online only when you click a link that opens your web browser.</li>
       <li><b>No online account.</b> The app’s usernames and passwords exist only on your computer.</li>
       <li><b>No advertising</b> and no selling of data, ever.</li>
       <li><b>Links you choose to open.</b> Some buttons in the app open a web page in your browser (for example this website, our forms or Buy Me a Coffee). What happens on those pages is covered below or by that site’s own policy.</li>
