@@ -162,7 +162,15 @@ void main() {
       expect(button.right, greaterThan(1800 - 120), reason: 'at the bottom right');
       final draft = tester.getRect(find.byKey(const ValueKey('modernSaveDraft')));
       expect(draft.top, greaterThan(totals.bottom));
-      expect(draft.right, lessThan(button.left), reason: 'Save Draft, then Create');
+      // Side by side when both names fit, else Create on top and Save Draft
+      // under it (long Tamil names; also the wide test font used here).
+      final sideBySide = (draft.center.dy - button.center.dy).abs() < 4;
+      if (sideBySide) {
+        expect(draft.right, lessThan(button.left), reason: 'Save Draft, then Create');
+      } else {
+        expect(draft.top, greaterThanOrEqualTo(button.bottom), reason: 'Create, then Save Draft under it');
+        expect(draft.left, closeTo(button.left, 1), reason: 'lined up on the left');
+      }
       expect(find.byKey(const ValueKey('modernSavePrint')), findsNothing,
           reason: 'Save & Print is in the Create ▾ menu');
     });

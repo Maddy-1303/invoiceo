@@ -19,6 +19,7 @@ import 'package:invoiceo/widgets/apply_customer_payment_dialog.dart';
 import 'package:invoiceo/l10n/app_localizations.dart';
 import 'package:invoiceo/layouts/modern/modern_page_header.dart';
 import 'package:invoiceo/widgets/customer_info_button.dart';
+import 'package:invoiceo/widgets/fit_text.dart';
 import 'package:uuid/uuid.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
@@ -2436,17 +2437,13 @@ class _CustomerManagementScreenV2State extends ConsumerState<CustomerManagementS
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                FitText(label,
                     style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 6),
                 Text('$value',
                     style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(sub,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                FitText(sub,
                     style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
               ],
             ),

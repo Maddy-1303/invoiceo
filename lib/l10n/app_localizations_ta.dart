@@ -304,7 +304,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get mInvSubtitle =>
-      'வாடிக்கையாளர், பொருட்கள் மற்றும் பில்லிங் விவரங்களைச் சேர்க்கவும்.';
+      'வாடிக்கையாளர், பொருட்கள், பில் விவரங்களைச் சேர்க்கவும்.';
 
   @override
   String get mInvCustomerSearchHint =>
@@ -441,15 +441,15 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get mListSubtitleInvoice =>
-      'உங்கள் அனைத்து விலைப்பட்டியல்களையும் நிர்வகிக்கவும், தேடவும், கண்காணிக்கவும்';
+      'எல்லா விலைப்பட்டியல்களையும் தேடவும், கண்காணிக்கவும்';
 
   @override
   String get mListSubtitleQuotation =>
-      'உங்கள் அனைத்து மதிப்பீடுகளையும் நிர்வகிக்கவும், தேடவும், கண்காணிக்கவும்';
+      'எல்லா விலைப்புள்ளிகளையும் தேடவும், கண்காணிக்கவும்';
 
   @override
   String get mListSubtitleReceipt =>
-      'உங்கள் அனைத்து ரசீதுகளையும் நிர்வகிக்கவும், தேடவும், கண்காணிக்கவும்';
+      'எல்லா ரசீதுகளையும் தேடவும், கண்காணிக்கவும்';
 
   @override
   String mListAllOfType(String items) {
@@ -569,8 +569,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get navServices => 'சேவைகள்';
 
   @override
-  String get mProdSubtitle =>
-      'உங்கள் பொருட்கள், இருப்பு மற்றும் விலைகளை நிர்வகிக்கவும்';
+  String get mProdSubtitle => 'பொருட்கள், இருப்பு, விலைகளை நிர்வகிக்கவும்';
 
   @override
   String get mSvcTitle => 'சேவை மேலாண்மை';
@@ -594,7 +593,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get mProdInStockSub => 'கிடைக்கும் பொருட்கள்';
 
   @override
-  String get mProdLowStockSub => 'கவனம் தேவைப்படும் பொருட்கள்';
+  String get mProdLowStockSub => 'கவனிக்க வேண்டியவை';
 
   @override
   String get mProdOutOfStockSub => 'கிடைக்கவில்லை';
@@ -2447,14 +2446,13 @@ class AppLocalizationsTa extends AppLocalizations {
   String get customerMgmtTotalCustomersLabel => 'மொத்த வாடிக்கையாளர்கள்';
 
   @override
-  String get customerMgmtAllCustomersSubtitle => 'அனைத்து வாடிக்கையாளர்கள்';
+  String get customerMgmtAllCustomersSubtitle => 'அனைவரும்';
 
   @override
   String get customerMgmtBusinessesLabel => 'வணிகங்கள்';
 
   @override
-  String get customerMgmtRegisteredBusinessesSubtitle =>
-      'பதிவு செய்யப்பட்ட வணிகங்கள்';
+  String get customerMgmtRegisteredBusinessesSubtitle => 'பதிவுபெற்ற வணிகங்கள்';
 
   @override
   String get customerMgmtIndividualsLabel => 'தனிநபர்கள்';
@@ -2483,7 +2481,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get customerMgmtSubtitle =>
-      'உங்கள் வாடிக்கையாளர்களையும் தொடர்பு விவரங்களையும் நிர்வகிக்கவும்';
+      'வாடிக்கையாளர்கள், தொடர்பு விவரங்களை நிர்வகிக்கவும்';
 
   @override
   String get actionImport => 'இறக்குமதி';
@@ -3173,7 +3171,7 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String reportsCurrentSelectedCurrencyLabel(String currency) {
-    return 'தற்போது தேர்ந்தெடுத்த நாணயம் ($currency)';
+    return 'தற்போதைய நாணயம் ($currency)';
   }
 
   @override

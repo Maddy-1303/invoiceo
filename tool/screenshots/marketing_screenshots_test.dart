@@ -270,7 +270,7 @@ void main() {
                   .apply(fontFamilyFallback: const ['NotoSansTamil', 'ShotEmoji'])),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          locale: _locale == '' ? null : const Locale(_locale),
+          locale: _locale == '' ? null : Locale(_locale),
           home: DashboardScreen(
               User(id: 'u1', username: 'Madhan', password: 'x', userType: 'admin')),
         ),

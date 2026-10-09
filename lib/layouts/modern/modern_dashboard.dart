@@ -25,6 +25,7 @@ import 'package:invoiceo/services/invoice_pdf_services.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 import 'package:invoiceo/utils/formatters.dart';
 import 'package:invoiceo/widgets/auto_backup_warning_banner.dart';
+import 'package:invoiceo/widgets/fit_text.dart';
 
 // ── Small pure helpers (tested in test/modern_dashboard_test.dart) ──────────
 
@@ -504,9 +505,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                FitText(label,
                     style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 4),
                 FittedBox(
@@ -812,8 +811,12 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
               Text('${s.total}',
                   key: const ValueKey('modernDashStatusTotal'),
                   style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
-              Text(l10n.navInvoices,
-                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
+              SizedBox(
+                width: 96,
+                child: FitText(l10n.navInvoices,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
+              ),
             ],
           ),
         ],
@@ -833,7 +836,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
                     height: 11,
                     decoration: BoxDecoration(color: r.$3, shape: BoxShape.circle)),
                 const SizedBox(width: 10),
-                Expanded(child: Text(r.$1, style: const TextStyle(fontSize: 14.5))),
+                Expanded(child: FitText(r.$1, style: const TextStyle(fontSize: 14.5))),
                 SizedBox(
                   width: 40,
                   child: Text('${r.$2}',
@@ -910,7 +913,10 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
         for (final c in cols)
           Expanded(
               flex: c.$2,
-              child: Text(c.$1, textAlign: c.$3, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FitText(c.$1, textAlign: c.$3, style: style),
+              )),
         if (trailing > 0) SizedBox(width: trailing),
       ]),
     );
@@ -941,7 +947,8 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
             (l10n.labelCustomer, 3, TextAlign.left),
             (l10n.invoiceMgmtColDate, 3, TextAlign.left),
             (l10n.labelAmount, 3, TextAlign.left),
-            (l10n.invoiceMgmtColStatus, 2, TextAlign.left),
+            // Room for the longer (Tamil) status names.
+            (l10n.invoiceMgmtColStatus, 3, TextAlign.left),
           ], trailing: 128),
           if (!_loading && _recent.isEmpty)
             Padding(
@@ -980,12 +987,12 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
                 child: Icon(Icons.description_outlined, size: 17, color: color),
               ),
               const SizedBox(width: 10),
-              Flexible(
-                child: Text('#${inv.invoiceNumber ?? inv.id}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+              // The number and the amount shrink a little rather than be cut.
+              Expanded(
+                child: FitText('#${inv.invoiceNumber ?? inv.id}',
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               ),
+              const SizedBox(width: 8),
             ]),
           ),
           Expanded(
@@ -1000,13 +1007,14 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
           ),
           Expanded(
             flex: 3,
-            child: Text('$symbol ${NumberFormat('#,##0.00').format(inv.total)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FitText('$symbol ${NumberFormat('#,##0.00').format(inv.total)}',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            ),
           ),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
@@ -1015,9 +1023,7 @@ class _ModernDashboardState extends ConsumerState<ModernDashboard> {
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                child: FitText(label,
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
               ),
             ),

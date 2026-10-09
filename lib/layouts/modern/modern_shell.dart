@@ -428,18 +428,24 @@ class _ModernNavItem extends StatelessWidget {
               const SizedBox(width: 14),
               iconWidget,
               const SizedBox(width: 14),
+              // A long label (Tamil "புதிய விலைப்பட்டியல்") shrinks a little
+              // to fit instead of being cut off.
               Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: color,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: color,
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
             ],
           );
 
@@ -593,11 +599,15 @@ class ModernTopBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                fontSize: 20, fontWeight: FontWeight.w800, height: 1.2)),
+        // A long title (Tamil) shrinks a little to fit.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(title,
+              maxLines: 1,
+              style: const TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.w800, height: 1.2)),
+        ),
         if (subtitle != null && subtitle.isNotEmpty)
           Text(subtitle,
               maxLines: 1,
@@ -619,76 +629,11 @@ class ModernTopBar extends StatelessWidget {
     PopupMenuItem<ModernUserAction> Function(ModernUserAction, IconData, String)
         userItem,
   ) {
-    return Row(
+    final trailing = Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (page != 0 && h?.onBack != null) ...[
-          IconButton(
-            key: const ValueKey('modernHeaderBack'),
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            icon: const Icon(Icons.chevron_left, size: 26),
-            onPressed: h!.onBack,
-          ),
-          const SizedBox(width: 4),
-        ],
-        if (page != 0)
-          Expanded(flex: 2, child: _title(h, scheme))
-        else ...[
-          Flexible(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Material(
-                key: const ValueKey('modernSearch'),
-                color: scheme.surfaceContainer,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: scheme.outlineVariant),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: onSearch,
-                  child: SizedBox(
-                    height: 40,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 12),
-                        Icon(Icons.search,
-                            size: 20, color: scheme.onSurfaceVariant),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            l10n.modernTopBarSearchHint,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontSize: 14, color: scheme.onSurfaceVariant),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const Spacer(),
-        ],
-        // The page's buttons shrink a little on a narrow window (Tamil
-        // labels, small screens) instead of pushing the menus off the edge.
         if (h != null && h.actions.isNotEmpty)
-          Flexible(
-            flex: 3,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  for (final a in h.actions) ...[a, const SizedBox(width: 4)],
-                ]),
-              ),
-            ),
-          ),
+          for (final a in h.actions) ...[a, const SizedBox(width: 4)],
         if (h?.createButton != null) ...[
           const SizedBox(width: 8),
           h!.createButton!,
@@ -784,5 +729,80 @@ class ModernTopBar extends StatelessWidget {
         ),
       ],
     );
+    return LayoutBuilder(
+        builder: (context, box) => Row(
+              children: [
+                if (page != 0 && h?.onBack != null) ...[
+                  IconButton(
+                    key: const ValueKey('modernHeaderBack'),
+                    tooltip:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    icon: const Icon(Icons.chevron_left, size: 26),
+                    onPressed: h!.onBack,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                if (page != 0)
+                  Expanded(child: _title(h, scheme))
+                else ...[
+                  Flexible(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 380),
+                      child: Material(
+                        key: const ValueKey('modernSearch'),
+                        color: scheme.surfaceContainer,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: scheme.outlineVariant),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: onSearch,
+                          child: SizedBox(
+                            height: 40,
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 12),
+                                Icon(Icons.search,
+                                    size: 20, color: scheme.onSurfaceVariant),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    l10n.modernTopBarSearchHint,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        color: scheme.onSurfaceVariant),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                ],
+                if (page != 0) ...[
+                  // The buttons and menus take the room they need (up to 75% of the
+                  // bar) and the title gets the rest. When they do not fit (Tamil
+                  // labels, a narrow window) they shrink a little instead of being
+                  // pushed off the edge.
+                  const SizedBox(width: 12),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: box.maxWidth * 0.75),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: trailing,
+                    ),
+                  ),
+                ] else
+                  trailing,
+              ],
+            ));
   }
 }

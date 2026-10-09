@@ -21,7 +21,7 @@ SITE = 'https://invoiceo.in'
 NAME = 'Invoiceo'
 BUSINESS = 'Madcreations'
 EMAIL = 'madhanprasat2002r@gmail.com'
-VERSION = '1.0.4'
+VERSION = '1.0.5'
 RELEASE_DATE = '9 October 2026'
 RELEASE_ISO = '2026-10-09'
 COFFEE = 'https://buymeacoffee.com/madcreations'
@@ -1143,6 +1143,15 @@ changelog_body = page_head('Updates', f'What’s new in {NAME}', 'Every release,
   <div class="wrap measure">
     <article class="release" id="v{VERSION}">
       <h2>Version {VERSION} {badge('Latest', 'brand')}</h2>
+      <p class="date">{RELEASE_DATE}</p>
+      <ul>
+        <li><b>Tamil screens read better.</b> Long Tamil labels are no longer cut off with “…”: the sidebar, page titles, dashboard cards and charts, the invoice, customer and product lists, and the Reports menu now show the full words.</li>
+        <li>On the New Invoice screen, when the buttons are too narrow for their names, Create goes full width with Save Draft under it.</li>
+        <li>Shorter, clearer Tamil wording for a few page subtitles and card notes.</li>
+      </ul>
+    </article>
+    <article class="release" id="v1.0.4">
+      <h2>Version 1.0.4</h2>
       <p class="date">{RELEASE_DATE}</p>
       <ul>
         <li>Anonymous usage counts are now on, so we can see how many shops use {NAME}: a short message when the app is first opened, once a day while it is used, and once when the first invoice is made. They never include your business data. Turn them off any time in Settings → Software Info (see the <a href="privacy.html">privacy policy</a>).</li>

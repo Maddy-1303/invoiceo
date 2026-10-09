@@ -27,6 +27,7 @@ import 'package:invoiceo/common/app_config.dart';
 import 'package:invoiceo/services/pdf/pdf_font_service.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 import 'package:invoiceo/utils/app_date.dart';
+import 'package:invoiceo/widgets/fit_text.dart';
 class ProductManagementScreenV2 extends ConsumerStatefulWidget {
   final User user;
 
@@ -4112,16 +4113,12 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                FitText(label,
                     style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 6),
                 Text('$value', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(sub,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                FitText(sub,
                     style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant)),
               ],
             ),
@@ -4363,12 +4360,22 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
     return InkWell(
       key: ValueKey(key),
       onTap: () => _onSortSelectionV2(field, sorted ? !_isAscending : defaultAscending),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Flexible(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
-        const SizedBox(width: 4),
-        Icon(!sorted ? Icons.unfold_more : (_isAscending ? Icons.arrow_upward : Icons.arrow_downward),
-            size: 14, color: style.color),
-      ]),
+      // Up to two lines, with the sort arrow after the last word, so a
+      // two-word (Tamil) label wraps at the space instead of being cut.
+      child: Text.rich(
+        TextSpan(text: '$text ', children: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Icon(
+                !sorted ? Icons.unfold_more : (_isAscending ? Icons.arrow_upward : Icons.arrow_downward),
+                size: 14,
+                color: style.color),
+          ),
+        ]),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
     );
   }
 
@@ -4400,7 +4407,7 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
       }
       // "Tax" (not "Tax Rate"): the column is narrow and the cell is a % anyway.
       final text = k == 'taxRate' ? l10n.fieldTaxLabel : _listColLabel(l10n, k);
-      return Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
+      return Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: style);
     }
 
     return Container(
@@ -4449,20 +4456,24 @@ class _ProductManagementScreenV2State extends ConsumerState<ProductManagementScr
         : p.stock > 0
             ? (l10n.productMgmtLowStockTabLabel, const Color(0xFFEA580C))
             : (l10n.productMgmtOutOfStockTabLabel, const Color(0xFFDC2626));
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        // A long word (Tamil) shrinks to fit instead of being cut.
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(text,
-              maxLines: 1,
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color)),
+    // The right padding keeps a gap before the next column.
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          // A long word (Tamil) shrinks to fit instead of being cut.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(text,
+                maxLines: 1,
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color)),
+          ),
         ),
       ),
     );

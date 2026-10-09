@@ -17,6 +17,7 @@ import 'package:invoiceo/providers/repositories.dart';
 
 import '../common/supported_currencies.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
+import 'package:invoiceo/widgets/fit_text.dart';
 
 // ─── Date preset enum ─────────────────────────────────────────────────────────
 
@@ -1023,11 +1024,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                     ? primary
                     : Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 10),
-            // A long name (some languages) shortens instead of overflowing.
-            Flexible(
-              child: Text(label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            // A long name (Tamil) shrinks a little to fit instead of being cut.
+            Expanded(
+              child: FitText(label,
                   style: TextStyle(
                       fontSize: 13,
                       fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
@@ -1057,13 +1056,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   sel ? primary : Theme.of(context).colorScheme.outlineVariant,
             ),
             const SizedBox(width: 8),
-            Flexible(
-              child: Text(
+            Expanded(
+              child: FitText(
                   isCustom
                       ? AppLocalizations.of(context)!.commonCustomEllipsisLabel
                       : _presetLabel(p),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       fontSize: 13,
                       color: sel

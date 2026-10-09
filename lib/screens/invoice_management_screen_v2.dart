@@ -23,6 +23,7 @@ import 'package:intl/intl.dart';
 import 'package:open_file/open_file.dart';
 import 'package:invoiceo/models/user.dart';
 import 'package:invoiceo/widgets/customer_info_button.dart';
+import 'package:invoiceo/widgets/fit_text.dart';
 import 'package:invoiceo/utils/formatters.dart';
 import 'package:invoiceo/theme/brand_colors.dart';
 
@@ -2041,6 +2042,9 @@ class _InvoiceManagementScreenV2State
 
   double _actionsWidth(bool isWide) => !isWide ? 48 : (widget.modern ? 140 : 300);
 
+  // Items column: room for the Tamil header "உருப்படிகள்".
+  static const double _itemsWidth = 76;
+
   // Status column: room for the longer (Tamil) labels; the pill scales down
   // to fit what is left (see _statusPill).
   double _statusWidth(bool isWide) => widget.filterType == 'Quotation'
@@ -2103,12 +2107,11 @@ class _InvoiceManagementScreenV2State
                   : Text(l10n.invoiceMgmtColDate, style: style)),
           if (isWide && _colOn('items'))
             SizedBox(
-                width: 56,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(l10n.invoiceMgmtColItems, maxLines: 1, style: style)),
+                width: _itemsWidth,
+                child: Padding(
+                  // A gap before Total, which starts right after.
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FitText(l10n.invoiceMgmtColItems, style: style),
                 )),
           if (_colOn('total')) Expanded(child: Text(l10n.fieldTotalLabel, style: style)),
           if (widget.filterType == 'Invoice') ...[
@@ -2214,14 +2217,16 @@ class _InvoiceManagementScreenV2State
             Expanded(
               // No special title set = the plain document title, "Invoice"
               // (what the PDF prints and what the edit form's GST title box shows).
-              child: Text(invoice.invoiceTitle ?? AppLocalizations.of(context)!.labelInvoice,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FitText(invoice.invoiceTitle ?? AppLocalizations.of(context)!.labelInvoice,
+                    style: TextStyle(fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ),
             ),
           if (_colOn('date')) SizedBox(width: 110, child: _buildDateCell(invoice)),
           if (isWide && _colOn('items'))
             SizedBox(
-              width: 56,
+              width: _itemsWidth,
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
@@ -2252,11 +2257,14 @@ class _InvoiceManagementScreenV2State
             if (_colOn('status'))
             SizedBox(
               width: _statusWidth(isWide),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: invoice.status == 'declined'
-                    ? _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red)
-                    : _buildPaymentStatusChip(invoice.paymentStatus),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: invoice.status == 'declined'
+                      ? _statusPill(AppLocalizations.of(context)!.invoiceStatusDeclinedBadge, Colors.red)
+                      : _buildPaymentStatusChip(invoice.paymentStatus),
+                ),
               ),
             ),
             if (_colOn('outstanding'))
@@ -2283,9 +2291,12 @@ class _InvoiceManagementScreenV2State
           if (widget.filterType == 'Quotation' && _colOn('status'))
             SizedBox(
               width: _statusWidth(isWide),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _buildQuotationStatusChip(invoice.status),
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _buildQuotationStatusChip(invoice.status),
+                ),
               ),
             ),
           SizedBox(

@@ -7403,51 +7403,82 @@ class _CreateInvoiceScreenModernState extends ConsumerState<CreateInvoiceScreenM
     final editing = widget.invoiceToEdit != null;
     final canSave = invoiceItems.isNotEmpty && !isLoading;
     final type = _invoiceTypeLabel(invoiceType);
-    return Row(
-      key: const ValueKey('modernActions'),
-      children: [
-        if (!editing) ...[
-          Expanded(
-            flex: 2,
-            child: SizedBox(
-              height: 48,
-              child: OutlinedButton.icon(
-                key: const ValueKey('modernSaveDraft'),
-                onPressed: _savingDraft || isLoading ? null : _saveDraft,
-                icon: _savingDraft
-                    ? const SizedBox(
-                        width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.description_outlined, size: 18),
-                label: Text(l10n.mInvSaveDraft, maxLines: 1, overflow: TextOverflow.ellipsis),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-        ],
-        Expanded(
-          flex: 3,
-          child: Tooltip(
-            message: _createTipModern,
-            child: _splitButton(
-              key: 'modernCreate',
-              menuKey: 'modernCreateDropdown',
-              filled: true,
-              expand: true,
-              icon: editing ? Icons.update : Icons.check,
-              label: isLoading
-                  ? l10n.createInvoiceProcessingLabel
-                  : (editing ? l10n.mInvUpdateType(type) : l10n.mInvCreateType(type)),
-              onPressed: canSave ? () => _saveAndMaybePrint() : null,
-              menu: _createMenuModern(),
-            ),
-          ),
+    final createLabel = isLoading
+        ? l10n.createInvoiceProcessingLabel
+        : (editing ? l10n.mInvUpdateType(type) : l10n.mInvCreateType(type));
+    final draft = SizedBox(
+      height: 48,
+      child: OutlinedButton.icon(
+        key: const ValueKey('modernSaveDraft'),
+        onPressed: _savingDraft || isLoading ? null : _saveDraft,
+        icon: _savingDraft
+            ? const SizedBox(
+                width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.description_outlined, size: 18),
+        label: Text(l10n.mInvSaveDraft, maxLines: 1, overflow: TextOverflow.ellipsis),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-      ],
+      ),
     );
+    final create = Tooltip(
+      message: _createTipModern,
+      child: _splitButton(
+        key: 'modernCreate',
+        menuKey: 'modernCreateDropdown',
+        filled: true,
+        expand: true,
+        icon: editing ? Icons.update : Icons.check,
+        label: createLabel,
+        onPressed: canSave ? () => _saveAndMaybePrint() : null,
+        menu: _createMenuModern(),
+      ),
+    );
+    return LayoutBuilder(builder: (context, box) {
+      // Side by side when both labels fit. When they would be cut off (the
+      // longer Tamil words in the right panel), Create goes full width with
+      // Save Draft under it.
+      final style = Theme.of(context)
+          .textTheme
+          .labelLarge!
+          .merge(const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5));
+      double textWidth(String s) => (TextPainter(
+            text: TextSpan(text: s, style: style),
+            maxLines: 1,
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout())
+              .width;
+      final row = box.maxWidth - (editing ? 0 : 10);
+      // Each button's share of the row, less its padding, icon and gap (and
+      // Create's ▾ menu).
+      final createRoom = row * (editing ? 1 : 3 / 5) - 24 - 19 - 10 - 41;
+      final draftRoom = row * 2 / 5 - 24 - 18 - 8;
+      final fits = !box.maxWidth.isFinite ||
+          (textWidth(createLabel) <= createRoom &&
+              (editing || textWidth(l10n.mInvSaveDraft) <= draftRoom));
+      if (!fits) {
+        return Column(
+          key: const ValueKey('modernActions'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            create,
+            if (!editing) ...[const SizedBox(height: 8), draft],
+          ],
+        );
+      }
+      return Row(
+        key: const ValueKey('modernActions'),
+        children: [
+          if (!editing) ...[
+            Expanded(flex: 2, child: draft),
+            const SizedBox(width: 10),
+          ],
+          Expanded(flex: 3, child: create),
+        ],
+      );
+    });
   }
 
   Widget _expandIf(bool expand, Widget child) =>
