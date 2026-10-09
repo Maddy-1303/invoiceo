@@ -101,3 +101,6 @@ gh_actions_cleanup.py
 /make_deb*.sh
 /make_app_image*.sh
 /lib/*.dart3
+
+# Cloudflare wrangler cache
+.wrangler/

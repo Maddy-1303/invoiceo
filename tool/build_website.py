@@ -21,7 +21,7 @@ SITE = 'https://invoiceo.in'
 NAME = 'Invoiceo'
 BUSINESS = 'Madcreations'
 EMAIL = 'madhanprasat2002r@gmail.com'
-VERSION = '1.0.3'
+VERSION = '1.0.4'
 RELEASE_DATE = '9 October 2026'
 RELEASE_ISO = '2026-10-09'
 COFFEE = 'https://buymeacoffee.com/madcreations'
@@ -834,11 +834,17 @@ changelog_body = page_head('Updates', f'What’s new in {NAME}', 'Every release,
       <h2>Version {VERSION} {badge('Latest', 'brand')}</h2>
       <p class="date">{RELEASE_DATE}</p>
       <ul>
+        <li>Anonymous usage counts are now on, so we can see how many shops use {NAME}: a short message when the app is first opened, once a day while it is used, and once when the first invoice is made. They never include your business data. Turn them off any time in Settings → Software Info (see the <a href="privacy.html">privacy policy</a>).</li>
+      </ul>
+    </article>
+    <article class="release" id="v1.0.3">
+      <h2>Version 1.0.3</h2>
+      <p class="date">{RELEASE_DATE}</p>
+      <ul>
         <li><b>Automatic backup.</b> Turn it on in Settings → Backup: every day or every week, while the app is open, a copy of your company’s data is saved by itself. Choose a folder inside Google Drive or OneDrive and the copies reach the cloud automatically.</li>
         <li>Keep the last 5, 10 or 30 automatic copies; older automatic copies are removed, and nothing else in the folder is touched.</li>
         <li>A clearer Backup page: saved backups show what they are (automatic, manual, before restore, JSON) with the right date and time.</li>
         <li>A warning on the dashboard if an automatic backup could not be saved, for example when the Drive folder is not available.</li>
-        <li>A setting in Settings → Software Info for anonymous usage counts (see the privacy policy).</li>
       </ul>
     </article>
     <article class="release" id="v1.0.2">
@@ -895,7 +901,7 @@ privacy_body = page_head('Legal', 'Privacy policy', f'Last updated: {RELEASE_DAT
     <h2>The {NAME} app</h2>
     <ul>
       <li><b>Your business data stays on your computer.</b> The customers, products, invoices, payments, settings and backups you create are stored on the computer where {NAME} is installed. We do not receive a copy.</li>
-      <li><b>Anonymous usage counts.</b> So that we know how many people use {NAME}, the app (from version 1.0.3) sends us a short message when it is first opened, once a day while it is used, and once when the first invoice is created. Each message carries only a random ID made for this purpose, the app version and the operating system (Windows, macOS or Linux). It never includes your customers, products, invoices, amounts or company details. The messages go to a small server we run on Cloudflare, which does not store IP addresses; Cloudflare’s handling is described in the <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Privacy Policy</a>. You can turn this off in the app under <b>Settings → Software Info</b>.</li>
+      <li><b>Anonymous usage counts.</b> So that we know how many people use {NAME}, the app (from version 1.0.4) sends us a short message when it is first opened, once a day while it is used, and once when the first invoice is created. Each message carries only a random ID made for this purpose, the app version and the operating system (Windows, macOS or Linux). It never includes your customers, products, invoices, amounts or company details. The messages go to a small server we run on Cloudflare, which does not store IP addresses; Cloudflare’s handling is described in the <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Privacy Policy</a>. You can turn this off in the app under <b>Settings → Software Info</b>.</li>
       <li><b>Update check.</b> Once a day, when you are online, the app asks GitHub whether a newer version of {NAME} exists; that is an ordinary web request, so GitHub sees your IP address. Apart from this and the usage counts, the app goes online only when you click a link that opens your web browser.</li>
       <li><b>No online account.</b> The app’s usernames and passwords exist only on your computer.</li>
       <li><b>No advertising</b> and no selling of data, ever.</li>

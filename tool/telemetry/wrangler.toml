@@ -1,0 +1,15 @@
+# Deploys worker.js as the "invoiceo-telemetry" Worker (usage counts).
+#   npx wrangler deploy                       (from this folder)
+#   npx wrangler d1 execute invoiceo-telemetry --remote --file=schema.sql
+# The STATS_KEY secret is set with `wrangler secret put STATS_KEY`; it is
+# never stored in this repo.
+name = "invoiceo-telemetry"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "invoiceo-telemetry"
+database_id = "0d286162-a341-4372-a6c0-de9d2b7659fc"
