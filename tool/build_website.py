@@ -470,6 +470,35 @@ def page_head(eyebrow, title, lead=None, extra=''):
 
 ORG = {'@type': 'Organization', 'name': BUSINESS, 'email': EMAIL, 'url': SITE + '/'}
 
+# ─────────────────────────────── Testimonials ──────────────────────────────
+# Real customers only, in their own words, shown with their permission. The
+# spelling and punctuation may be tidied, nothing else. Never add one that is
+# not real and approved (made-up reviews are also against Indian consumer
+# rules). Green & Green Agri Solutions agreed on 13 October 2026.
+TESTIMONIALS = [{
+    'name': 'Green &amp; Green Agri Solutions',
+    'initial': 'G',
+    'about': {'en': 'Agricultural products and solar power · Udumalai',
+              'ta': 'விவசாயப் பொருட்கள், சூரிய மின் உற்பத்தி · உடுமலை'},
+    'quote': {'en': 'It is exactly the software we were looking for. I had approached many tech companies, but they '
+                    'quoted more. Invoiceo quoted a perfect budget, and it is very easy to use — the perfect solution '
+                    'we were looking for.',
+              'ta': 'நாங்கள் தேடிக்கொண்டிருந்த மென்பொருள் இதுதான். பல தொழில்நுட்ப நிறுவனங்களை அணுகினோம், ஆனால் அவர்கள் '
+                    'அதிக விலை சொன்னார்கள். Invoiceo சரியான பட்ஜெட்டில் விலை சொன்னது; பயன்படுத்தவும் மிக எளிது — நாங்கள் '
+                    'தேடிய சரியான தீர்வு.'},
+    'tag': {'en': 'Custom energy bill', 'ta': 'தனிப்பயன் மின் பில்'},
+}]
+
+
+def testimonial_card(t, lang='en'):
+    # The Tamil page shows a translation of the customer's English words, and says so.
+    note = '<p class="testimonial-note">ஆங்கிலத்திலிருந்து தமிழாக்கம்</p>' if lang == 'ta' else ''
+    return (f'<figure class="testimonial"><blockquote><p>{t["quote"][lang]}</p></blockquote>{note}'
+            f'<figcaption><span class="testimonial-mark" aria-hidden="true">{t["initial"]}</span>'
+            f'<span><b>{t["name"]}</b><span>{t["about"][lang]}</span></span></figcaption>'
+            f'{badge(t["tag"][lang], "teal", "tool")}</figure>')
+
+
 # ─────────────────────────────────── Home ──────────────────────────────────
 hero = f'''<section class="hero" aria-labelledby="hero-title">
   <div class="wrap hero-grid">
@@ -604,6 +633,11 @@ langs = ''.join(f'<span class="chip"{(" lang=" + chr(34) + l + chr(34)) if l els
 INDIA = ['GSTIN, HSN/SAC and CGST + SGST or IGST', 'UPI QR code on your invoices', 'Amounts in rupees by default', 'Tamil and Hindi on screen and on paper']
 WORLD = ['Pick the currency you bill in', 'Eight app languages (Tibetan partly translated)', 'A4, A5, A6 and 58/80 mm paper',
          'GST fields stay out of the way when you don’t need them']
+customers = section(section_head('Customers', 'What our customers say', hid='tm-title')
+                    + '<div class="testimonials mt-4">' + ''.join(testimonial_card(t) for t in TESTIMONIALS) + '</div>'
+                    + '<p class="center mt-3"><a href="customization.html#work">See the energy bill we built for them</a></p>',
+                    'customers', 'section-subtle', 'tm-title')
+
 local_global = section(section_head('Local and global', 'Built for local businesses. Ready for the world.',
                                     f'{NAME} is made in India for Indian billing rules, and works just as well anywhere else.', 'lg-title')
                        + '<div class="split split-stretch mt-4">'
@@ -691,7 +725,7 @@ final_cta = f'''<section class="cta-section" aria-labelledby="cta-title">
 page('index.html', f'{NAME} — Free offline billing and GST invoice software',
      f'{NAME} is free, open-source billing software for Windows, macOS and Linux. Make GST invoices, quotations and receipts offline, '
      'print on A4 or thermal printers, in English, Tamil and more.',
-     'home', '\n\n'.join([hero, facts, why, how, features, shots, who, local_global, privacy, open_source, download, home_faq, final_cta]),
+     'home', '\n\n'.join([hero, facts, why, how, features, shots, who, customers, local_global, privacy, open_source, download, home_faq, final_cta]),
      jsonld={
          '@context': 'https://schema.org',
          '@type': 'SoftwareApplication',
@@ -824,6 +858,11 @@ ta_who = section(section_head('யாருக்கு?', 'சிறு வண�
 TA_INDIA = ['GSTIN, HSN/SAC, CGST + SGST அல்லது IGST', 'பில்லில் UPI QR குறியீடு', 'இயல்பாக ரூபாயில் தொகை', 'திரையிலும் பில்லிலும் தமிழ், இந்தி']
 TA_TAMIL = ['மெனு, பட்டன்கள், பெரும்பாலான திரைகள் தமிழில்', 'பொருள், வாடிக்கையாளர் பெயர்களைத் தமிழில் சேமிக்கலாம்',
             'தமிழ்ப் பெயர்கள் PDF-லும் தெர்மல் ரசீதிலும் சரியாக அச்சாகும்', 'எப்போது வேண்டுமானாலும் English-க்கு மாற்றலாம்']
+ta_customers = section(section_head('வாடிக்கையாளர்கள்', 'எங்கள் வாடிக்கையாளர் சொல்வது', hid='tm-title')
+                       + '<div class="testimonials mt-4">' + ''.join(testimonial_card(t, 'ta') for t in TESTIMONIALS) + '</div>'
+                       + '<p class="center mt-3"><a href="customization.html#work">அவர்களுக்காக செய்த மின் பில்லைப் பாருங்கள் (English)</a></p>',
+                       'customers', 'section-subtle', 'tm-title')
+
 ta_tamil = section(section_head('தமிழில்', 'தமிழிலேயே பயன்படுத்துங்கள், தமிழிலேயே பிரிண்ட் எடுங்கள்',
                                 f'{NAME} இந்தியாவில், இந்திய பில்லிங் விதிகளுக்காக உருவாக்கப்பட்டது. ஆப்பின் மொழியைத் தமிழாக மாற்றினால் போதும்.', 'lg-title')
                    + '<div class="split split-stretch mt-4">'
@@ -922,7 +961,7 @@ ta_cta = f'''<section class="cta-section" aria-labelledby="cta-title">
 page('ta.html', f'இலவச பில்லிங் சாஃப்ட்வேர் தமிழில் — GST பில், ஆஃப்லைன் | {NAME}',
      f'{NAME} — கடைகளுக்கான இலவச பில்லிங் சாஃப்ட்வேர். தமிழிலேயே GST பில், கொட்டேஷன், ரசீது போடலாம். '
      'இன்டர்நெட் இல்லாமலும் வேலை செய்யும். Windows, Mac, Linux-க்கு இலவச டவுன்லோட்.',
-     'home', '\n\n'.join([ta_hero, ta_facts, ta_why, ta_how, ta_features, ta_shots, ta_who, ta_tamil, ta_privacy, ta_free,
+     'home', '\n\n'.join([ta_hero, ta_facts, ta_why, ta_how, ta_features, ta_shots, ta_who, ta_customers, ta_tamil, ta_privacy, ta_free,
                           ta_download, ta_faq, ta_cta]),
      lang='ta',
      jsonld={
@@ -990,6 +1029,36 @@ CUSTOM = [
 CUSTOM_STEPS = [('message', 'Tell us what you need', 'Fill in the request form below. Sample bills or screenshots help a lot.'),
                 ('file', 'Get a quote', 'We reply with any questions and a price for the work. There is no charge for the quote.'),
                 ('package', 'We build it', 'Once you approve, we build and test it, and give you your updated version.')]
+# Recent custom work. The picture is the real energy bill PDF code printing
+# made-up companies and numbers (never a customer's real bill).
+ENERGY_WORK = [
+    'Units generated, units allotted and the net units billed at the month’s rate',
+    'The month’s deductions under “Less:” — transmission, wheeling, scheduling, meter reading and more — '
+    'as fixed amounts or per unit, like the 10-paise self-generation tax',
+    'Total expenses, round off and the net amount, with the amount in words',
+    'Remembers last month’s wording, rate and deductions, so each new bill needs only the new numbers',
+    'Bill numbers in the company’s own style, starting again each financial year (for example ABC/26-27/001)',
+    'Saved like any invoice, so payments, balances and reports work as usual',
+]
+_energy_png = 'assets/images/docs/energy-bill.png'
+_ew, _eh = png_size(os.path.join(OUT, _energy_png))
+recent_work = f'''<section class="section" id="work" aria-labelledby="work-title">
+  <div class="wrap">
+    {section_head('Recent work', 'An energy bill for a solar power company',
+                  'Made for Green &amp; Green Agri Solutions, Udumalai: their monthly power-sale bill, built into ' + NAME + '.', 'work-title')}
+    <div class="split split-top mt-4">
+      <figure class="doc-full">
+        <a href="{_energy_png}" target="_blank" rel="noopener" title="Open full size"><img src="{_energy_png}" width="{_ew}" height="{_eh}" alt="A sample energy bill made with {NAME}: units generated and allotted, net units at the rate, deductions such as transmission and wheeling charges, and the net amount" loading="lazy" decoding="async"></a>
+        <figcaption>Shown with sample data: every name and number on it is made up.</figcaption>
+      </figure>
+      <div class="stack" style="gap: 28px">
+        <div class="stack"><h3 class="h4">What it does</h3>{checks(ENERGY_WORK)}</div>
+        {testimonial_card(TESTIMONIALS[0])}
+      </div>
+    </div>
+  </div>
+</section>'''
+
 customization_body = page_head(
     'Custom features', 'Customization',
     f'{NAME} is free to use. When your business needs something more, we can build it for you. Every request is quoted on its own, and you decide before any work starts.') + f'''
@@ -1000,6 +1069,8 @@ customization_body = page_head(
     <div class="grid-auto mt-4">{''.join(f'<div class="card">{tile(i, "neutral")}<h3>{t}</h3><p>{d}</p></div>' for i, t, d in CUSTOM)}</div>
   </div>
 </section>
+
+{recent_work}
 
 <section class="section section-subtle" aria-labelledby="custom-how">
   <div class="wrap">
