@@ -57,6 +57,7 @@ STROKE = {
     'cloud-off': '<path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/>',
     'code': '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
     'coffee': '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+    'copy': '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
     'credit-card': '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>',
     'database': '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
     'download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
@@ -302,8 +303,27 @@ def dl_grid(full=False, lang='en'):
     return '<div class="dl-grid">' + ''.join(dl_card(p, full, lang=lang) for p in cards) + '</div>'
 
 
-PHONE_NOTE = (f'<div class="notice hidden" data-mobile-note>{icon("smartphone")}<span>You’re on a phone. {NAME} runs on '
-              f'Windows, macOS and Linux computers. Open <b>invoiceo.in</b> on your computer to download it.</span></div>')
+def phone_note(lang='en'):
+    """Shown on phones only (site.js): Invoiceo installs on a computer, so the
+    visitor sends the download link to themselves. "Send to my computer"
+    (the phone's share menu) appears only where the browser can share."""
+    if lang == 'ta':
+        text = (f'நீங்கள் போனில் பார்க்கிறீர்கள். {NAME} கணினியில் (Windows, macOS, Linux) இயங்கும் ஆப். லிங்கை '
+                'உங்களுக்கே அனுப்பி, பிறகு கணினியில் திறந்து டவுன்லோட் செய்யுங்கள்.')
+        share, copy = 'கணினிக்கு அனுப்பு', 'லிங்கை காப்பி செய்'
+    else:
+        text = (f'You’re on a phone. {NAME} runs on Windows, macOS and Linux computers. Send yourself the link, '
+                'then open it on your computer to download.')
+        share, copy = 'Send to my computer', 'Copy link'
+    return (f'<div class="notice hidden" data-mobile-note>{icon("smartphone")}<div class="stack" style="gap: 12px">'
+            f'<span>{text}</span><div class="send-link">'
+            f'<button type="button" class="btn btn-primary hidden" data-send-share>{icon("share")}<span>{share}</span></button>'
+            f'<a class="btn btn-secondary" href="#" data-send-whatsapp target="_blank" rel="noopener">{icon("message")}<span>WhatsApp</span></a>'
+            f'<button type="button" class="btn btn-ghost" data-send-copy>{icon("copy")}<span>{copy}</span></button>'
+            '</div></div></div>')
+
+
+PHONE_NOTE = phone_note('en')
 TRUST = ('<div class="dl-trust">' + ''.join(badge(t, 'teal', 'check') for t in
                                            ['Free forever', 'No credit card', 'No subscription', 'Open source']) + '</div>')
 CHECKSUMS = (f'<p class="center small muted">Check your download with the <a href="{DL}SHA256SUMS.txt">SHA-256 checksums</a>'
@@ -972,8 +992,7 @@ ta_free = section(
 
 TA_TRUST = ('<div class="dl-trust">' + ''.join(badge(t, 'teal', 'check') for t in
                                               ['என்றும் இலவசம்', 'கிரெடிட் கார்டு தேவையில்லை', 'சந்தா இல்லை', 'ஓப்பன் சோர்ஸ்']) + '</div>')
-TA_PHONE_NOTE = (f'<div class="notice hidden" data-mobile-note>{icon("smartphone")}<span>நீங்கள் போனில் பார்க்கிறீர்கள். {NAME} '
-                 'Windows, macOS, Linux கணினிகளில் இயங்கும் ஆப். டவுன்லோட் செய்ய உங்கள் கணினியில் <b>invoiceo.in/ta.html</b> திறக்கவும்.</span></div>')
+TA_PHONE_NOTE = phone_note('ta')
 TA_FIRST_STEPS = [
     ('download', 'டவுன்லோட்', 'மேலே உங்கள் கணினியைத் தேர்ந்தெடுங்கள்.'),
     ('package', 'இன்ஸ்டால்', 'ஃபைலைத் திறந்து வழிமுறைகளைப் பின்பற்றுங்கள்.'),
