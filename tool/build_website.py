@@ -1026,6 +1026,8 @@ page('download.html', 'Download',
 
 # ────────────────────────────── Customization ──────────────────────────────
 CUSTOM = [
+    ('zap', 'Energy and power-sale bills', 'Monthly bills for wind and solar power: units, rate, deductions and net '
+     'amount. <a href="#work">See the one we built</a>.'),
     ('file', 'Invoice and bill designs', 'A layout that matches your letterhead, your trade or a format your customers expect.'),
     ('list', 'Extra fields', 'More details on invoices, products or customers, printed where you need them.'),
     ('layout', 'Bill formats for your trade', 'Special bills for your kind of business, with the columns and totals your trade uses.'),
@@ -1178,22 +1180,18 @@ faq_body = page_head('Help', 'Frequently asked questions', f'Short answers about
 reviews_body = page_head('Reviews', 'What our customers say',
                          f'Businesses that use {NAME}, in words they have approved.') + f'''
 
-<section class="page-body" aria-label="Customer reviews">
+<section class="page-body" aria-labelledby="rv-work">
   <div class="wrap">
-    <div class="testimonials">{''.join(testimonial_card(t) for t in TESTIMONIALS)}</div>
-  </div>
-</section>
-
-<section class="section section-subtle" aria-labelledby="rv-work">
-  <div class="wrap">
-    <div class="split">
-      <div class="stack">
-        {section_head('Recent work', 'An energy bill built for Green &amp; Green Agri Solutions',
-                      'Their monthly power-sale bill: units, rate, deductions and net amount, ready in a few clicks each month.', 'rv-work', left=True)}
-        <p>{btn('See the energy bill', 'customization.html#work', 'secondary', '', 'arrow')}</p>
+    <div class="review-story stack">
+      <div class="stack" style="gap: 10px">
+        <p>{badge('Custom feature', 'brand', 'tool')}</p>
+        <h2 class="h3" id="rv-work">An energy bill built for Green &amp; Green Agri Solutions</h2>
+        <p>Their monthly power-sale bill: units, rate, deductions and net amount, ready in a few clicks each month.</p>
       </div>
-      <figure class="doc-full"><a href="customization.html#work"><img src="{_energy_png}" width="{_ew}" height="{_eh}" alt="A sample energy bill made with {NAME}" loading="lazy" decoding="async"></a>
+      <figure class="doc-full"><a href="{_energy_png}" target="_blank" rel="noopener" title="Open full size"><img src="{_energy_png}" width="{_ew}" height="{_eh}" alt="A sample energy bill made with {NAME}: units generated and allotted, net units at the rate, deductions and the net amount" loading="lazy" decoding="async"></a>
         <figcaption>Shown with sample data: every name and number on it is made up.</figcaption></figure>
+      {''.join(testimonial_card(t) for t in TESTIMONIALS)}
+      <p class="center">{btn('See what this energy bill does', 'customization.html#work', 'secondary', '', 'arrow')}</p>
     </div>
   </div>
 </section>
