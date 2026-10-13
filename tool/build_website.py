@@ -605,6 +605,12 @@ def png_size(path):
     return int.from_bytes(head[16:20], 'big'), int.from_bytes(head[20:24], 'big')
 
 
+# The energy bill we built for them, printed with made-up data (Recent work,
+# Reviews and the Tamil home show it).
+_energy_png = 'assets/images/docs/energy-bill.png'
+_ew, _eh = png_size(os.path.join(OUT, _energy_png))
+
+
 def paper(name, cls, alt):
     src = f'assets/images/docs/{name}.png'
     w, h = png_size(os.path.join(OUT, src))
@@ -865,10 +871,36 @@ ta_who = section(section_head('யாருக்கு?', 'சிறு வண�
 TA_INDIA = ['GSTIN, HSN/SAC, CGST + SGST அல்லது IGST', 'பில்லில் UPI QR குறியீடு', 'இயல்பாக ரூபாயில் தொகை', 'திரையிலும் பில்லிலும் தமிழ், இந்தி']
 TA_TAMIL = ['மெனு, பட்டன்கள், பெரும்பாலான திரைகள் தமிழில்', 'பொருள், வாடிக்கையாளர் பெயர்களைத் தமிழில் சேமிக்கலாம்',
             'தமிழ்ப் பெயர்கள் PDF-லும் தெர்மல் ரசீதிலும் சரியாக அச்சாகும்', 'எப்போது வேண்டுமானாலும் English-க்கு மாற்றலாம்']
-ta_customers = section(section_head('வாடிக்கையாளர்கள்', 'எங்கள் வாடிக்கையாளர் சொல்வது', hid='tm-title')
-                       + '<div class="testimonials mt-4">' + ''.join(testimonial_card(t, 'ta') for t in TESTIMONIALS) + '</div>'
-                       + '<p class="center mt-3"><a href="customization.html#work">அவர்களுக்காக செய்த மின் பில்லைப் பாருங்கள் (English)</a></p>',
-                       'customers', 'section-subtle', 'tm-title')
+TA_ENERGY_WORK = [
+    'உற்பத்தியான யூனிட்கள், ஒதுக்கப்பட்ட யூனிட்கள், அந்த மாத விலையில் பில் செய்யப்படும் நிகர யூனிட்கள்',
+    'அந்த மாதக் கழிவுகள் “Less:” கீழ் — டிரான்ஸ்மிஷன், வீலிங், ஷெட்யூலிங், மீட்டர் ரீடிங் போன்றவை — நிலையான '
+    'தொகையாகவோ யூனிட்டுக்கு இவ்வளவு என்றோ (10 பைசா சுய உற்பத்தி வரி போல)',
+    'மொத்தச் செலவுகள், ரவுண்ட் ஆஃப், நிகரத் தொகை — தொகை எழுத்திலும்',
+    'கடந்த மாத விவரம், விலை, கழிவுகளை நினைவில் வைக்கும்; புதிய பில்லுக்குப் புதிய எண்கள் மட்டும் போதும்',
+    'நிறுவனத்தின் சொந்த பாணியில் பில் எண்கள், ஒவ்வொரு நிதியாண்டும் 001-லிருந்து (எ.கா. ABC/26-27/001)',
+    'சாதாரண பில்லைப் போலவே சேமிக்கப்படும் — பணம் வசூல், நிலுவை, அறிக்கைகள் வழக்கம்போல்',
+]
+# The energy bill first, the customer's words under it (as on the Reviews page).
+ta_customers = section(
+    '<div class="review-story stack">'
+    + section_head('வாடிக்கையாளர்கள்', 'Green &amp; Green Agri Solutions-க்காக உருவாக்கிய மின் (energy) பில்',
+                   'காற்றாலை, சூரிய மின் விற்பனைக்கான மாதாந்திர பில்: யூனிட்கள், விலை, கழிவுகள், நிகரத் தொகை — ஒவ்வொரு '
+                   'மாதமும் சில கிளிக்குகளில்.', 'tm-title')
+    + f'<p class="center">{badge("தனிப்பயன் வசதி", "brand", "tool")}</p>'
+    + f'<figure class="doc-full"><a href="{_energy_png}" target="_blank" rel="noopener" title="முழு அளவில் திறக்க">'
+      f'<img src="{_energy_png}" width="{_ew}" height="{_eh}" alt="{NAME}-ல் செய்த மாதிரி மின் பில்: உற்பத்தி, ஒதுக்கிய யூனிட்கள், '
+      f'நிகர யூனிட்கள், கழிவுகள், நிகரத் தொகை" loading="lazy" decoding="async"></a>'
+      '<figcaption>மாதிரித் தகவல்களுடன் காட்டப்பட்டுள்ளது: இதிலுள்ள பெயர்கள், எண்கள் அனைத்தும் கற்பனையானவை.</figcaption></figure>'
+    + ''.join(testimonial_card(t, 'ta', link=False) for t in TESTIMONIALS)
+    + f'<div class="card stack"><h3 class="h4">இந்த பில் என்ன செய்யும்?</h3>{checks(TA_ENERGY_WORK)}</div>'
+    + '<div class="stack" style="align-items: center; text-align: center; gap: 14px">'
+      '<p>உங்கள் தொழிலுக்கும் இப்படி ஒரு தனி பில் வேண்டுமா? இது கட்டண சேவை; ஒவ்வொரு கோரிக்கைக்கும் தனியாக விலை சொல்வோம்.</p>'
+      '<div class="cta-row" style="justify-content: center">'
+      f'<span data-block>{btn("WhatsApp-ல் கேளுங்கள்", "#", "primary", "", "message", attrs=" data-whatsapp target=" + chr(34) + "_blank" + chr(34) + " rel=" + chr(34) + "noopener" + chr(34))}</span>'
+      f'{btn("Customization பக்கம் (English)", "customization.html#request", "secondary", "", "arrow")}'
+      '</div></div>'
+    + '</div>',
+    'customers', 'section-subtle', 'tm-title')
 
 ta_tamil = section(section_head('தமிழில்', 'தமிழிலேயே பயன்படுத்துங்கள், தமிழிலேயே பிரிண்ட் எடுங்கள்',
                                 f'{NAME} இந்தியாவில், இந்திய பில்லிங் விதிகளுக்காக உருவாக்கப்பட்டது. ஆப்பின் மொழியைத் தமிழாக மாற்றினால் போதும்.', 'lg-title')
@@ -1049,8 +1081,6 @@ ENERGY_WORK = [
     'Bill numbers in the company’s own style, starting again each financial year (for example ABC/26-27/001)',
     'Saved like any invoice, so payments, balances and reports work as usual',
 ]
-_energy_png = 'assets/images/docs/energy-bill.png'
-_ew, _eh = png_size(os.path.join(OUT, _energy_png))
 recent_work = f'''<section class="section" id="work" aria-labelledby="work-title">
   <div class="wrap">
     {section_head('Recent work', 'An energy bill for a solar power company',
