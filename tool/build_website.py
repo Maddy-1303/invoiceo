@@ -335,7 +335,7 @@ def header(active, home=False, base=False, lang='en'):
         switch = '<a class="lang-switch" href="index.html" hreflang="en" lang="en">English</a>'
     else:
         links = [('Features', f'{pre}#features', 'features'), ('How it works', f'{pre}#how-it-works', 'how'),
-                 ('FAQ', 'faq.html', 'faq'), ('Contact', 'contact.html', 'contact')]
+                 ('Reviews', 'reviews.html', 'reviews'), ('FAQ', 'faq.html', 'faq'), ('Contact', 'contact.html', 'contact')]
         more = [('Screenshots', f'{pre}#screenshots', 'screenshots'), ('What’s new', 'changelog.html', 'changelog')]
         words = {'dl': 'Download free', 'skip': 'Skip to content', 'home': f'{NAME} home',
                  'main': 'Main', 'menu': 'Menu', 'main_menu': 'Main menu'}
@@ -369,7 +369,8 @@ def footer(home=False, lang='en'):
     feedback = 'data-href="forms.feedback" data-hide-empty target="_blank" rel="noopener"'
     if lang == 'ta':
         cols = [('ஆப்', [('வசதிகள்', 'href="#features"'), ('செயல்முறை', 'href="#how-it-works"'),
-                         ('ஸ்கிரீன்ஷாட்கள்', 'href="#screenshots"'), ('டவுன்லோட்', 'href="#download"'),
+                         ('ஸ்கிரீன்ஷாட்கள்', 'href="#screenshots"'), ('வாடிக்கையாளர் கருத்து', 'href="#customers"'),
+                         ('டவுன்லோட்', 'href="#download"'),
                          ('புதியவை (English)', 'href="changelog.html"')]),
                 ('உதவி', [('கேள்விகள் (English)', 'href="faq.html"'), ('தொடர்பு', 'href="contact.html"'),
                           ('உதவி கோரிக்கை', support), ('WhatsApp', whatsapp), ('கருத்து', feedback),
@@ -382,7 +383,8 @@ def footer(home=False, lang='en'):
                   '<a href="licenses.html">MIT License</a>, © 2025 ANOOP P.')
     else:
         cols = [('Product', [('Features', f'href="{pre}#features"'), ('How it works', f'href="{pre}#how-it-works"'),
-                             ('Screenshots', f'href="{pre}#screenshots"'), ('Download', 'href="download.html"'),
+                             ('Screenshots', f'href="{pre}#screenshots"'), ('Customer reviews', 'href="reviews.html"'),
+                             ('Download', 'href="download.html"'),
                              ('What’s new', 'href="changelog.html"')]),
                 ('Help', [('FAQ', 'href="faq.html"'), ('Contact', 'href="contact.html"'), ('Support request', support),
                           ('WhatsApp', whatsapp), ('Feedback', feedback), ('Custom features (paid)', 'href="customization.html"')]),
@@ -471,31 +473,35 @@ def page_head(eyebrow, title, lead=None, extra=''):
 ORG = {'@type': 'Organization', 'name': BUSINESS, 'email': EMAIL, 'url': SITE + '/'}
 
 # ─────────────────────────────── Testimonials ──────────────────────────────
-# Real customers only, in their own words, shown with their permission. The
-# spelling and punctuation may be tidied, nothing else. Never add one that is
-# not real and approved (made-up reviews are also against Indian consumer
-# rules). Green & Green Agri Solutions agreed on 13 October 2026.
+# Real customers only, with their permission, in words they have approved.
+# Never add one that is not real and approved (made-up reviews are also
+# against Indian consumer rules). Green & Green Agri Solutions: name shown
+# with their OK (13 Oct 2026); the wording was written from their own message
+# and approved for use (owner's confirmation, 13 Oct 2026).
 TESTIMONIALS = [{
     'name': 'Green &amp; Green Agri Solutions',
     'initial': 'G',
     'about': {'en': 'Agricultural products and solar power · Udumalai',
               'ta': 'விவசாயப் பொருட்கள், சூரிய மின் உற்பத்தி · உடுமலை'},
-    'quote': {'en': 'It is exactly the software we were looking for. I had approached many tech companies, but they '
-                    'quoted more. Invoiceo quoted a perfect budget, and it is very easy to use — the perfect solution '
-                    'we were looking for.',
-              'ta': 'நாங்கள் தேடிக்கொண்டிருந்த மென்பொருள் இதுதான். பல தொழில்நுட்ப நிறுவனங்களை அணுகினோம், ஆனால் அவர்கள் '
-                    'அதிக விலை சொன்னார்கள். Invoiceo சரியான பட்ஜெட்டில் விலை சொன்னது; பயன்படுத்தவும் மிக எளிது — நாங்கள் '
-                    'தேடிய சரியான தீர்வு.'},
+    'quote': {'en': 'We approached many software companies for our energy billing, but their quotes were too high. '
+                    'Invoiceo built exactly what we needed, within our budget. Our monthly bill is now simple to make. '
+                    'It’s the perfect solution for us.',
+              'ta': 'எங்கள் மின் (energy) பில்லிங்கிற்காகப் பல மென்பொருள் நிறுவனங்களை அணுகினோம்; ஆனால் அவர்கள் சொன்ன '
+                    'விலை மிக அதிகம். எங்களுக்குத் தேவையானதை Invoiceo எங்கள் பட்ஜெட்டுக்குள் சரியாக உருவாக்கித் தந்தது. '
+                    'இப்போது மாதாந்திர பில் போடுவது எளிது. எங்களுக்கு இதுவே சரியான தீர்வு.'},
     'tag': {'en': 'Custom energy bill', 'ta': 'தனிப்பயன் மின் பில்'},
+    # What we made for them (the Customization page's Recent work section).
+    'link': 'customization.html#work',
 }]
 
 
-def testimonial_card(t, lang='en'):
+def testimonial_card(t, lang='en', link=True):
     # The Tamil page shows a translation of the customer's English words, and says so.
     note = '<p class="testimonial-note">ஆங்கிலத்திலிருந்து தமிழாக்கம்</p>' if lang == 'ta' else ''
+    name = (f'<a href="{t["link"]}">{t["name"]}</a>' if link and t.get('link') else t['name'])
     return (f'<figure class="testimonial"><blockquote><p>{t["quote"][lang]}</p></blockquote>{note}'
             f'<figcaption><span class="testimonial-mark" aria-hidden="true">{t["initial"]}</span>'
-            f'<span><b>{t["name"]}</b><span>{t["about"][lang]}</span></span></figcaption>'
+            f'<span><b>{name}</b><span>{t["about"][lang]}</span></span></figcaption>'
             f'{badge(t["tag"][lang], "teal", "tool")}</figure>')
 
 
@@ -635,7 +641,8 @@ WORLD = ['Pick the currency you bill in', 'Eight app languages (Tibetan partly t
          'GST fields stay out of the way when you don’t need them']
 customers = section(section_head('Customers', 'What our customers say', hid='tm-title')
                     + '<div class="testimonials mt-4">' + ''.join(testimonial_card(t) for t in TESTIMONIALS) + '</div>'
-                    + '<p class="center mt-3"><a href="customization.html#work">See the energy bill we built for them</a></p>',
+                    + '<p class="center mt-3"><a href="customization.html#work">See the energy bill we built for them</a>'
+                      ' · <a href="reviews.html">Read all reviews</a></p>',
                     'customers', 'section-subtle', 'tm-title')
 
 local_global = section(section_head('Local and global', 'Built for local businesses. Ready for the world.',
@@ -1053,7 +1060,7 @@ recent_work = f'''<section class="section" id="work" aria-labelledby="work-title
       </figure>
       <div class="stack" style="gap: 28px">
         <div class="stack"><h3 class="h4">What it does</h3>{checks(ENERGY_WORK)}</div>
-        {testimonial_card(TESTIMONIALS[0])}
+        {testimonial_card(TESTIMONIALS[0], link=False)}
       </div>
     </div>
   </div>
@@ -1166,6 +1173,44 @@ faq_body = page_head('Help', 'Frequently asked questions', f'Short answers about
     f'    <h2 class="h3{" mt-4" if i else ""}" id="{strip_tags(t).lower().replace(" ", "-")}">{t}</h2>\n    <div class="faq-list mt-2">'
     + ''.join(faq_item(q, a) for q, a in items) + '</div>'
     for i, (t, items) in enumerate(FAQ_GROUPS)) + '\n  </div>\n</section>'
+
+# ───────────────────────────────── Reviews ─────────────────────────────────
+reviews_body = page_head('Reviews', 'What our customers say',
+                         f'Businesses that use {NAME}, in words they have approved.') + f'''
+
+<section class="page-body" aria-label="Customer reviews">
+  <div class="wrap">
+    <div class="testimonials">{''.join(testimonial_card(t) for t in TESTIMONIALS)}</div>
+  </div>
+</section>
+
+<section class="section section-subtle" aria-labelledby="rv-work">
+  <div class="wrap">
+    <div class="split">
+      <div class="stack">
+        {section_head('Recent work', 'An energy bill built for Green &amp; Green Agri Solutions',
+                      'Their monthly power-sale bill: units, rate, deductions and net amount, ready in a few clicks each month.', 'rv-work', left=True)}
+        <p>{btn('See the energy bill', 'customization.html#work', 'secondary', '', 'arrow')}</p>
+      </div>
+      <figure class="doc-full"><a href="customization.html#work"><img src="{_energy_png}" width="{_ew}" height="{_eh}" alt="A sample energy bill made with {NAME}" loading="lazy" decoding="async"></a>
+        <figcaption>Shown with sample data: every name and number on it is made up.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="section section-flush" aria-labelledby="rv-write">
+  <div class="wrap narrow center stack" style="align-items: center">
+    {section_head('Your turn', f'Using {NAME}? Tell us what you think', 'Your review helps other shops decide. We only publish reviews with your permission.', 'rv-write')}
+    <div class="cta-row" style="justify-content: center">
+      <span data-block>{btn('Write a review', '#', 'primary', 'lg', 'message', attrs=' data-href="forms.feedback" data-hide-empty target="_blank" rel="noopener"')}</span>
+      <span data-block>{btn('Send it on WhatsApp', '#', 'secondary', 'lg', 'message', attrs=' data-whatsapp target="_blank" rel="noopener"')}</span>
+    </div>
+  </div>
+</section>'''
+
+page('reviews.html', 'Customer reviews',
+     f'What businesses say about {NAME}, the free billing software, and the custom features we built for them.',
+     'reviews', reviews_body)
 
 page('faq.html', 'FAQ',
      f'Answers about {NAME}: price, open source, offline use, where data is stored, GST, printers, Tamil, barcode scanners, installing and updating.',
@@ -1430,7 +1475,7 @@ page('404.html', 'Page not found', f'This page could not be found on the {NAME} 
 print('pages written')
 
 # ───────────────────────── sitemap / robots / llms / manifest ──────────────
-pages = ['', 'ta.html', 'download.html', 'customization.html', 'faq.html', 'changelog.html', 'contact.html',
+pages = ['', 'ta.html', 'download.html', 'customization.html', 'reviews.html', 'faq.html', 'changelog.html', 'contact.html',
          'privacy.html', 'terms.html', 'licenses.html']
 with open(os.path.join(OUT, 'sitemap.xml'), 'w') as f:
     f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
@@ -1452,6 +1497,7 @@ with open(os.path.join(OUT, 'llms.txt'), 'w') as f:
 - [Home in Tamil]({SITE}/ta.html): the same page in Tamil (தமிழ்)
 - [Download]({SITE}/download.html): installers for Windows, macOS and Linux, with install steps
 - [Customization]({SITE}/customization.html): paid custom features, quoted per request
+- [Reviews]({SITE}/reviews.html): what customers say, and recent custom work
 - [FAQ]({SITE}/faq.html): price, open source, offline use, data storage, GST, printers, languages
 - [What's new]({SITE}/changelog.html): release notes
 - [Contact]({SITE}/contact.html): email {EMAIL}
