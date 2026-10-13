@@ -611,6 +611,18 @@ _energy_png = 'assets/images/docs/energy-bill.png'
 _ew, _eh = png_size(os.path.join(OUT, _energy_png))
 
 
+# Recent custom work. The picture is the real energy bill PDF code printing
+# made-up companies and numbers (never a customer's real bill).
+ENERGY_WORK = [
+    'Units generated, units allotted and the net units billed at the month’s rate',
+    'The month’s deductions under “Less:” — transmission, wheeling, scheduling, meter reading and more — '
+    'as fixed amounts or per unit, like the 10-paise self-generation tax',
+    'Total expenses, round off and the net amount, with the amount in words',
+    'Remembers last month’s wording, rate and deductions, so each new bill needs only the new numbers',
+    'Bill numbers in the company’s own style, starting again each financial year (for example ABC/26-27/001)',
+    'Saved like any invoice, so payments, balances and reports work as usual',
+]
+
 def paper(name, cls, alt):
     src = f'assets/images/docs/{name}.png'
     w, h = png_size(os.path.join(OUT, src))
@@ -645,11 +657,28 @@ langs = ''.join(f'<span class="chip"{(" lang=" + chr(34) + l + chr(34)) if l els
 INDIA = ['GSTIN, HSN/SAC and CGST + SGST or IGST', 'UPI QR code on your invoices', 'Amounts in rupees by default', 'Tamil and Hindi on screen and on paper']
 WORLD = ['Pick the currency you bill in', 'Eight app languages (Tibetan partly translated)', 'A4, A5, A6 and 58/80 mm paper',
          'GST fields stay out of the way when you don’t need them']
-customers = section(section_head('Customers', 'What our customers say', hid='tm-title')
-                    + '<div class="testimonials mt-4">' + ''.join(testimonial_card(t) for t in TESTIMONIALS) + '</div>'
-                    + '<p class="center mt-3"><a href="customization.html#work">See the energy bill we built for them</a>'
-                      ' · <a href="reviews.html">Read all reviews</a></p>',
-                    'customers', 'section-subtle', 'tm-title')
+# The energy bill first, the customer's words under it (as on the Reviews
+# page and the Tamil home).
+customers = section(
+    '<div class="review-story stack">'
+    + section_head('Customers', 'An energy bill built for Green &amp; Green Agri Solutions',
+                   'Their monthly power-sale bill for wind and solar generation: units, rate, deductions and net amount, '
+                   'ready in a few clicks each month.', 'tm-title')
+    + f'<p class="center">{badge("Custom feature", "brand", "tool")}</p>'
+    + f'<figure class="doc-full"><a href="{_energy_png}" target="_blank" rel="noopener" title="Open full size">'
+      f'<img src="{_energy_png}" width="{_ew}" height="{_eh}" alt="A sample energy bill made with {NAME}: units generated '
+      f'and allotted, net units at the rate, deductions and the net amount" loading="lazy" decoding="async"></a>'
+      '<figcaption>Shown with sample data: every name and number on it is made up.</figcaption></figure>'
+    + ''.join(testimonial_card(t) for t in TESTIMONIALS)
+    + f'<div class="card stack"><h3 class="h4">What this bill does</h3>{checks(ENERGY_WORK)}</div>'
+    + '<div class="stack" style="align-items: center; text-align: center; gap: 14px">'
+      '<p>Want a bill like this for your business? It is a paid service, and every request is quoted on its own.</p>'
+      '<div class="cta-row" style="justify-content: center">'
+      f'<span data-block>{btn("Ask on WhatsApp", "#", "primary", "", "message", attrs=" data-whatsapp target=" + chr(34) + "_blank" + chr(34) + " rel=" + chr(34) + "noopener" + chr(34))}</span>'
+      f'{btn("Request a customization", "customization.html#request", "secondary", "", "arrow")}'
+      '</div><p class="small"><a href="reviews.html">Read all reviews</a></p></div>'
+    + '</div>',
+    'customers', 'section-subtle', 'tm-title')
 
 local_global = section(section_head('Local and global', 'Built for local businesses. Ready for the world.',
                                     f'{NAME} is made in India for Indian billing rules, and works just as well anywhere else.', 'lg-title')
@@ -1070,17 +1099,6 @@ CUSTOM = [
 CUSTOM_STEPS = [('message', 'Tell us what you need', 'Fill in the request form below. Sample bills or screenshots help a lot.'),
                 ('file', 'Get a quote', 'We reply with any questions and a price for the work. There is no charge for the quote.'),
                 ('package', 'We build it', 'Once you approve, we build and test it, and give you your updated version.')]
-# Recent custom work. The picture is the real energy bill PDF code printing
-# made-up companies and numbers (never a customer's real bill).
-ENERGY_WORK = [
-    'Units generated, units allotted and the net units billed at the month’s rate',
-    'The month’s deductions under “Less:” — transmission, wheeling, scheduling, meter reading and more — '
-    'as fixed amounts or per unit, like the 10-paise self-generation tax',
-    'Total expenses, round off and the net amount, with the amount in words',
-    'Remembers last month’s wording, rate and deductions, so each new bill needs only the new numbers',
-    'Bill numbers in the company’s own style, starting again each financial year (for example ABC/26-27/001)',
-    'Saved like any invoice, so payments, balances and reports work as usual',
-]
 recent_work = f'''<section class="section" id="work" aria-labelledby="work-title">
   <div class="wrap">
     {section_head('Recent work', 'An energy bill for a solar power company',
